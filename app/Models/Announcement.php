@@ -25,15 +25,19 @@ class Announcement extends Model
         'published_at',
         'status',
         'created_by',
+        'notifications_sent_at',
+        'send_telegram',
     ];
 
     protected $casts = [
         'attachments' => 'array',
         'target_ids' => 'array',
         'is_featured' => 'boolean',
+        'send_telegram' => 'boolean',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'published_at' => 'datetime',
+        'notifications_sent_at' => 'datetime',
     ];
 
     public function createdBy()

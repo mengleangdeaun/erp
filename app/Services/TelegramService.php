@@ -93,7 +93,15 @@ class TelegramService
         ];
 
         if ($announcement->short_description) {
-            $lines[] = $announcement->short_description;
+            $lines[] = "<i>{$announcement->short_description}</i>";
+            $lines[] = "";
+        }
+
+        if ($announcement->content) {
+            // Strip HTML tags for Telegram but keep basic formatting if needed
+            // Telegram supports <b>, <i>, <u>, <s>, <code>, <pre>, <a>
+            $content = strip_tags($announcement->content, '<b><i><u><s><code><pre><a>');
+            $lines[] = $content;
         }
 
         return implode("\n", $lines);

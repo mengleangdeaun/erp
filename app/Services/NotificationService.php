@@ -96,4 +96,36 @@ class NotificationService
             default => Employee::all(), // 'all'
         };
     }
+
+    /**
+     * Dispatch announcement to Telegram.
+     */
+    public static function dispatchTelegram(Announcement $announcement): void
+    {
+        if (!$announcement->send_telegram) {
+            return;
+        }
+
+        $service = new TelegramService();
+        $setting = \App\Models\TelegramSetting::instance();
+        $message = $service->formatAnnouncementMessage($announcement);
+
+        match($announcement->targeting_type) {
+            'branch' => \App\Models\HR\Branch::whereIn('id', $announcement->target_ids ?? [])->get()
+                ->each(fn ($b) => $b->telegram_chat_id && $service->sendMessage($b->telegram_chat_id, $message, $b->telegram_topic_id)),
+            'department' => \App\Models\HR\Department::whereIn('id', $announcement->target_ids ?? [])->get()
+                ->each(fn ($d) => $d->telegram_chat_id && $service->sendMessage($d->telegram_chat_id, $message, $d->telegram_topic_id)),
+            default => $setting?->global_chat_id && $service->sendMessage($setting->global_chat_id, $message, $setting->global_topic_id),
+        };
+    }
+
+    /**
+     * Recall (delete) all notifications associated with an announcement.
+     */
+    public static function recallAnnouncement(int $announcementId): void
+    {
+        Notification::where('type', 'announcement')
+            ->whereJsonContains('data->announcement_id', $announcementId)
+            ->delete();
+    }
 }

@@ -79,64 +79,52 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('attendance-policies', App\Http\Controllers\Attendance\AttendancePolicyController::class);
         Route::apiResource('records', App\Http\Controllers\Attendance\AttendanceRecordController::class)->only(['index']);
         
-        // QR Code Attendance Routes
-        Route::get('branch-qr/{branch}', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'generateBranchQr']);
-        Route::get('employee-qr/{employee}', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'generateEmployeeQr']);
-        Route::post('employee-login', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'employeeLogin']);
-        Route::post('login-credentials', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'loginWithCredentials']);
-        Route::post('scan/clock', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'scanClock']);
-
         Route::get('employee-config', [App\Http\Controllers\Attendance\EmployeeConfigController::class, 'index']);
         Route::put('employee-config/{employee}', [App\Http\Controllers\Attendance\EmployeeConfigController::class, 'updateField']);
     });
 
-    // Employee PWA Routes (Auth handled via custom header token in controller)
-    Route::prefix('employee-app')->group(function () {
-        Route::get('dashboard', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'dashboard']);
-        Route::get('history', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'history']);
-        Route::get('profile', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'profile']);
-        Route::post('profile/avatar', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'updateAvatar']);
-        Route::get('calendar-data', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'calendarData']);
-        Route::get('my-leave-balances', [App\Http\Controllers\EmployeeApp\LeaveController::class, 'myBalances']);
-        Route::get('leave-requests', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'index']);
-        Route::get('leave-requests/approvals', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'approvals']);
-        Route::post('leave-requests', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'store']);
-        Route::post('leave-requests/{id}/approve', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'approve']);
-        Route::post('leave-requests/{id}/reject', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'reject']);
-        Route::put('leave-requests/{id}/cancel', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'cancel']);
-        Route::get('preferences', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'getPreferences']);
-        Route::put('preferences', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'updatePreferences']);
-        
-        Route::post('feedback', [App\Http\Controllers\EmployeeApp\FeedbackController::class, 'store']);
+});
 
-        // Activity
-        Route::get('activities', [App\Http\Controllers\EmployeeApp\ActivityController::class, 'index']);
-        Route::post('activities', [App\Http\Controllers\EmployeeApp\ActivityController::class, 'store']);
+// Public/Employee Attendance Routes (Token-based)
+Route::prefix('attendance')->group(function () {
+    Route::post('employee-login', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'employeeLogin']);
+    Route::post('login-credentials', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'loginWithCredentials']);
+    Route::post('scan/clock', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'scanClock']);
+});
 
-        // Notifications
-        Route::get('notifications', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'index']);
-        Route::get('notifications/unread-count', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'unreadCount']);
-        Route::post('notifications/mark-all-read', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'markAllRead']);
-        Route::post('notifications/{id}/read', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'markRead']);
+// Employee PWA Routes (Auth handled via custom header token in controller)
+Route::prefix('employee-app')->group(function () {
+    Route::get('dashboard', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'dashboard']);
+    Route::get('history', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'history']);
+    Route::get('profile', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'profile']);
+    Route::post('profile/avatar', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'updateAvatar']);
+    Route::get('calendar-data', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'calendarData']);
+    Route::get('my-leave-balances', [App\Http\Controllers\EmployeeApp\LeaveController::class, 'myBalances']);
+    Route::get('leave-requests', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'index']);
+    Route::get('leave-requests/approvals', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'approvals']);
+    Route::post('leave-requests', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'store']);
+    Route::post('leave-requests/{id}/approve', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'approve']);
+    Route::post('leave-requests/{id}/reject', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'reject']);
+    Route::put('leave-requests/{id}/cancel', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'cancel']);
+    Route::get('preferences', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'getPreferences']);
+    Route::put('preferences', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'updatePreferences']);
+    
+    Route::post('feedback', [App\Http\Controllers\EmployeeApp\FeedbackController::class, 'store']);
 
-        // Announcements (PWA)
-        Route::get('announcements', [App\Http\Controllers\EmployeeApp\AnnouncementController::class, 'index']);
-        Route::get('announcements/featured', [App\Http\Controllers\EmployeeApp\AnnouncementController::class, 'featured']);
-        Route::get('announcements/{id}', [App\Http\Controllers\EmployeeApp\AnnouncementController::class, 'show']);
-    });
+    // Activity
+    Route::get('activities', [App\Http\Controllers\EmployeeApp\ActivityController::class, 'index']);
+    Route::post('activities', [App\Http\Controllers\EmployeeApp\ActivityController::class, 'store']);
 
-    // Cloud Storage Settings
-    Route::get('settings/storage', [App\Http\Controllers\StorageSettingController::class, 'index']);
-    Route::put('settings/storage/{provider}', [App\Http\Controllers\StorageSettingController::class, 'update']);
+    // Notifications
+    Route::get('notifications', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'index']);
+    Route::get('notifications/unread-count', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'unreadCount']);
+    Route::post('notifications/mark-all-read', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'markAllRead']);
+    Route::post('notifications/{id}/read', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'markRead']);
 
-    Route::prefix('media')->group(function () {
-        Route::get('storage-info', [App\Http\Controllers\MediaFileController::class, 'storageInfo']);
-        
-        Route::apiResource('folders', App\Http\Controllers\MediaFolderController::class)->except(['show']);
-        Route::post('files/upload', [App\Http\Controllers\MediaFileController::class, 'upload']);
-        Route::put('files/{file}/favorite', [App\Http\Controllers\MediaFileController::class, 'favorite']);
-        Route::apiResource('files', App\Http\Controllers\MediaFileController::class)->except(['store', 'show']);
-    });
+    // Announcements (PWA)
+    Route::get('announcements', [App\Http\Controllers\EmployeeApp\AnnouncementController::class, 'index']);
+    Route::get('announcements/featured', [App\Http\Controllers\EmployeeApp\AnnouncementController::class, 'featured']);
+    Route::get('announcements/{id}', [App\Http\Controllers\EmployeeApp\AnnouncementController::class, 'show']);
 });
 
 Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {

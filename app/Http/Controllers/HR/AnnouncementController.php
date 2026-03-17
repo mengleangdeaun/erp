@@ -37,18 +37,25 @@ class AnnouncementController extends Controller
             'content'          => 'nullable|string',
             'start_date'       => 'nullable|date',
             'end_date'         => 'nullable|date|after_or_equal:start_date',
-            'is_featured'      => 'boolean',
+            'is_featured'      => 'sometimes',
             'targeting_type'   => 'required|in:all,branch,department,employee',
-            'target_ids'       => 'nullable|array',
+            'target_ids'       => 'nullable',
             'published_at'     => 'nullable|date',
             'status'           => 'required|in:draft,published',
-            'send_telegram'    => 'boolean',
+            'send_telegram'    => 'sometimes',
             'attachments'      => 'nullable|array',
             'attachments.*'    => 'nullable|file',
             'featured_image'   => 'nullable|image|max:5120', // Max 5MB
         ]);
 
         $data = $validated;
+        $data['is_featured'] = $request->boolean('is_featured');
+        $data['send_telegram'] = $request->boolean('send_telegram');
+
+        if ($request->has('target_ids')) {
+            $targetIds = $request->input('target_ids');
+            $data['target_ids'] = is_string($targetIds) ? json_decode($targetIds, true) : $targetIds;
+        }
         
         // Handle Featured Image
         if ($request->hasFile('featured_image')) {
@@ -78,13 +85,16 @@ class AnnouncementController extends Controller
         ]);
 
         // Dispatch in-app notifications if publishing now
-        if ($announcement->status === 'published') {
+        // Be lenient with the time check (5 seconds skew) to handle client/server mismatch
+        if ($announcement->status === 'published' && ($announcement->published_at <= now()->addSeconds(5) || empty($announcement->published_at))) {
             NotificationService::dispatchAnnouncement($announcement);
 
             // Send to Telegram if requested
             if ($request->boolean('send_telegram')) {
-                $this->dispatchTelegram($announcement);
+                NotificationService::dispatchTelegram($announcement);
             }
+
+            $announcement->update(['notifications_sent_at' => now()]);
         }
 
         return response()->json($announcement->load('createdBy'), 201);
@@ -106,15 +116,26 @@ class AnnouncementController extends Controller
             'content'          => 'nullable|string',
             'start_date'       => 'nullable|date',
             'end_date'         => 'nullable|date',
-            'is_featured'      => 'boolean',
+            'is_featured'      => 'sometimes',
             'targeting_type'   => 'sometimes|in:all,branch,department,employee',
-            'target_ids'       => 'nullable|array',
+            'target_ids'       => 'nullable',
             'published_at'     => 'nullable|date',
             'status'           => 'sometimes|in:draft,published,expired',
-            'send_telegram'    => 'boolean',
+            'send_telegram'    => 'sometimes',
         ]);
 
         $data = $validated;
+        if ($request->has('is_featured')) {
+            $data['is_featured'] = $request->boolean('is_featured');
+        }
+        if ($request->has('send_telegram')) {
+            $data['send_telegram'] = $request->boolean('send_telegram');
+        }
+
+        if ($request->has('target_ids')) {
+            $targetIds = $request->input('target_ids');
+            $data['target_ids'] = is_string($targetIds) ? json_decode($targetIds, true) : $targetIds;
+        }
 
         // Handle Featured Image Update
         if ($request->hasFile('featured_image')) {
@@ -148,12 +169,15 @@ class AnnouncementController extends Controller
         $announcement->update($data);
 
         // If just published for the first time, dispatch notifications
-        if (!$wasPublished && $announcement->status === 'published') {
+        // Be lenient with time check (5 seconds skew)
+        if ($announcement->status === 'published' && !$announcement->notifications_sent_at && ($announcement->published_at <= now()->addSeconds(5) || empty($announcement->published_at))) {
             NotificationService::dispatchAnnouncement($announcement);
 
             if ($request->boolean('send_telegram')) {
-                $this->dispatchTelegram($announcement);
+                NotificationService::dispatchTelegram($announcement);
             }
+
+            $announcement->update(['notifications_sent_at' => now()]);
         }
 
         return response()->json($announcement->load('createdBy'));
@@ -161,6 +185,7 @@ class AnnouncementController extends Controller
 
     public function destroy(Announcement $announcement)
     {
+        NotificationService::recallAnnouncement($announcement->id);
         $announcement->delete();
         return response()->noContent();
     }
@@ -187,20 +212,6 @@ class AnnouncementController extends Controller
         return response()->json($service->testConnection());
     }
 
-    private function dispatchTelegram(Announcement $announcement): void
-    {
-        $service = new TelegramService();
-        $setting = \App\Models\TelegramSetting::instance();
-        $message = $service->formatAnnouncementMessage($announcement);
-
-        match($announcement->targeting_type) {
-            'branch' => Branch::whereIn('id', $announcement->target_ids ?? [])->get()
-                ->each(fn ($b) => $b->telegram_chat_id && $service->sendMessage($b->telegram_chat_id, $message, $b->telegram_topic_id)),
-            'department' => Department::whereIn('id', $announcement->target_ids ?? [])->get()
-                ->each(fn ($d) => $d->telegram_chat_id && $service->sendMessage($d->telegram_chat_id, $message, $d->telegram_topic_id)),
-            default => $setting?->global_chat_id && $service->sendMessage($setting->global_chat_id, $message, $setting->global_topic_id),
-        };
-    }
 
     /** Reference data for the form */
     public function formData()

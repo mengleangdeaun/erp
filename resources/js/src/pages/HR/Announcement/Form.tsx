@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { DatePicker } from '../../../components/ui/date-picker';
+import { TimePicker } from '../../../components/ui/time-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import SearchableMultiSelect from '../../../components/ui/SearchableMultiSelect';
 import { CustomQuillEditor } from '../../../components/ui/custom-quill-editor';
@@ -140,6 +141,9 @@ export default function AnnouncementForm() {
     const [filterBranchId, setFilterBranchId] = useState<string>('all');
     const [filterDeptId, setFilterDeptId] = useState<string>('all');
 
+    const [publishMethod, setPublishMethod] = useState<'now' | 'schedule'>('now');
+    const [publishTime, setPublishTime] = useState<string>('00:00');
+
     const getCookie = (name: string) => {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
@@ -207,6 +211,13 @@ export default function AnnouncementForm() {
                 status:           data.status           || 'draft',
                 send_telegram: false,
             });
+            if (data.published_at && dayjs(data.published_at).isAfter(dayjs())) {
+                setPublishMethod('schedule');
+                setPublishTime(dayjs(data.published_at).format('HH:mm'));
+            } else {
+                setPublishMethod('now');
+                setPublishTime(dayjs().format('HH:mm'));
+            }
             setPreexistingImage(data.featured_image || null);
             setPreexistingAttachments(Array.isArray(data.attachments) ? data.attachments : []);
         }).catch(() => {
@@ -226,12 +237,29 @@ export default function AnnouncementForm() {
             await fetch('/sanctum/csrf-cookie');
             
             const formData = new FormData();
+            
+            let finalPublishedAt = form.published_at;
+            if (status === 'published') {
+                if (publishMethod === 'now') {
+                    finalPublishedAt = dayjs().format('YYYY-MM-DD HH:mm:ss');
+                } else if (form.published_at) {
+                    finalPublishedAt = `${form.published_at} ${publishTime}:00`;
+                }
+            }
+
             // Append basic fields
-            Object.entries({ ...form, status }).forEach(([key, value]) => {
+            Object.entries({ ...form, status, published_at: finalPublishedAt }).forEach(([key, value]) => {
                 if (key === 'target_ids') {
-                    formData.append(key, JSON.stringify(value));
+                    // Laravel expects array fields as target_ids[] when using FormData
+                    if (Array.isArray(value)) {
+                        value.forEach((val, index) => {
+                            formData.append(`target_ids[${index}]`, String(val));
+                        });
+                    }
+                } else if (typeof value === 'boolean') {
+                    formData.append(key, value ? '1' : '0');
                 } else {
-                    formData.append(key, String(value));
+                    formData.append(key, String(value ?? ''));
                 }
             });
 
@@ -243,29 +271,20 @@ export default function AnnouncementForm() {
                 formData.append(`attachments[${i}]`, file);
             });
 
-            const url    = isEdit ? `/api/hr/announcements/${id}` : '/api/hr/announcements';
-            
-            // We use POST with _method=PUT to overcome PHP Multipart limitation for PUT
-            const res    = await fetch(url, { 
-                method: 'POST', 
-                headers: authHeaders, 
-                credentials: 'include', 
-                body: formData 
-            });
-
             if (isEdit) {
                 formData.append('_method', 'PUT');
             }
 
-            const actualRes = await fetch(url, { 
+            const url = isEdit ? `/api/hr/announcements/${id}` : '/api/hr/announcements';
+            const res = await fetch(url, { 
                 method: 'POST', 
                 headers: authHeaders, 
                 credentials: 'include', 
                 body: formData 
             });
 
-            const data   = await actualRes.json();
-            if (actualRes.ok) {
+            const data = await res.json();
+            if (res.ok) {
                 toast.success(status === 'published' ? 'Announcement published!' : 'Saved as draft');
                 navigate('/hr/announcements');
             } else {
@@ -386,16 +405,43 @@ export default function AnnouncementForm() {
                                 />
                             </div>
                         </div>
-                        <div>
-                            <Label>Publish At</Label>
-                            <DatePicker
-                                value={toDate(form.published_at)}
-                                onChange={d => set('published_at', toStr(d))}
-                                placeholder="Pick publish date"
-                            />
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                                Leave empty to publish immediately when you click "Publish Now".
-                            </p>
+                        <div className="space-y-4">
+                            <div>
+                                <Label>Publish Method</Label>
+                                <Select value={publishMethod} onValueChange={(v: any) => setPublishMethod(v)}>
+                                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="now">Publish Now</SelectItem>
+                                        <SelectItem value="schedule">Schedule for later</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {publishMethod === 'schedule' && (
+                                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <div>
+                                        <Label>Publish Date</Label>
+                                        <DatePicker
+                                            value={toDate(form.published_at)}
+                                            onChange={d => set('published_at', toStr(d))}
+                                            placeholder="Pick date"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Publish Time</Label>
+                                        <TimePicker
+                                            value={publishTime}
+                                            onChange={setPublishTime}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {publishMethod === 'now' && (
+                                <p className="text-xs text-gray-400 dark:text-gray-500">
+                                    Broadcast will be sent immediately after you click "Publish Now".
+                                </p>
+                            )}
                         </div>
                     </Card>
                 </div>
