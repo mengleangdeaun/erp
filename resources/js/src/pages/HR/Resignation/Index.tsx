@@ -197,6 +197,7 @@ const ResignationIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconUserOff className="w-6 h-6 text-primary" />}
                 title="Employee Resignations"
                 description="Track and manage employee resignation records"
                 search={search}

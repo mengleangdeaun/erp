@@ -1,98 +1,79 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { IconMapPin, IconLoader2, IconCheck, IconX } from '@tabler/icons-react';
+import { IconMapPin, IconLoader2, IconCheck, IconX, IconArrowLeft } from '@tabler/icons-react';
 import { Button } from '../../../../components/ui/button';
 
 export default function MobileEmployeeScan() {
     const [searchParams] = useSearchParams();
-    const payload = searchParams.get('payload');
+    const navigate = useNavigate();
+    const branchCode = searchParams.get('b');
+    const signature = searchParams.get('s');
 
     const [status, setStatus] = useState<'idle' | 'locating' | 'verifying' | 'success' | 'error'>('idle');
-    const [message, setMessage] = useState('Ready to scan');
+    const [message, setMessage] = useState('Initializing scan...');
     const [distance, setDistance] = useState<number | null>(null);
 
-    // Grab cached token from local storage (set during the personal QR login)
+    // Grab cached token from local storage
     const authToken = localStorage.getItem('employee_auth_token');
     const employeeName = localStorage.getItem('employee_name');
 
     useEffect(() => {
         if (!authToken) {
             setStatus('error');
-            setMessage('You are not logged in. Please ask HR for your Personal Login QR code first.');
+            setMessage('Session expired. Please log in again.');
             return;
         }
 
-        if (!payload) {
+        if (!branchCode || !signature) {
             setStatus('error');
-            setMessage('Invalid Branch QR Code.');
+            setMessage('Invalid verification data.');
             return;
         }
 
         startAttendanceScan();
-    }, [payload, authToken]);
+    }, [branchCode, signature, authToken]);
 
     const startAttendanceScan = () => {
         setStatus('locating');
-        setMessage('Acquiring GPS Location. Please allow location permissions if prompted...');
+        setMessage('Detecting your location...');
 
         if (!navigator.geolocation) {
             setStatus('error');
-            setMessage('Geolocation is not supported by your browser.');
+            setMessage('GPS is not supported on this device.');
             return;
         }
 
-        const getFallbackPosition = () => {
-            setMessage('High accuracy timeout. Retrying with standard accuracy...');
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    verifyAndClockIn(latitude, longitude);
-                },
-                (error) => {
-                    setStatus('error');
-                    if (error.code === error.PERMISSION_DENIED) {
-                        setMessage('Location Access Denied. You must allow location access to clock in.');
-                    } else {
-                        setMessage('Failed to get your location. Please check your GPS signal and ensure location services are enabled.');
-                    }
-                },
-                // Fallback: 15 seconds timeout, accept location up to 60 seconds old
-                { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-            );
+        const handleSuccess = (position: GeolocationPosition) => {
+            const { latitude, longitude } = position.coords;
+            verifyAndClockIn(latitude, longitude);
         };
 
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                verifyAndClockIn(latitude, longitude);
-            },
-            (error) => {
-                // If it's a permission issue, don't fallback, just show error
-                if (error.code === error.PERMISSION_DENIED) {
+        const handleError = (error: GeolocationPositionError) => {
+            if (error.code === error.PERMISSION_DENIED) {
+                setStatus('error');
+                setMessage('Location permission required to clock in.');
+            } else {
+                // Try one more time with lower accuracy if it was a timeout/unavailable
+                navigator.geolocation.getCurrentPosition(handleSuccess, () => {
                     setStatus('error');
-                    setMessage('Location Access Denied. You must allow location access to clock in.');
-                } else {
-                    // Timeout or Position Unavailable -> Try Fallback
-                    getFallbackPosition();
-                }
-            },
-            // High Accuracy: 5 seconds timeout (fail fast), accept location up to 60 seconds old (instant load if cached)
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
-        );
+                    setMessage('Unable to determine location. Please ensure GPS is enabled.');
+                }, { enableHighAccuracy: false, timeout: 10000 });
+            }
+        };
+
+        navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+            enableHighAccuracy: true,
+            timeout: 6000,
+            maximumAge: 30000
+        });
     };
 
     const verifyAndClockIn = async (user_lat: number, user_lng: number) => {
         setStatus('verifying');
-        setMessage('Verifying your location against the Branch geo-fence...');
+        setMessage('Verifying your placement...');
 
         try {
-            // First decode the branch QR we just scanned so we get the branch_code
-            const decodedQr = JSON.parse(atob(payload as string));
-            const branchCode = decodedQr.branch_code;
-
-            if (!branchCode) throw new Error("Invalid Branch Payload");
-
             const res = await fetch('/api/attendance/scan/clock', {
                 method: 'POST',
                 headers: {
@@ -102,6 +83,7 @@ export default function MobileEmployeeScan() {
                 body: JSON.stringify({
                     auth_token: authToken,
                     branch_code: branchCode,
+                    signature: signature,
                     user_lat,
                     user_lng
                 })
@@ -111,77 +93,124 @@ export default function MobileEmployeeScan() {
 
             if (res.ok) {
                 setStatus('success');
-                setMessage(data.message); // e.g. "Successfully Clocked IN!"
-                toast.success(data.message);
+                setMessage(data.message);
+                toast.success('Attendance Recorded');
             } else {
                 setStatus('error');
-                setMessage(data.message || 'Verification Failed.');
+                setMessage(data.message || 'Verification failed');
                 if (data.distance) setDistance(data.distance);
-                toast.error('Clock-in Failed');
+                toast.error('Placement Invalid');
             }
         } catch (err) {
             setStatus('error');
-            setMessage('Error reading the QR code or communicating with the server.');
+            setMessage('Network connection lost.');
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
-            <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center space-y-6 border border-gray-100 dark:border-gray-700">
+        <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col items-center justify-between p-8 font-sans transition-colors duration-500">
+            
+            {/* Top Navigation / Status Header */}
+            <div className="w-full flex items-center justify-between">
+                <button 
+                    onClick={() => navigate('/employee/dashboard')}
+                    className="p-2 -ml-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                    <IconArrowLeft size={24} />
+                </button>
+                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 dark:text-gray-600">
+                    S-COOL CRM AUTH
+                </div>
+                <div className="w-8" /> {/* Spacer */}
+            </div>
 
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-widest">Attendance Scanner</h3>
-                <h2 className="text-xl font-bold dark:text-white">Hi, {employeeName || 'Employee'}</h2>
-
+            <div className="flex-1 flex flex-col items-center justify-center w-full max-w-sm space-y-12">
+                
                 {(status === 'locating' || status === 'verifying') && (
-                    <div className="flex flex-col items-center text-primary py-8">
-                        <IconLoader2 size={64} className="animate-spin mb-4" />
-                        <h2 className="text-xl font-bold">{status === 'locating' ? 'Locating...' : 'Verifying...'}</h2>
-                        <p className="text-gray-500 mt-2 max-w-xs">{message}</p>
+                    <div className="flex flex-col items-center space-y-8 animate-in fade-in zoom-in duration-500">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150 animate-pulse" />
+                            <div className="w-24 h-24 rounded-[2.5rem] bg-primary/5 flex items-center justify-center border border-primary/20 relative z-10">
+                                <IconLoader2 size={40} className="text-primary animate-spin" />
+                            </div>
+                        </div>
+                        <div className="text-center space-y-2">
+                            <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Authenticating</h2>
+                            <p className="text-gray-400 font-bold text-sm uppercase tracking-widest animate-pulse">{message}</p>
+                        </div>
                     </div>
                 )}
 
                 {status === 'success' && (
-                    <div className="flex flex-col items-center text-green-600 py-6">
-                        <div className="h-24 w-24 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                            <IconCheck size={48} />
+                    <div className="flex flex-col items-center space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-green-500/20 blur-3xl rounded-full scale-150" />
+                            <div className="w-32 h-32 rounded-[3rem] bg-green-50 dark:bg-green-900/20 flex items-center justify-center shadow-2xl shadow-green-500/20 relative z-10 border border-green-100 dark:border-green-800">
+                                <IconCheck size={64} className="text-green-500 animate-in zoom-in spin-in-90 duration-500" />
+                            </div>
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Done!</h2>
-                        <p className="text-gray-500 font-medium mt-2">{message}</p>
-
-                        <Button
-                            className="mt-8 w-full"
-                            onClick={() => window.close()}
-                            variant="outline"
-                        >
-                            Close Page
-                        </Button>
+                        <div className="text-center space-y-3">
+                            <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Success!</h2>
+                            <p className="text-gray-500 dark:text-gray-400 font-bold text-lg leading-tight px-6">{message}</p>
+                        </div>
                     </div>
                 )}
 
                 {status === 'error' && (
-                    <div className="flex flex-col items-center text-red-600 py-6">
-                        <div className="h-24 w-24 rounded-full bg-red-100 flex items-center justify-center mb-4">
-                            <IconX size={48} />
-                        </div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Failed</h2>
-                        <p className="text-gray-600 dark:text-gray-300 font-medium">{message}</p>
-
-                        {distance && (
-                            <div className="mt-4 flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-sm font-bold">
-                                <IconMapPin size={18} />
-                                Distance calculated: {distance} meters away
+                    <div className="flex flex-col items-center space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-red-500/20 blur-3xl rounded-full scale-150" />
+                            <div className="w-32 h-32 rounded-[3rem] bg-red-50 dark:bg-red-900/20 flex items-center justify-center shadow-2xl shadow-red-500/20 relative z-10 border border-red-100 dark:border-red-800">
+                                <IconX size={64} className="text-red-500" />
                             </div>
-                        )}
-
-                        <Button
-                            className="mt-8 w-full"
-                            onClick={() => startAttendanceScan()}
-                        >
-                            Try Again
-                        </Button>
+                        </div>
+                        <div className="text-center space-y-3">
+                            <h2 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Access Denied</h2>
+                            <p className="text-gray-500 dark:text-red-400 font-bold text-sm leading-tight px-8">{message}</p>
+                            
+                            {distance && (
+                                <div className="mt-6 flex items-center gap-2 p-4 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-3xl text-xs font-black uppercase tracking-wider mx-auto w-fit">
+                                    <IconMapPin size={16} />
+                                    {distance}m away
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
+
+            {/* Bottom Actions */}
+            <div className="w-full max-w-sm flex flex-col items-center space-y-4 pb-4">
+                {status === 'success' ? (
+                    <Button 
+                        onClick={() => navigate('/employee/dashboard')}
+                        className="w-full h-16 rounded-[2rem] bg-slate-900 hover:bg-black text-white font-black text-lg shadow-2xl shadow-slate-900/20 transition-all active:scale-95"
+                    >
+                        GO TO DASHBOARD
+                    </Button>
+                ) : status === 'error' ? (
+                    <div className="w-full space-y-3">
+                        <Button 
+                            onClick={() => startAttendanceScan()}
+                            className="w-full h-16 rounded-[2rem] bg-primary text-white font-black text-lg shadow-2xl shadow-primary/20 transition-all active:scale-95"
+                        >
+                            TRY AGAIN
+                        </Button>
+                        <Button 
+                            variant="outline"
+                            onClick={() => navigate('/employee/dashboard')}
+                            className="w-full h-16 rounded-[2rem] border-2 border-gray-100 dark:border-gray-800 text-gray-500 font-black"
+                        >
+                            CANCEL
+                        </Button>
+                    </div>
+                ) : (
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-300 dark:text-gray-700">
+                        {status === 'locating' ? 'Locating Coordinate...' : 'Validating Token...'}
+                    </p>
+                )}
+            </div>
+
         </div>
     );
 }

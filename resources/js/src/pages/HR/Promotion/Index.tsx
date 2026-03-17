@@ -236,6 +236,7 @@ const PromotionIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconBriefcase className="w-6 h-6 text-primary" />}
                 title="Employee Promotions"
                 description="Track and manage employee promotions"
                 search={search}

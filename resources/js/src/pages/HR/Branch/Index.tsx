@@ -3,6 +3,8 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { ScrollArea } from '../../../components/ui/scroll-area';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -10,6 +12,7 @@ import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
+import { IconBuilding } from '@tabler/icons-react';
 
 const BranchIndex = () => {
     const [branches, setBranches] = useState<any[]>([]);
@@ -39,6 +42,8 @@ const BranchIndex = () => {
         zip_code: '',
         phone: '',
         email: '',
+        telegram_chat_id: '',
+        telegram_topic_id: '',
         status: 'active',
     };
 
@@ -108,6 +113,8 @@ const BranchIndex = () => {
             phone: branch.phone || '',
             email: branch.email || '',
             status: branch.status,
+            telegram_chat_id: branch.telegram_chat_id || '',
+            telegram_topic_id: branch.telegram_topic_id || '',
         });
         setModalOpen(true);
     };
@@ -243,6 +250,7 @@ const BranchIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconBuilding className="w-6 h-6 text-primary" />}
                 title="Branches"
                 description="Manage your company's physical locations and offices"
                 search={search}
@@ -324,84 +332,258 @@ const BranchIndex = () => {
                 </div>
             )}
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[800px] overflow-y-auto max-h-[90vh]">
-                    <DialogHeader>
-                        <DialogTitle>{editingBranch ? 'Edit Branch' : 'Create Branch'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-5 mt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label htmlFor="name">Branch Name</label>
-                                <input id="name" name="name" type="text" className="form-input" value={formData.name} onChange={handleChange} required />
-                            </div>
-                            <div>
-                                <label htmlFor="code">Branch Code</label>
-                                <input id="code" name="code" type="text" className="form-input" value={formData.code} onChange={handleChange} required />
-                            </div>
-                        </div>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-[700px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconBuilding className="text-primary w-7 h-7" />
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingBranch ? 'Edit Branch' : 'Create New Branch'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingBranch 
+            ? 'Update the branch details below.' 
+            : 'Fill in the details to add a new branch location.'}
+        </p>
+      </div>
+    </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label htmlFor="address">Address</label>
-                                <input id="address" name="address" type="text" className="form-input" value={formData.address} onChange={handleChange} required />
-                            </div>
-                            <div>
-                                <label htmlFor="city">City</label>
-                                <input id="city" name="city" type="text" className="form-input" value={formData.city} onChange={handleChange} required />
-                            </div>
-                        </div>
+    <ScrollArea className="flex-1 min-h-0">
+      <form id="branch-form" onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Basic Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Branch Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="e.g. Downtown Office"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Branch Code <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="code"
+                name="code"
+                type="text"
+                value={formData.code}
+                onChange={handleChange}
+                placeholder="e.g. BR-001"
+                required
+              />
+            </div>
+          </div>
+        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label htmlFor="state">State/Province</label>
-                                <input id="state" name="state" type="text" className="form-input" value={formData.state} onChange={handleChange} />
-                            </div>
-                            <div>
-                                <label htmlFor="country">Country</label>
-                                <input id="country" name="country" type="text" className="form-input" value={formData.country} onChange={handleChange} required />
-                            </div>
-                        </div>
+        {/* Location Details */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Location Details
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Address <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="address"
+              name="address"
+              type="text"
+              value={formData.address}
+              onChange={handleChange}
+              placeholder="Street address"
+              required
+            />
+          </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label htmlFor="zip_code">ZIP/Postal Code</label>
-                                <input id="zip_code" name="zip_code" type="text" className="form-input" value={formData.zip_code} onChange={handleChange} />
-                            </div>
-                            <div>
-                                <label htmlFor="phone">Phone</label>
-                                <input id="phone" name="phone" type="text" className="form-input" value={formData.phone} onChange={handleChange} />
-                            </div>
-                        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                City <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="city"
+                name="city"
+                type="text"
+                value={formData.city}
+                onChange={handleChange}
+                placeholder="e.g. New York"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                State / Province
+              </label>
+              <Input
+                id="state"
+                name="state"
+                type="text"
+                value={formData.state}
+                onChange={handleChange}
+                placeholder="e.g. NY"
+              />
+            </div>
+          </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label htmlFor="email">Email</label>
-                                <input id="email" name="email" type="email" className="form-input" value={formData.email} onChange={handleChange} />
-                            </div>
-                            <div>
-                                <label htmlFor="status">Status</label>
-                                <Select onValueChange={(value) => handleSelectChange(value, 'status')} value={formData.status}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Country <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="country"
+                name="country"
+                type="text"
+                value={formData.country}
+                onChange={handleChange}
+                placeholder="e.g. United States"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                ZIP / Postal Code
+              </label>
+              <Input
+                id="zip_code"
+                name="zip_code"
+                type="text"
+                value={formData.zip_code}
+                onChange={handleChange}
+                placeholder="e.g. 10001"
+              />
+            </div>
+          </div>
+        </div>
 
-                        <div className="flex justify-end gap-3">
-                            <button type="button" onClick={() => setModalOpen(false)} className="btn btn-outline-danger">Cancel</button>
-                            <button type="submit" className="btn btn-primary" disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save'}
-                            </button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+        {/* Contact Information */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Contact Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Phone Number
+              </label>
+              <Input
+                id="phone"
+                name="phone"
+                type="text"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="e.g. +1 (555) 123-4567"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Email Address
+              </label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="branch@company.com"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Status & Telegram Integration */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Status & Notifications
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Status <span className="text-red-500">*</span>
+              </label>
+              <Select
+                onValueChange={(value) => handleSelectChange(value, 'status')}
+                value={formData.status}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Telegram Chat ID <span className="text-gray-400 text-xs">(Optional)</span>
+              </label>
+              <Input
+                id="telegram_chat_id"
+                name="telegram_chat_id"
+                type="text"
+                value={formData.telegram_chat_id}
+                onChange={handleChange}
+                placeholder="e.g. -1001234567890"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Telegram Topic ID <span className="text-gray-400 text-xs">(Optional)</span>
+              </label>
+              <Input
+                id="telegram_topic_id"
+                name="telegram_topic_id"
+                type="text"
+                value={formData.telegram_topic_id}
+                onChange={handleChange}
+                placeholder="e.g. 42"
+              />
+            </div>
+          </div>
+        </div>
+      </form>
+    </ScrollArea>
+
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-5"
+        onClick={() => setModalOpen(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="branch-form"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : (editingBranch ? 'Save Changes' : 'Create Branch')}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
             <DeleteModal
                 isOpen={deleteModalOpen}

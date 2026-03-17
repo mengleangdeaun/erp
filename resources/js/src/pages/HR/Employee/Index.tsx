@@ -10,6 +10,7 @@ import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import QRCode from 'react-qr-code';
+import { IconUser } from '@tabler/icons-react';
 
 const getCookie = (name: string) => {
     const value = `; ${document.cookie}`;
@@ -188,6 +189,7 @@ const EmployeeIndex = () => {
         <div>
 
             <FilterBar
+                icon={<IconUser className="w-6 h-6 text-primary" />}
                 title="Employees"
                 description="Manage your employees"
                 search={search}

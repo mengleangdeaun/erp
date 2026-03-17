@@ -6,10 +6,10 @@ import {
     IconBriefcase, IconClockFilled, IconLogout, IconCalendarEvent,
     IconId, IconMapPin, IconGenderMale, IconGenderFemale,
     IconCamera, IconClock, IconPalette, IconBell, IconTextSize,
-    IconChevronRight, IconSettingsFilled, IconInfoCircle,
+    IconChevronRight, IconSettings, IconInfoCircle,
     IconMessageHeart
 } from '@tabler/icons-react';
-import DeleteModal from '../../../components/DeleteModal';
+import MobileConfirmationModal from '@/components/MobileConfirmationModal';
 import { cn } from '@/lib/utils';
 import PageHeader from '@/components/ui/PageHeader';
 import { applyEmployeePreferences, storePreferences } from '@/utils/employeePreferences';
@@ -38,8 +38,6 @@ export default function EmployeePwaProfile() {
     const fileRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState<any>(null);
-    const [prefs, setPrefs] = useState<any>(null);
-    const [savingPrefs, setSavingPrefs] = useState(false);
     const [uploadingAvatar, setUploadingAvatar] = useState(false);
     const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
@@ -61,12 +59,11 @@ export default function EmployeePwaProfile() {
             }
 
             if (profileRes.ok) setProfile(await profileRes.json());
-            if (prefsRes.ok) {
-                const p = await prefsRes.json();
-                setPrefs(p);
-                // Apply saved prefs to DOM (dark mode, color theme, font) on load
-                applyEmployeePreferences(p);
-                storePreferences(p);
+            
+            // Still apply preferences from storage on load to ensure theme consistency
+            const storedPrefs = localStorage.getItem('employee_preferences');
+            if (storedPrefs) {
+                applyEmployeePreferences(JSON.parse(storedPrefs));
             }
         } catch {
             toast.error('Network error');
@@ -101,26 +98,6 @@ export default function EmployeePwaProfile() {
         } finally {
             setUploadingAvatar(false);
         }
-    };
-
-    const updatePref = async (key: string, value: any) => {
-        const newPrefs = { ...prefs, [key]: value };
-        setPrefs(newPrefs);
-
-        // Apply immediately to the DOM so the user sees the change at once
-        applyEmployeePreferences(newPrefs);
-        // Persist to localStorage for instant re-application on next navigation
-        storePreferences(newPrefs);
-
-        setSavingPrefs(true);
-        try {
-            await fetch('/api/employee-app/preferences', {
-                method: 'PUT',
-                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ [key]: value }),
-            });
-        } catch { toast.error('Failed to save preferences'); }
-        finally { setSavingPrefs(false); }
     };
 
     const executeLogout = () => {
@@ -163,6 +140,15 @@ export default function EmployeePwaProfile() {
             <PageHeader
                 title="My Profile"
                 icon={<IconUser className="w-4.5 h-4.5" />}
+                rightAction={
+                    <button
+                        onClick={() => navigate('/employee/settings')}
+                        className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 active:scale-90 transition-all"
+                        aria-label="Settings"
+                    >
+                        <IconSettings className="w-5 h-5" />
+                    </button>
+                }
             />
 
             <div className="p-4 space-y-6 pb-28 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -242,7 +228,7 @@ export default function EmployeePwaProfile() {
                         <InfoRow icon={<IconCalendarEvent className="w-4 h-4" />} label="Join Date" value={formatDate(profile.date_of_joining)} />
                         <InfoRow icon={<IconBuildingCommunity className="w-4 h-4" />} label="Main Branch" value={profile.branch} />
                         <InfoRow icon={<IconBriefcase className="w-4 h-4" />} label="Position" value={profile.designation} />
-                        <InfoRow icon={<IconSettingsFilled className="w-4 h-4" />} label="Department" value={profile.department} last />
+                        <InfoRow icon={<IconSettings className="w-4 h-4" />} label="Department" value={profile.department} last />
                     </div>
                 </div>
 
@@ -272,96 +258,7 @@ export default function EmployeePwaProfile() {
                     </div>
                 </div>
 
-                {/* ── Preferences ──────────────────────────────────────────── */}
-                {prefs && (
-                    <div>
-                        <SectionHeader icon={<IconPalette className="w-4 h-4" />} title={`Preferences${savingPrefs ? ' · Saving…' : ''}`} />
-                        <div className="space-y-3">
-
-                            {/* Font Family */}
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Font Family</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {fontFamilyOptions.map(f => (
-                                        <button
-                                            key={f}
-                                            onClick={() => updatePref('font_family', f)}
-                                            className={cn(
-                                                'px-3 py-1.5 rounded-lg text-xs font-bold border transition-all',
-                                                prefs.font_family === f
-                                                    ? 'bg-primary text-white border-primary'
-                                                    : 'bg-gray-50 dark:bg-gray-900 text-gray-500 border-gray-100 dark:border-gray-700'
-                                            )}
-                                        >{f}</button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Font Size */}
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <IconTextSize className="w-4 h-4 text-gray-400" />
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Font Size</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    {fontSizeOptions.map(s => (
-                                        <button
-                                            key={s.id}
-                                            onClick={() => updatePref('font_size', s.id)}
-                                            className={cn(
-                                                'flex-1 py-2 rounded-xl text-xs font-bold border transition-all',
-                                                prefs.font_size === s.id
-                                                    ? 'bg-primary text-white border-primary'
-                                                    : 'bg-gray-50 dark:bg-gray-900 text-gray-500 border-gray-100 dark:border-gray-700'
-                                            )}
-                                        >{s.label}</button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Color Theme */}
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Color Theme</p>
-                                <div className="flex gap-3">
-                                    {themeOptions.map(t => (
-                                        <button
-                                            key={t.id}
-                                            onClick={() => updatePref('color_theme', t.id)}
-                                            title={t.label}
-                                            className={cn(
-                                                'w-10 h-10 rounded-full transition-all active:scale-90',
-                                                prefs.color_theme === t.id && 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 scale-110'
-                                            )}
-                                            style={{ backgroundColor: t.color }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Dark Mode + Notifications toggles */}
-                            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                                {[
-                                    { key: 'dark_mode', label: 'Dark Mode', icon: <IconPalette className="w-4 h-4" /> },
-                                    { key: 'notifications_enabled', label: 'Notifications', icon: <IconBell className="w-4 h-4" /> },
-                                ].map(({ key, label, icon }, idx, arr) => (
-                                    <div key={key} className={cn('flex items-center gap-4 px-4 py-4', idx < arr.length - 1 && 'border-b border-gray-100 dark:border-gray-700/50')}>
-                                        <div className="p-2 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-500">{icon}</div>
-                                        <p className="flex-1 font-semibold text-sm text-gray-900 dark:text-white">{label}</p>
-                                        <button
-                                            onClick={() => updatePref(key, !prefs[key])}
-                                            className={cn(
-                                                'relative w-11 h-6 rounded-full transition-all duration-300',
-                                                prefs[key] ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'
-                                            )}
-                                        >
-                                            <span className={cn('absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300', prefs[key] && 'translate-x-5')} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* Preferences moved to Settings */}
 
                 {/* ── Sign Out ─────────────────────────────────────────────── */}
                 <div className="pt-2 pb-6">
@@ -393,12 +290,15 @@ export default function EmployeePwaProfile() {
 
             </div>
 
-            <DeleteModal
+            <MobileConfirmationModal
                 isOpen={logoutModalOpen}
                 setIsOpen={setLogoutModalOpen}
                 title="Sign Out"
-                message="Are you sure you want to sign out? You'll need your Personal QR Code to log back in."
+                message="Are you sure you want to sign out? You'll need your Personal QR Code or Password to log back in."
                 onConfirm={executeLogout}
+                confirmLabel="Yes, Sign Out"
+                cancelLabel="Stay Signed In"
+                variant="danger"
                 isLoading={false}
             />
         </div>

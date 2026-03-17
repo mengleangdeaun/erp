@@ -1,6 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { Checkbox } from '../../../components/ui/checkbox';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { ScrollArea } from '../../../components/ui/scroll-area';
+import { Label } from '../../../components/ui/label';
+import { IconBatteryVertical3 } from '@tabler/icons-react';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -11,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { DateRangePicker } from '../../../components/ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { IconScale } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 
 const LeaveBalanceIndex = () => {
@@ -294,6 +301,7 @@ const LeaveBalanceIndex = () => {
         <div>
 
             <FilterBar
+                icon={<IconBatteryVertical3 className=" h-6 w-6 text-primary" />}
                 title="Leave Balances"
                 description="Manage and calculate employee leave balances"
                 search={search}
@@ -431,74 +439,170 @@ const LeaveBalanceIndex = () => {
                 </div>
             )}
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>{editingBalance ? 'Edit Balance' : 'Manual Initial Balance'}</DialogTitle>
-                    </DialogHeader>
-                    <DialogDescription className="hidden">Manual adjustment of leave balances.</DialogDescription>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconScale className="text-primary w-7 h-7" />
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingBalance ? 'Edit Leave Balance' : 'Manual Initial Balance'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingBalance
+            ? 'Update the leave balance details below.'
+            : 'Set initial balance for an employee’s leave type.'}
+        </p>
+      </div>
+    </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-semibold mb-1 block">Employee <span className="text-red-500">*</span></label>
-                                <SearchableSelect
-                                    options={employees.map((emp: any) => ({
-                                        value: String(emp.id),
-                                        label: emp.full_name,
-                                        description: emp.employee_id
-                                    }))}
-                                    value={formData.employee_id}
-                                    onChange={(val) => handleSelectChange(String(val), 'employee_id')}
-                                    placeholder="Select Employee"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm font-semibold mb-1 block">Leave Type <span className="text-red-500">*</span></label>
-                                <SearchableSelect
-                                    options={leaveTypes.map((type: any) => ({
-                                        value: String(type.id),
-                                        label: type.name,
-                                        color: type.color || '#000000'
-                                    }))}
-                                    value={formData.leave_type_id}
-                                    onChange={(val) => handleSelectChange(String(val), 'leave_type_id')}
-                                    placeholder="Select Leave Type"
-                                    searchPlaceholder="Search leave types..."
-                                    disabled={!!editingBalance}
-                                />
-                            </div>
-                        </div>
+    <ScrollArea className="flex-1 min-h-0">
+      <form id="balance-form" onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Employee & Leave Type */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Employee & Leave Type
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1">
+              <Label htmlFor="employee_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Employee <span className="text-red-500">*</span>
+              </Label>
+              <SearchableSelect
+                options={employees.map((emp: any) => ({
+                  value: String(emp.id),
+                  label: emp.full_name,
+                  description: emp.employee_id
+                }))}
+                value={formData.employee_id}
+                onChange={(val) => handleSelectChange(String(val), 'employee_id')}
+                placeholder="Select Employee"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="leave_type_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Leave Type <span className="text-red-500">*</span>
+              </Label>
+              <SearchableSelect
+                options={leaveTypes.map((type: any) => ({
+                  value: String(type.id),
+                  label: type.name,
+                  color: type.color || '#000000'
+                }))}
+                value={formData.leave_type_id}
+                onChange={(val) => handleSelectChange(String(val), 'leave_type_id')}
+                placeholder="Select Leave Type"
+                searchPlaceholder="Search leave types..."
+                disabled={!!editingBalance}
+              />
+            </div>
+          </div>
+        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded bg-gray-50 dark:bg-dark dark:border-gray-800">
-                            <div>
-                                <label htmlFor="total_accrued">Total Accrued</label>
-                                <input id="total_accrued" name="total_accrued" type="number" step="0.5" className="form-input" value={formData.total_accrued} onChange={handleChange} required min="0" />
-                            </div>
-                            <div>
-                                <label htmlFor="total_taken">Total Taken</label>
-                                <input id="total_taken" name="total_taken" type="number" step="0.5" className="form-input" value={formData.total_taken} onChange={handleChange} required min="0" />
-                            </div>
-                            <div>
-                                <label htmlFor="balance">Balance</label>
-                                <input id="balance" name="balance" type="number" step="0.5" className="form-input font-bold bg-white-light/50" value={formData.balance} readOnly />
-                            </div>
-                        </div>
+        {/* Balance Details */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Balance Details
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="space-y-1.5">
+              <Label htmlFor="total_accrued" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Total Accrued <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="total_accrued"
+                name="total_accrued"
+                type="number"
+                step="0.5"
+                value={formData.total_accrued}
+                onChange={handleChange}
+                required
+                min="0"
+                placeholder="0.0"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="total_taken" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Total Taken <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="total_taken"
+                name="total_taken"
+                type="number"
+                step="0.5"
+                value={formData.total_taken}
+                onChange={handleChange}
+                required
+                min="0"
+                placeholder="0.0"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="balance" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Balance
+              </Label>
+              <Input
+                id="balance"
+                name="balance"
+                type="number"
+                step="0.5"
+                value={formData.balance}
+                readOnly
+                className="bg-gray-100 dark:bg-gray-800 font-semibold text-primary border-primary/20"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500">
+            Balance is automatically calculated as Accrued - Taken.
+          </p>
+        </div>
 
-                        <div>
-                            <label htmlFor="year">Year <span className="text-red-500">*</span></label>
-                            <input id="year" name="year" type="number" className="form-input bg-white-light/50" value={formData.year} readOnly required />
-                        </div>
+        {/* Period */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Period
+          </h3>
+          <div className="space-y-1.5">
+            <Label htmlFor="year" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Year <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="year"
+              name="year"
+              type="number"
+              value={formData.year}
+              readOnly
+              className="bg-gray-100 dark:bg-gray-800"
+              required
+            />
+          </div>
+        </div>
+      </form>
+    </ScrollArea>
 
-                        <div className="flex justify-end gap-3 mt-8">
-                            <button type="button" onClick={() => setModalOpen(false)} className="btn btn-outline-danger">Cancel</button>
-                            <button type="submit" className="btn btn-primary" disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save Balance'}
-                            </button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-5"
+        onClick={() => setModalOpen(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="balance-form"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : (editingBalance ? 'Save Changes' : 'Create Balance')}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
         </div>
     );
 };

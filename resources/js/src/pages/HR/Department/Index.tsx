@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { ScrollArea } from '../../../components/ui/scroll-area';
 import { Button } from '../../../components/ui/button';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
@@ -14,6 +15,7 @@ import SearchableMultiSelect from '../../../components/ui/SearchableMultiSelect'
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
+import { IconHierarchy } from '@tabler/icons-react';
 
 const DepartmentIndex = () => {
     const [departments, setDepartments] = useState<any[]>([]);
@@ -253,6 +255,7 @@ const DepartmentIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconHierarchy className="w-6 h-6 text-primary" />}
                 title="Departments"
                 description="Manage your organizational departments"
                 search={search}
@@ -344,58 +347,132 @@ const DepartmentIndex = () => {
                 </div>
             )}
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>{editingDepartment ? 'Edit Department' : 'Create Department'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-5 mt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label htmlFor="name">Department Name</label>
-                                <Input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required />
-                            </div>
-                            <div>
-                                <label>Branches</label>
-                                <SearchableMultiSelect
-                                    options={branches.map((b: any) => ({
-                                        value: String(b.id),
-                                        label: b.name
-                                    }))}
-                                    value={formData.branch_ids}
-                                    onChange={(val) => handleSelectChange(val, 'branch_ids')}
-                                    placeholder="Select Branches"
-                                />
-                            </div>
-                        </div>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconHierarchy className="text-primary w-7 h-7" />
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingDepartment ? 'Edit Department' : 'Create New Department'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingDepartment 
+            ? 'Update the department details below.' 
+            : 'Fill in the details to add a new department.'}
+        </p>
+      </div>
+    </div>
 
-                        <div>
-                            <label htmlFor="description">Description</label>
-                            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} />
-                        </div>
+    <ScrollArea className="flex-1 min-h-0">
+      <form id="department-form" onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Basic Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Department Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="e.g. Human Resources"
+                required
+              />
+            </div>
+            <div className="space-y-0">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Branches
+              </label>
+              <SearchableMultiSelect
+                options={branches.map((b: any) => ({
+                  value: String(b.id),
+                  label: b.name
+                }))}
+                value={formData.branch_ids}
+                onChange={(val) => handleSelectChange(val, 'branch_ids')}
+                placeholder="Select Branches"
+              />
+            </div>
+          </div>
+        </div>
 
-                        <div>
-                            <label htmlFor="status">Status</label>
-                            <Select onValueChange={(value) => handleSelectChange(value, 'status')} value={formData.status}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+        {/* Description */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Additional Details
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Description
+            </label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Describe the department's purpose and responsibilities..."
+              rows={4}
+              className="bg-gray-50 dark:bg-gray-800/50 resize-none"
+            />
+          </div>
+        </div>
 
-                        <div className="flex justify-end gap-3">
-                            <Button type="button" size="sm" onClick={() => setModalOpen(false)} variant="outline">Cancel</Button>
-                            <Button type="submit" size="sm" disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save'}
-                            </Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+        {/* Status */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Status
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <Select
+              onValueChange={(value) => handleSelectChange(value, 'status')}
+              value={formData.status}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </form>
+    </ScrollArea>
+
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-5"
+        onClick={() => setModalOpen(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="department-form"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : (editingDepartment ? 'Save Changes' : 'Create Department')}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
             <DeleteModal
                 isOpen={deleteModalOpen}

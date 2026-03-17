@@ -24,6 +24,7 @@ import {
     IconDownload,
     IconFileTypePdf,
     IconCheck,
+    IconUserCog
 
 } from '@tabler/icons-react';
 import QRCode from 'react-qr-code';
@@ -350,6 +351,7 @@ const EmployeeConfigIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconUserCog className="w-6 h-6 text-primary" />}
                 title="Employee Config"
                 description="Configure attendance settings for your employees"
                 search={search}

@@ -32,6 +32,8 @@ class BranchController extends Controller
             'city' => 'required|string|max:255',
             'country' => 'required|string|max:255',
             'email' => 'nullable|email',
+            'telegram_chat_id' => 'nullable|string|max:255',
+            'telegram_topic_id' => 'nullable|string|max:255',
         ]);
 
         $branch = Branch::create($request->all());

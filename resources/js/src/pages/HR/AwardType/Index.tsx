@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { ScrollArea } from '../../../components/ui/scroll-area';
+import { IconAward } from '@tabler/icons-react';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
@@ -191,6 +193,7 @@ const AwardTypeIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconAward className="w-6 h-6 text-primary" />}
                 title="Award Types"
                 description="Manage metadata classifications for employee awards"
                 search={search}
@@ -256,37 +259,113 @@ const AwardTypeIndex = () => {
                 )}
             </div>
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                        <DialogTitle>{editingItem ? 'Edit Award Type' : 'Add Award Type'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Name <span className="text-red-500">*</span></label>
-                            <Input name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Employee of the Month" required />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Status</label>
-                            <Select onValueChange={(val) => handleSelectChange(val, 'status')} value={formData.status}>
-                                <SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Description</label>
-                            <Textarea name="description" value={formData.description} onChange={handleChange} placeholder="Optional details..." rows={3} />
-                        </div>
-                        <DialogFooter className="mt-6">
-                            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Award Type'}</Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconAward className="text-primary w-7 h-7" />
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingItem ? 'Edit Award Type' : 'Create New Award Type'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingItem 
+            ? 'Update the award type details below.' 
+            : 'Fill in the details to add a new award type.'}
+        </p>
+      </div>
+    </div>
+
+    <ScrollArea className="flex-1 min-h-0">
+      <form id="award-type-form" onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Basic Information
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Award Type Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="e.g. Employee of the Month, Excellence Award"
+              required
+            />
+          </div>
+        </div>
+
+        {/* Additional Details */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Additional Details
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Description
+            </label>
+            <Textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Describe what this award recognizes and any criteria..."
+              rows={4}
+              className="bg-gray-50 dark:bg-gray-800/50 resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Status */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Status
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Status
+            </label>
+            <Select
+              onValueChange={(val) => handleSelectChange(val, 'status')}
+              value={formData.status}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </form>
+    </ScrollArea>
+
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-5"
+        onClick={() => setModalOpen(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="award-type-form"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : (editingItem ? 'Save Changes' : 'Create Award Type')}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
             <DeleteModal
                 isOpen={deleteModalOpen}

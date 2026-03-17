@@ -60,13 +60,14 @@ class EmployeeLeaveAllocationController extends Controller
                     continue;
                 }
 
+                $employee = \App\Models\HR\Employee::find($empId);
                 $allocationData = [
                     'employee_id' => $empId,
                     'leave_policy_id' => $validated['leave_policy_id'],
                     'effective_date' => $validated['effective_date'],
                     'expiration_date' => $validated['expiration_date'] ?? null,
                     'is_active' => $validated['is_active'] ?? true,
-                    'approved_by' => $validated['approved_by'] ?? null,
+                    'approved_by' => $validated['approved_by'] ?? ($employee ? $employee->line_manager_id : null),
                 ];
 
                 EmployeeLeaveAllocation::create($allocationData);

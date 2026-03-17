@@ -62,6 +62,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('leave-requests', App\Http\Controllers\HR\LeaveRequestController::class)->except(['store', 'update']);
         Route::post('leave-requests/{id}/approve', [App\Http\Controllers\HR\LeaveRequestController::class, 'approve']);
         Route::post('leave-requests/{id}/reject', [App\Http\Controllers\HR\LeaveRequestController::class, 'reject']);
+
+        // Announcements
+        Route::apiResource('announcements', App\Http\Controllers\HR\AnnouncementController::class);
+        Route::get('announcements/{announcement}/statistics', [App\Http\Controllers\HR\AnnouncementController::class, 'statistics']);
+        Route::get('announcements-form-data', [App\Http\Controllers\HR\AnnouncementController::class, 'formData']);
+
+        // Telegram Settings
+        Route::get('telegram-settings', [App\Http\Controllers\HR\TelegramSettingController::class, 'show']);
+        Route::post('telegram-settings', [App\Http\Controllers\HR\TelegramSettingController::class, 'save']);
+        Route::post('telegram-settings/test', [App\Http\Controllers\HR\TelegramSettingController::class, 'test']);
     });
 
     Route::prefix('attendance')->group(function () {
@@ -73,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('branch-qr/{branch}', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'generateBranchQr']);
         Route::get('employee-qr/{employee}', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'generateEmployeeQr']);
         Route::post('employee-login', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'employeeLogin']);
+        Route::post('login-credentials', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'loginWithCredentials']);
         Route::post('scan/clock', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'scanClock']);
 
         Route::get('employee-config', [App\Http\Controllers\Attendance\EmployeeConfigController::class, 'index']);
@@ -88,7 +99,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('calendar-data', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'calendarData']);
         Route::get('my-leave-balances', [App\Http\Controllers\EmployeeApp\LeaveController::class, 'myBalances']);
         Route::get('leave-requests', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'index']);
+        Route::get('leave-requests/approvals', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'approvals']);
         Route::post('leave-requests', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'store']);
+        Route::post('leave-requests/{id}/approve', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'approve']);
+        Route::post('leave-requests/{id}/reject', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'reject']);
         Route::put('leave-requests/{id}/cancel', [App\Http\Controllers\EmployeeApp\LeaveRequestController::class, 'cancel']);
         Route::get('preferences', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'getPreferences']);
         Route::put('preferences', [App\Http\Controllers\EmployeeApp\EmployeeAppController::class, 'updatePreferences']);
@@ -98,6 +112,17 @@ Route::middleware('auth:sanctum')->group(function () {
         // Activity
         Route::get('activities', [App\Http\Controllers\EmployeeApp\ActivityController::class, 'index']);
         Route::post('activities', [App\Http\Controllers\EmployeeApp\ActivityController::class, 'store']);
+
+        // Notifications
+        Route::get('notifications', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'index']);
+        Route::get('notifications/unread-count', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'unreadCount']);
+        Route::post('notifications/mark-all-read', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'markAllRead']);
+        Route::post('notifications/{id}/read', [App\Http\Controllers\EmployeeApp\NotificationController::class, 'markRead']);
+
+        // Announcements (PWA)
+        Route::get('announcements', [App\Http\Controllers\EmployeeApp\AnnouncementController::class, 'index']);
+        Route::get('announcements/featured', [App\Http\Controllers\EmployeeApp\AnnouncementController::class, 'featured']);
+        Route::get('announcements/{id}', [App\Http\Controllers\EmployeeApp\AnnouncementController::class, 'show']);
     });
 
     // Cloud Storage Settings

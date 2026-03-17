@@ -7,7 +7,8 @@ import {
     IconActivity,
     IconClockHour4,
     IconLogout,
-    IconChevronRight
+    IconChevronRight,
+    IconBell
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +17,9 @@ export default function EmployeePwaDashboard() {
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [dashboardData, setDashboardData] = useState<any>(null);
+    const [featured, setFeatured] = useState<any>(null);
+    const [showFeatured, setShowFeatured] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
 
     // Live clock ticker
     useEffect(() => {
@@ -23,33 +27,44 @@ export default function EmployeePwaDashboard() {
         return () => clearInterval(timer);
     }, []);
 
-    const fetchDashboard = async () => {
+    const fetchData = async () => {
         const token = localStorage.getItem('employee_auth_token');
         if (!token) {
             navigate('/attendance/login');
             return;
         }
 
-        try {
-            const res = await fetch('/api/employee-app/dashboard', {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+        const headers = {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
 
-            if (res.status === 401) {
-                localStorage.removeItem('employee_auth_token');
+        try {
+            // Fetch Dashboard Data
+            const dashRes = await fetch('/api/employee-app/dashboard', { headers });
+            if (dashRes.status === 401) {
                 navigate('/attendance/login');
                 return;
             }
+            if (dashRes.ok) setDashboardData(await dashRes.json());
 
-            const data = await res.json();
-            if (res.ok) {
-                setDashboardData(data);
-            } else {
-                toast.error(data.message || 'Failed to load dashboard');
+            // Fetch Featured Announcement
+            const featRes = await fetch('/api/employee-app/announcements/featured', { headers });
+            if (featRes.ok) {
+                const featData = await featRes.json();
+                if (featData && featData.id) {
+                    setFeatured(featData);
+                    setShowFeatured(true);
+                }
             }
+
+            // Fetch Unread Count
+            const unreadRes = await fetch('/api/employee-app/notifications/unread-count', { headers });
+            if (unreadRes.ok) {
+                const countData = await unreadRes.json();
+                setUnreadCount(countData.count);
+            }
+
         } catch (e) {
             toast.error('Network error');
         } finally {
@@ -58,7 +73,7 @@ export default function EmployeePwaDashboard() {
     };
 
     useEffect(() => {
-        fetchDashboard();
+        fetchData();
     }, []);
 
     const handleSignOut = () => {
@@ -113,7 +128,7 @@ export default function EmployeePwaDashboard() {
             sub: 'Request time off',
             icon: <IconCalendarPlus className="w-7 h-7" />,
             iconBg: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400',
-            path: '/employee/leave/create',
+            path: '/employee/leave',
         },
         {
             label: 'My Calendar',
@@ -154,14 +169,30 @@ export default function EmployeePwaDashboard() {
                             )}
                         </div>
 
-                        {/* Sign out */}
-                        <button
-                            onClick={handleSignOut}
-                            className="p-2.5 bg-white/15 hover:bg-white/25 rounded-xl transition-all active:scale-95"
-                            aria-label="Sign Out"
-                        >
-                            <IconLogout className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            {/* Notification Bell */}
+                            <button
+                                onClick={() => navigate('/employee/notifications')}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 rounded-xl transition-all active:scale-95 relative"
+                                aria-label="Notifications"
+                            >
+                                <IconBell className="w-5 h-5 text-white" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 border-2 border-primary text-[10px] font-black flex items-center justify-center rounded-full animate-in zoom-in duration-300">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {/* Sign out */}
+                            <button
+                                onClick={handleSignOut}
+                                className="p-2.5 bg-white/15 hover:bg-white/25 rounded-xl transition-all active:scale-95"
+                                aria-label="Sign Out"
+                            >
+                                <IconLogout className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -211,6 +242,56 @@ export default function EmployeePwaDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Featured Announcement Popup */}
+            {showFeatured && featured && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="bg-primary p-0 text-center relative overflow-hidden h-48">
+                            {featured.featured_image ? (
+                                <img 
+                                    src={`/storage/${featured.featured_image}`} 
+                                    className="w-full h-full object-cover" 
+                                    alt={featured.title}
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-primary flex flex-col items-center justify-center p-8">
+                                    {/* Decorative circles */}
+                                    <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/10 rounded-full" />
+                                    <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-white/10 rounded-full" />
+                                    
+                                    <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md border border-white/30">
+                                        <span className="text-4xl">📢</span>
+                                    </div>
+                                    <h2 className="text-white text-xl font-black leading-tight px-2">{featured.title}</h2>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-8 text-center">
+                            {featured.featured_image && (
+                                <h2 className="text-gray-900 dark:text-white text-xl font-black leading-tight mb-2">{featured.title}</h2>
+                            )}
+                            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-8 font-medium">
+                                {featured.short_description || "You have a new important announcement from management. Please read the full details below."}
+                            </p>
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    onClick={() => navigate(`/employee/announcements/${featured.id}`)}
+                                    className="w-full bg-primary text-white font-black py-4 rounded-2xl shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+                                >
+                                    Read Details
+                                </button>
+                                <button
+                                    onClick={() => setShowFeatured(false)}
+                                    className="w-full py-2 text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-gray-600 transition-colors active:scale-95"
+                                >
+                                    Maybe Later
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

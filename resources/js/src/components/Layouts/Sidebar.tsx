@@ -190,6 +190,12 @@ const Sidebar = () => {
                                         <li>
                                             <NavLink to="/hr/company-feedbacks">{t('company_feedback', 'Company Feedback')}</NavLink>
                                         </li>
+                                        <li>
+                                            <NavLink to="/hr/announcements">{'Announcements'}</NavLink>
+                                        </li>
+                                        <li>
+                                            <NavLink to="/hr/telegram-settings">{'Telegram Settings'}</NavLink>
+                                        </li>
                                     </ul>
                                 </AnimateHeight>
                             </li>

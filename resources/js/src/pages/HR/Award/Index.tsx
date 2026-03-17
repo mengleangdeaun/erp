@@ -229,6 +229,7 @@ const AwardIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconTrophy className="w-6 h-6 text-primary" />}
                 title="Employee Awards"
                 description="Manage awards given to employees"
                 search={search}

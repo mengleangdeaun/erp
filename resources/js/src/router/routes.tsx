@@ -29,6 +29,11 @@ const LeaveAllocationIndex = lazy(() => import('../pages/HR/LeaveAllocation/Inde
 const LeaveRecordIndex = lazy(() => import('../pages/HR/LeaveRecord/Index'));
 const LeaveBalanceIndex = lazy(() => import('../pages/HR/LeaveBalance/Index'));
 
+// Announcements & Telegram
+const AnnouncementIndex = lazy(() => import('../pages/HR/Announcement/Index'));
+const AnnouncementForm = lazy(() => import('../pages/HR/Announcement/Form'));
+const TelegramSettings = lazy(() => import('../pages/HR/Announcement/TelegramSettings'));
+
 const MediaLibrary = lazy(() => import('../pages/Apps/MediaLibrary'));
 const Error = lazy(() => import('../components/Error'));
 
@@ -46,6 +51,9 @@ const EmployeePwaLeaveCreate = lazy(() => import('../pages/EmployeeApp/Leave/Cre
 const EmployeePwaActivity = lazy(() => import('../pages/EmployeeApp/Activity/Index'));
 const EmployeePwaActivityCreate = lazy(() => import('../pages/EmployeeApp/Activity/Create'));
 const EmployeePwaHistory = lazy(() => import('../pages/EmployeeApp/History/Index'));
+const EmployeePwaSettings = lazy(() => import('../pages/EmployeeApp/Settings/Index'));
+const EmployeePwaNotifications = lazy(() => import('../pages/EmployeeApp/Notification/Index'));
+const EmployeePwaAnnouncementDetail = lazy(() => import('../pages/EmployeeApp/Notification/AnnouncementDetail'));
 
 // HR - Activity Log
 const HrActivityIndex = lazy(() => import('../pages/HR/Activity/Index'));
@@ -153,7 +161,7 @@ const routes = [
     {
         path: '/employee/scan',
         element: <EmployeePwaScan />,
-        layout: 'mobile',
+        layout: 'blank',
     },
     {
         path: '/employee/leave',
@@ -168,6 +176,43 @@ const routes = [
     {
         path: '/employee/history',
         element: <EmployeePwaHistory />,
+        layout: 'mobile',
+    },
+    {
+        path: '/employee/settings',
+        element: <EmployeePwaSettings />,
+        layout: 'mobile',
+    },
+    // HR - Announcements
+    {
+        path: '/hr/announcements',
+        element: <AnnouncementIndex />,
+        layout: 'default',
+    },
+    {
+        path: '/hr/announcements/create',
+        element: <AnnouncementForm />,
+        layout: 'default',
+    },
+    {
+        path: '/hr/announcements/:id/edit',
+        element: <AnnouncementForm />,
+        layout: 'default',
+    },
+    {
+        path: '/hr/telegram-settings',
+        element: <TelegramSettings />,
+        layout: 'default',
+    },
+    // Employee App - Notifications
+    {
+        path: '/employee/notifications',
+        element: <EmployeePwaNotifications />,
+        layout: 'mobile',
+    },
+    {
+        path: '/employee/announcements/:id',
+        element: <EmployeePwaAnnouncementDetail />,
         layout: 'mobile',
     },
     // Employees

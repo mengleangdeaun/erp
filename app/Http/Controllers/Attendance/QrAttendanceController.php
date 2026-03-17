@@ -9,6 +9,7 @@ use App\Models\Attendance\AttendanceRecord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 
 class QrAttendanceController extends Controller
@@ -38,23 +39,13 @@ class QrAttendanceController extends Controller
      */
     public function generateBranchQr(Branch $branch)
     {
-        $payload = [
-            'type' => 'branch_qr',
-            'branch_code' => $branch->code,
-            'name' => $branch->name,
-            'lat' => $branch->lat,
-            'lng' => $branch->lng,
-            'radius' => $branch->allowed_radius ?? 50,
-            'timestamp' => now()->timestamp 
-        ];
-
-        // We can base64 encode it so it looks cleaner in the QR, and allows fast parsing.
-        $encoded = base64_encode(json_encode($payload));
+        $branchCode = $branch->code;
+        // Generate a cryptographic signature to prevent tampering with the branch code
+        $signature = hash_hmac('sha256', $branchCode, config('app.key'));
 
         return response()->json([
             'branch' => $branch->name,
-            'payload' => $encoded,
-            'url' => config('app.url') . "/attendance/scan?payload={$encoded}"
+            'url' => config('app.url') . "/attendance/scan?b={$branchCode}&s={$signature}"
         ]);
     }
 
@@ -87,6 +78,39 @@ class QrAttendanceController extends Controller
     }
 
     /**
+     * Authenticate an employee via Email and Password for the PWA.
+     */
+    public function loginWithCredentials(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $employee = Employee::where('email', $request->email)->first();
+
+        if (!$employee || !Hash::check($request->password, $employee->password)) {
+            return response()->json(['message' => 'Invalid email or password.'], 401);
+        }
+
+        // Regenerate auth_token if missing
+        if (!$employee->auth_token) {
+            $employee->auth_token = Str::random(60);
+            $employee->save();
+        }
+
+        return response()->json([
+            'message' => 'Login successful',
+            'employee' => [
+                'name' => $employee->full_name,
+                'code' => $employee->employee_code,
+                'profile_image' => $employee->profile_image
+            ],
+            'auth_token' => $employee->auth_token
+        ]);
+    }
+
+    /**
      * The endpoint hit by the Employee App when scanning their personal Auth QR.
      * We decrypt and exchange the payload for the raw token safely inside their localstorage.
      */
@@ -97,10 +121,14 @@ class QrAttendanceController extends Controller
         ]);
 
         try {
+            // Debugging what we receive from the PWA scanner
+            \Illuminate\Support\Facades\Log::info('QR Login Attempt', ['payload_received' => $request->payload]);
+
             $decoded = json_decode(base64_decode($request->payload), true);
             
             if (!$decoded || !isset($decoded['type']) || $decoded['type'] !== 'employee_login') {
-                return response()->json(['message' => 'Invalid QR Code format.'], 400);
+                \Illuminate\Support\Facades\Log::error('QR Login Decode Failed', ['decoded_data' => $decoded]);
+                return response()->json(['message' => 'Invalid QR Code format. Please scan a Personal QR Code (not a Branch QR).'], 400);
             }
 
             $rawToken = Crypt::decryptString($decoded['auth_token']);
@@ -109,6 +137,10 @@ class QrAttendanceController extends Controller
                                 ->first();
 
             if (!$employee) {
+                \Illuminate\Support\Facades\Log::warning('QR Login Auth Mismatch', [
+                    'scanned_code' => $decoded['employee_code'],
+                    'scanned_token' => $rawToken
+                ]);
                 return response()->json(['message' => 'Invalid or expired credentials.'], 401);
             }
 
@@ -136,9 +168,16 @@ class QrAttendanceController extends Controller
         $request->validate([
             'auth_token' => 'required|string',
             'branch_code' => 'required|string',
+            'signature' => 'required|string',
             'user_lat' => 'required|numeric',
             'user_lng' => 'required|numeric',
         ]);
+
+        // 0. Verify QR Code Signature (Best Practice: Prevent tampering)
+        $expectedSignature = hash_hmac('sha256', $request->branch_code, config('app.key'));
+        if (!hash_equals($expectedSignature, $request->signature)) {
+            return response()->json(['message' => 'Invalid or tampered QR Code signature. Access denied.'], 403);
+        }
 
         // 1. Authenticate Employee via Token
         $employee = Employee::where('auth_token', $request->auth_token)->first();

@@ -3,6 +3,9 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Button } from '../../../components/ui/button';
+import { Label } from '../../../components/ui/label';
+import { ScrollArea } from '../../../components/ui/scroll-area';   
+import { Checkbox } from '../../../components/ui/checkbox';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -13,6 +16,7 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
+import { IconClipboardHeart } from '@tabler/icons-react';
 
 const LeavePolicyIndex = () => {
     const [leavePolicies, setLeavePolicies] = useState<any[]>([]);
@@ -279,6 +283,7 @@ const LeavePolicyIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconClipboardHeart className="w-6 h-6 text-primary" />}
                 title="Leave Policies"
                 description="Manage leave rules, limits, and approval policies"
                 search={search}
@@ -374,97 +379,233 @@ const LeavePolicyIndex = () => {
                 </div>
             )}
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>{editingLeavePolicy ? 'Edit Leave Policy' : 'Create Leave Policy'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-5 mt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label htmlFor="name">Policy Name <span className="text-red-500">*</span></label>
-                                <Input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required placeholder="e.g. Standard Annual Leave" />
-                            </div>
-                            <div>
-                                <label htmlFor="leave_type_id">Leave Type <span className="text-red-500">*</span></label>
-                                <SearchableSelect
-                                    options={leaveTypes.map((type: any) => ({
-                                        value: String(type.id),
-                                        label: type.name,
-                                        color: type.color || '#000000'
-                                    }))}
-                                    value={formData.leave_type_id}
-                                    onChange={(val) => handleSelectChange(String(val), 'leave_type_id')}
-                                    placeholder="Select Leave Type"
-                                    searchPlaceholder="Search leave types..."
-                                />
-                            </div>
-                        </div>
 
-                        <div>
-                            <label htmlFor="description">Description</label>
-                            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={2} />
-                        </div>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-[700px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconClipboardHeart className="text-primary w-7 h-7" />
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingLeavePolicy ? 'Edit Leave Policy' : 'Create New Leave Policy'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingLeavePolicy
+            ? 'Update the leave policy details below.'
+            : 'Fill in the details to create a new leave policy.'}
+        </p>
+      </div>
+    </div>
 
-                        <hr className="border-white-light dark:border-[#1b2e4b]" />
+    <ScrollArea className="flex-1 min-h-0">
+      <form id="leave-policy-form" onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Basic Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1">
+              <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Policy Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                placeholder="e.g. Standard Annual Leave"
+              />
+            </div>
+            <div className="space-y-0">
+              <Label htmlFor="leave_type_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Leave Type <span className="text-red-500">*</span>
+              </Label>
+              <SearchableSelect
+                options={leaveTypes.map((type: any) => ({
+                  value: String(type.id),
+                  label: type.name,
+                  color: type.color || '#000000'
+                }))}
+                value={formData.leave_type_id}
+                onChange={(val) => handleSelectChange(String(val), 'leave_type_id')}
+                placeholder="Select Leave Type"
+                searchPlaceholder="Search leave types..."
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Description
+            </Label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={2}
+              placeholder="Describe the policy details and conditions..."
+              className="bg-gray-50 dark:bg-gray-800/50 resize-none"
+            />
+          </div>
+        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                            <div>
-                                <label htmlFor="accrual_type">Accrual Type</label>
-                                <Select onValueChange={(value) => handleSelectChange(value, 'accrual_type')} value={formData.accrual_type}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="fixed">Fixed</SelectItem>
-                                        <SelectItem value="monthly">Monthly</SelectItem>
-                                        <SelectItem value="yearly">Yearly</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <label htmlFor="accrual_rate">Accrual Rate (Days) <span className="text-red-500">*</span></label>
-                                <Input id="accrual_rate" name="accrual_rate" type="number" step="0.01" value={formData.accrual_rate} onChange={handleChange} required min="0" />
-                            </div>
-                            <div>
-                                <label htmlFor="carry_forward_limit">Carry Forward Limit</label>
-                                <Input id="carry_forward_limit" name="carry_forward_limit" type="number" value={formData.carry_forward_limit} onChange={handleChange} min="0" />
-                            </div>
-                        </div>
+        {/* Accrual Settings */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Accrual Settings
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="accrual_type" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Accrual Type
+              </Label>
+              <Select
+                onValueChange={(value) => handleSelectChange(value, 'accrual_type')}
+                value={formData.accrual_type}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">Fixed</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="accrual_rate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Accrual Rate (Days) <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="accrual_rate"
+                name="accrual_rate"
+                type="number"
+                step="0.01"
+                value={formData.accrual_rate}
+                onChange={handleChange}
+                required
+                min="0"
+                placeholder="e.g. 1.5"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="carry_forward_limit" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Carry Forward Limit
+              </Label>
+              <Input
+                id="carry_forward_limit"
+                name="carry_forward_limit"
+                type="number"
+                value={formData.carry_forward_limit}
+                onChange={handleChange}
+                min="0"
+                placeholder="e.g. 5"
+              />
+            </div>
+          </div>
+        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label htmlFor="min_days_per_app">Min. Days Per Application</label>
-                                <Input id="min_days_per_app" name="min_days_per_app" type="number" value={formData.min_days_per_app} onChange={handleChange} min="0" />
-                            </div>
-                            <div>
-                                <label htmlFor="max_days_per_app">Max. Days Per Application</label>
-                                <Input id="max_days_per_app" name="max_days_per_app" type="number" value={formData.max_days_per_app} onChange={handleChange} min="0" />
-                                <p className="text-xs text-gray-500 mt-1">0 means unlimited</p>
-                            </div>
-                        </div>
+        {/* Application Limits */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Application Limits
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="min_days_per_app" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Min. Days Per Application
+              </Label>
+              <Input
+                id="min_days_per_app"
+                name="min_days_per_app"
+                type="number"
+                value={formData.min_days_per_app}
+                onChange={handleChange}
+                min="0"
+                placeholder="e.g. 0.5"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="max_days_per_app" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Max. Days Per Application
+              </Label>
+              <Input
+                id="max_days_per_app"
+                name="max_days_per_app"
+                type="number"
+                value={formData.max_days_per_app}
+                onChange={handleChange}
+                min="0"
+                placeholder="e.g. 10"
+              />
+              <p className="text-xs text-gray-500 mt-1">0 means unlimited</p>
+            </div>
+          </div>
+        </div>
 
-                        <div className="grid grid-cols-2 gap-5 mt-4 p-4 border rounded">
-                            <label className="flex items-center cursor-pointer">
-                                <input type="checkbox" className="form-checkbox" name="require_approval" checked={formData.require_approval} onChange={handleChange} />
-                                <span className="text-white-dark mb-0 ml-2">Requires Approval</span>
-                            </label>
+        {/* Additional Options */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Additional Options
+          </h3>
+          <div className="grid grid-cols-2 gap-5 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/30">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                name="require_approval"
+                checked={formData.require_approval}
+                onCheckedChange={(checked) => {
+                  setFormData(prev => ({ ...prev, require_approval: checked }));
+                }}
+              />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                Requires Approval
+              </span>
+            </label>
 
-                            <label className="flex items-center cursor-pointer">
-                                <input type="checkbox" className="form-checkbox" name="status" checked={formData.status} onChange={handleChange} />
-                                <span className="text-white-dark ml-2">Status Active</span>
-                            </label>
-                        </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                name="status"
+                checked={formData.status}
+                onCheckedChange={(checked) => {
+                  setFormData(prev => ({ ...prev, status: checked }));
+                }}
+              />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                Status Active
+              </span>
+            </label>
+          </div>
+        </div>
+      </form>
+    </ScrollArea>
 
-                        <div className="flex justify-end gap-3 mt-8">
-                            <Button type="button" onClick={() => setModalOpen(false)} variant="destructive">Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save Policy'}
-                            </Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-5"
+        onClick={() => setModalOpen(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="leave-policy-form"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : (editingLeavePolicy ? 'Save Changes' : 'Create Policy')}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
             <DeleteModal
                 isOpen={deleteModalOpen}

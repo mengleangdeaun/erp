@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
-import { IconActivity, IconMapPin, IconUser, IconCalendarEvent, IconCheck, IconAlertTriangle, IconClock, IconEye, IconExternalLink, IconFilter } from '@tabler/icons-react';
+import { IconActivity, IconCamera, IconMapPin, IconUser, IconCalendarEvent, IconCheck, IconAlertTriangle, IconClock, IconEye, IconExternalLink, IconFilter } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
@@ -174,8 +174,9 @@ export default function HrActivityIndex() {
     const hasActiveFilters = search !== '' || statusFilter !== 'all' || employeeFilter !== 'all' || dateRange !== undefined;
 
     return (
-        <div className="space-y-5">
+        <div>
             <FilterBar
+                icon={<IconCamera className="w-6 h-6 text-primary" />}
                 title="Activity Log"
                 description="Monitor field activities submitted by outdoor sales staff"
                 search={searchInput}

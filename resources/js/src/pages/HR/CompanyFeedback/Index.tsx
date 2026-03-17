@@ -6,7 +6,7 @@ import EmptyState from '../../../components/ui/EmptyState';
 import Pagination from '../../../components/ui/Pagination';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
-import { IconMessageHeart } from '@tabler/icons-react';
+import { IconMessageHeart, IconMessageChatbot  } from '@tabler/icons-react';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 
@@ -103,6 +103,7 @@ const CompanyFeedbackIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconMessageChatbot className="w-6 h-6 text-primary" />}
                 title="Company Feedback"
                 description="View anonymous feedback and recommendations from employees"
                 search={search}

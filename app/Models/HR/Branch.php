@@ -23,5 +23,7 @@ class Branch extends Model
         'lng',
         'allowed_radius',
         'status',
+        'telegram_chat_id',
+        'telegram_topic_id',
     ];
 }

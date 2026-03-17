@@ -201,6 +201,7 @@ const HolidayIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconCalendarEvent className="w-6 h-6 text-primary" />}
                 title="Holiday Management"
                 description="Manage company and national holidays"
                 search={search}
@@ -282,6 +283,7 @@ const HolidayIndex = () => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <ActionButtons
+                                                variant='rounded'
                                                 skipDeleteConfirm={true}
                                                 onEdit={() => handleEdit(item)}
                                                 onDelete={() => confirmDelete(item.id)}

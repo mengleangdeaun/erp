@@ -16,7 +16,7 @@ import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import { TimePicker } from '../../../components/ui/time-picker';
 import { ScrollArea } from '../../../components/ui/scroll-area';
-import { IconClock, IconCalendarPlus, IconCoffee, IconRepeat, IconSeparator } from '@tabler/icons-react';
+import { IconClock, IconCalendarPlus, IconCoffee, IconRepeat, IconSeparator, IconTransferVertical } from '@tabler/icons-react';
 
 const WorkingShiftIndex = () => {
     const [workingShifts, setWorkingShifts] = useState<any[]>([]);
@@ -217,6 +217,7 @@ const WorkingShiftIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconTransferVertical className="w-6 h-6 text-primary" />}
                 title="Working Shifts"
                 description="Manage employee shift schedules"
                 search={search}

@@ -2,7 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { ScrollArea } from '../../../components/ui/scroll-area';
+import { IconFileText } from '@tabler/icons-react';
 import { Button } from '../../../components/ui/button';
+import { Checkbox } from '../../../components/ui/checkbox';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import FilterBar from '../../../components/ui/FilterBar';
@@ -244,6 +247,7 @@ const DocumentTypeIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconFileText className="w-6 h-6 text-primary" />}
                 title="Document Types"
                 description="Manage the types of documents required for employees"
                 search={search}
@@ -329,49 +333,128 @@ const DocumentTypeIndex = () => {
                 </div>
             )}
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>{editingDocumentType ? 'Edit Document Type' : 'Create Document Type'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-5 mt-4">
-                        <div>
-                            <label htmlFor="name">Document Type Name</label>
-                            <Input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required />
-                        </div>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconFileText className="text-primary w-7 h-7" />
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingDocumentType ? 'Edit Document Type' : 'Create New Document Type'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingDocumentType 
+            ? 'Update the document type details below.' 
+            : 'Fill in the details to add a new document type.'}
+        </p>
+      </div>
+    </div>
 
-                        <div>
-                            <label htmlFor="description">Description</label>
-                            <Textarea id="description" name="description" value={formData.description} onChange={handleChange}></Textarea>
-                        </div>
+    <ScrollArea className="flex-1 min-h-0">
+      <form id="document-type-form" onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Basic Information
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Document Type Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="e.g. Passport, Driver's License, Diploma"
+              required
+            />
+          </div>
+        </div>
 
-                        <div className="flex items-center">
-                            <input id="is_required" name="is_required" type="checkbox" className="form-checkbox" checked={formData.is_required} onChange={handleChange} />
-                            <label htmlFor="is_required" className="ml-2 mb-0">Required?</label>
-                        </div>
+        {/* Additional Details */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Additional Details
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Description
+            </label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Describe what this document type is used for..."
+              rows={3}
+              className="bg-gray-50 dark:bg-gray-800/50 resize-none"
+            />
+          </div>
 
-                        <div>
-                            <label htmlFor="status">Status</label>
-                            <Select onValueChange={(value) => handleSelectChange(value, 'status')} value={formData.status}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+          <div className="flex items-center gap-2 pt-1">
+            <Checkbox
+              id="is_required"
+              name="is_required"
+              checked={formData.is_required}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_required: checked })}
+            />
+            <label htmlFor="is_required" className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+              Required document?
+            </label>
+          </div>
+        </div>
 
-                        <div className="flex justify-end gap-3">
-                            <button type="button" onClick={() => setModalOpen(false)} className="btn btn-outline-danger">Cancel</button>
-                            <button type="submit" className="btn btn-primary" disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save'}
-                            </button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+        {/* Status */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Status
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <Select
+              onValueChange={(value) => handleSelectChange(value, 'status')}
+              value={formData.status}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </form>
+    </ScrollArea>
+
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-5"
+        onClick={() => setModalOpen(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="document-type-form"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : (editingDocumentType ? 'Save Changes' : 'Create Document Type')}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
             <DeleteModal
                 isOpen={deleteModalOpen}

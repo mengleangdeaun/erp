@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
+import { ScrollArea } from '../../../components/ui/scroll-area';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -13,6 +14,7 @@ import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import SearchableMultiSelect from '../../../components/ui/SearchableMultiSelect';
+import { IconBadge } from '@tabler/icons-react';
 
 const DesignationIndex = () => {
     const [designations, setDesignations] = useState<any[]>([]);
@@ -267,6 +269,7 @@ const DesignationIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconBadge className="w-6 h-6 text-primary" />}
                 title="Designations"
                 description="Manage your organizational roles and job titles"
                 search={search}
@@ -372,58 +375,132 @@ const DesignationIndex = () => {
                 </div>
             )}
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle>{editingDesignation ? 'Edit Designation' : 'Create Designation'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-5 mt-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label htmlFor="name">Designation Name</label>
-                                <Input id="name" name="name" type="text" value={formData.name} onChange={handleChange} required />
-                            </div>
-                            <div>
-                                <label>Departments</label>
-                                <SearchableMultiSelect
-                                    options={departments.map((dept: any) => ({
-                                        value: String(dept.id),
-                                        label: dept.name
-                                    }))}
-                                    value={formData.department_ids}
-                                    onChange={(val) => handleSelectChange(val, 'department_ids')}
-                                    placeholder="Select Departments"
-                                />
-                            </div>
-                        </div>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconBadge className="text-primary w-7 h-7" />
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingDesignation ? 'Edit Designation' : 'Create New Designation'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingDesignation 
+            ? 'Update the designation details below.' 
+            : 'Fill in the details to add a new designation.'}
+        </p>
+      </div>
+    </div>
 
-                        <div>
-                            <label htmlFor="description">Description</label>
-                            <Textarea id="description" name="description" value={formData.description} onChange={handleChange}></Textarea>
-                        </div>
+    <ScrollArea className="flex-1 min-h-0">
+      <form id="designation-form" onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Basic Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Designation Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="e.g. Senior Software Engineer"
+                required
+              />
+            </div>
+            <div className="space-y-0">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Departments
+              </label>
+              <SearchableMultiSelect
+                options={departments.map((dept: any) => ({
+                  value: String(dept.id),
+                  label: dept.name
+                }))}
+                value={formData.department_ids}
+                onChange={(val) => handleSelectChange(val, 'department_ids')}
+                placeholder="Select Departments"
+              />
+            </div>
+          </div>
+        </div>
 
-                        <div>
-                            <label htmlFor="status">Status</label>
-                            <Select onValueChange={(value) => handleSelectChange(value, 'status')} value={formData.status}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+        {/* Description */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Additional Details
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Description
+            </label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Describe the responsibilities and scope of this designation..."
+              rows={4}
+              className="bg-gray-50 dark:bg-gray-800/50 resize-none"
+            />
+          </div>
+        </div>
 
-                        <div className="flex justify-end gap-3">
-                            <Button type="button" size="sm" onClick={() => setModalOpen(false)} variant="outline">Cancel</Button>
-                            <Button type="submit" size="sm" disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save'}
-                            </Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+        {/* Status */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Status
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <Select
+              onValueChange={(value) => handleSelectChange(value, 'status')}
+              value={formData.status}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </form>
+    </ScrollArea>
+
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-5"
+        onClick={() => setModalOpen(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="designation-form"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : (editingDesignation ? 'Save Changes' : 'Create Designation')}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
             <DeleteModal
                 isOpen={deleteModalOpen}

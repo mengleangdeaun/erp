@@ -10,6 +10,7 @@ import { DateRangePicker } from '../../../components/ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import dayjs from 'dayjs';
+import { IconClockRecord } from '@tabler/icons-react';
 
 const AttendanceRecordIndex = () => {
     const [records, setRecords] = useState<any[]>([]);
@@ -165,6 +166,7 @@ const AttendanceRecordIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconClockRecord className="w-6 h-6 text-primary" />}
                 title="Attendance Records"
                 description="Manage and view employee attendance logs"
                 search={search}

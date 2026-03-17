@@ -3,9 +3,11 @@
     "short_name": "S-Cool",
     "description": "Employee Attendance & CRM Portal",
     "start_url": "/attendance/login",
-    "display": "standalone",
+    "scope": "/",
+    "display": "fullscreen",
     "background_color": "#ffffff",
     "theme_color": "#ffffff",
+    "orientation": "portrait",
     "icons": [
         {
             "src": "/favicon.png",

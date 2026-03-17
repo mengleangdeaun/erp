@@ -208,4 +208,104 @@ class LeaveRequestController extends Controller
 
         return response()->json($leaveRequest);
     }
+
+    /**
+     * Get pending approvals assigned to the authenticated employee.
+     */
+    public function approvals(Request $request)
+    {
+        $employee = $this->getAuthenticatedEmployee($request);
+        if (!$employee) return response()->json(['message' => 'Unauthorized'], 401);
+
+        $approvals = LeaveRequest::with(['leaveType', 'employee'])
+            ->where('approved_by', $employee->id)
+            ->where('status', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($approvals);
+    }
+
+    /**
+     * Approve a leave request.
+     */
+    public function approve(Request $request, $id)
+    {
+        $employee = $this->getAuthenticatedEmployee($request);
+        if (!$employee) return response()->json(['message' => 'Unauthorized'], 401);
+
+        try {
+            DB::beginTransaction();
+
+            $leaveRequest = LeaveRequest::find($id);
+            if (!$leaveRequest) {
+                return response()->json(['message' => 'Leave request not found.'], 404);
+            }
+
+            if ($leaveRequest->approved_by !== $employee->id) {
+                return response()->json(['message' => 'You are not authorized to approve this request.'], 403);
+            }
+
+            if ($leaveRequest->status !== 'pending') {
+                return response()->json(['message' => 'This request is no longer pending.'], 422);
+            }
+
+            // Deduct balance
+            $currentYear = Carbon::parse($leaveRequest->start_date)->year;
+            $balance = LeaveBalance::where('employee_id', $leaveRequest->employee_id)
+                ->where('leave_type_id', $leaveRequest->leave_type_id)
+                ->where('year', $currentYear)
+                ->first();
+
+            if (!$balance || $balance->balance < $leaveRequest->total_days) {
+                return response()->json(['message' => 'Employee has insufficient leave balance.'], 422);
+            }
+
+            $balance->total_taken += $leaveRequest->total_days;
+            $balance->balance -= $leaveRequest->total_days;
+            $balance->save();
+
+            $leaveRequest->status = 'approved';
+            $leaveRequest->save();
+
+            DB::commit();
+            return response()->json($leaveRequest);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Approval failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Reject a leave request.
+     */
+    public function reject(Request $request, $id)
+    {
+        $employee = $this->getAuthenticatedEmployee($request);
+        if (!$employee) return response()->json(['message' => 'Unauthorized'], 401);
+
+        $validated = $request->validate([
+            'rejection_reason' => 'required|string|max:500',
+        ]);
+
+        $leaveRequest = LeaveRequest::find($id);
+        if (!$leaveRequest) {
+            return response()->json(['message' => 'Leave request not found.'], 404);
+        }
+
+        if ($leaveRequest->approved_by !== $employee->id) {
+            return response()->json(['message' => 'You are not authorized to reject this request.'], 403);
+        }
+
+        if ($leaveRequest->status !== 'pending') {
+            return response()->json(['message' => 'This request is no longer pending.'], 422);
+        }
+
+        $leaveRequest->status = 'rejected';
+        $leaveRequest->rejection_reason = $validated['rejection_reason'];
+        $leaveRequest->save();
+
+        return response()->json($leaveRequest);
+    }
 }

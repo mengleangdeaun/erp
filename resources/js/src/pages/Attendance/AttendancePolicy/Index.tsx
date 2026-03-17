@@ -169,6 +169,7 @@ const AttendancePolicyIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconShieldCheck className="w-6 h-6 text-primary" />}
                 title="Attendance Policies"
                 description="Configure complex rules like grace periods and overtime"
                 search={search}

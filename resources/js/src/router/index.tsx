@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import BlankLayout from '../components/Layouts/BlankLayout';
 import DefaultLayout from '../components/Layouts/DefaultLayout';
 import MobileLayout from '../components/Layouts/MobileLayout';
+import Error from '../components/Error';
 import { routes } from './routes';
 
 const finalRoutes = routes.map((route) => {
@@ -17,6 +18,12 @@ const finalRoutes = routes.map((route) => {
     };
 });
 
-const router = createBrowserRouter(finalRoutes);
+// A single, top-level route to provide the global error boundary
+const router = createBrowserRouter([
+    {
+        errorElement: <BlankLayout><Error /></BlankLayout>,
+        children: finalRoutes
+    }
+]);
 
 export default router;

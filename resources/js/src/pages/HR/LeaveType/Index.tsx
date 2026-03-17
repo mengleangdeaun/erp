@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { ScrollArea } from '../../../components/ui/scroll-area';
+import { Checkbox } from '../../../components/ui/checkbox';
 import { Button } from '../../../components/ui/button';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
@@ -13,6 +15,7 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { Textarea } from '../../../components/ui/textarea';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
+import { IconClipboardHeart } from '@tabler/icons-react';
 
 const LeaveTypeIndex = () => {
     const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
@@ -246,6 +249,7 @@ const LeaveTypeIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconClipboardHeart className="w-6 h-6 text-primary" />}
                 title="Leave Types"
                 description="Manage leave types available for employees"
                 search={search}
@@ -339,74 +343,161 @@ const LeaveTypeIndex = () => {
                 </div>
             )}
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>{editingLeaveType ? 'Edit Leave Type' : 'Create Leave Type'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-5 mt-4">
-                        <div className="grid grid-cols-1 gap-5">
-                            <div>
-                                <Label htmlFor="name">Leave Name <span className="text-red-500">*</span></Label>
-                                <Input id="name" name="name" type="text"  value={formData.name} onChange={handleChange} required placeholder="e.g. Annual Leave, Sick Leave" />
-                            </div>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconClipboardHeart className="text-primary w-7 h-7" />
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingLeaveType ? 'Edit Leave Type' : 'Create New Leave Type'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingLeaveType
+            ? 'Update the leave type details below.'
+            : 'Fill in the details to add a new leave type.'}
+        </p>
+      </div>
+    </div>
 
-                            <div>
-                                <Label htmlFor="description">Description</Label>
-                                <Textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={3}></Textarea>
-                            </div>
+    <ScrollArea className="flex-1 min-h-0">
+      <form id="leave-type-form" onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Basic Information
+          </h3>
+          <div className="space-y-1.5">
+            <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Leave Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              placeholder="e.g. Annual Leave, Sick Leave"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Description
+            </Label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Describe the leave type and any conditions..."
+              className="bg-gray-50 dark:bg-gray-800/50 resize-none"
+            />
+          </div>
+        </div>
 
-                            <div className="grid grid-cols-2 gap-5">
-                                <div>
-                                    <Label htmlFor="max_per_year">Max Days Per Year</Label>
-                                    <Input id="max_per_year" name="max_per_year" type="number"  value={formData.max_per_year} onChange={handleChange} min="0" />
-                                    <p className="text-xs text-gray-500 mt-1">0 means unlimited</p>
-                                </div>
+        {/* Leave Settings */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Leave Settings
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="max_per_year" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Max Days Per Year
+              </Label>
+              <Input
+                id="max_per_year"
+                name="max_per_year"
+                type="number"
+                value={formData.max_per_year}
+                onChange={handleChange}
+                min="0"
+                placeholder="e.g. 20"
+              />
+              <p className="text-xs text-gray-500 mt-1">0 means unlimited</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="color" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Color Code
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="color"
+                  name="color"
+                  type="color"
+                  className="h-10 w-10 p-1 border-0 rounded cursor-pointer"
+                  value={formData.color}
+                  onChange={handleChange}
+                />
+                <Input
+                  type="text"
+                  value={formData.color}
+                  name="color"
+                  onChange={handleChange}
+                  placeholder="#000000"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <Checkbox
+              id="is_paid"
+              name="is_paid"
+              checked={formData.is_paid}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_paid: checked })}
+            />
+            <Label htmlFor="is_paid" className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+              Is Paid Leave?
+            </Label>
+          </div>
+        </div>
 
-                                <div>
-                                    <Label htmlFor="color">Color Code</Label>
-                                    <div className="flex">
-                                        <Input
-                                            id="color"
-                                            name="color"
-                                            type="color"
-                                            className="h-10 w-10 p-1 border-0 rounded cursor-pointer me-2"
-                                            value={formData.color}
-                                            onChange={handleChange}
-                                        />
-                                        <Input
-                                            type="text"
-                                            value={formData.color}
-                                            name="color"
-                                            onChange={handleChange}
-                                            placeholder="#000000"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+        {/* Status */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Status
+          </h3>
+          <div className="flex items-center gap-2 pt-1">
+            <Checkbox
+              id="status"
+              name="status"
+              checked={formData.status}
+              onCheckedChange={(checked) => setFormData({ ...formData, status: checked })}
+            />
+            <Label htmlFor="status" className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+              Active?
+            </Label>
+          </div>
+        </div>
+      </form>
+    </ScrollArea>
 
-                            <div className="grid grid-cols-2 gap-5">
-                                <label className="flex items-center cursor-pointer">
-                                    <input type="checkbox" className="form-checkbox" name="is_paid" checked={formData.is_paid} onChange={handleChange} />
-                                    <span className="text-white-dark ml-2">Is Paid Leave?</span>
-                                </label>
-
-                                <label className="flex items-center cursor-pointer">
-                                    <input type="checkbox" className="form-checkbox" name="status" checked={formData.status} onChange={handleChange} />
-                                    <span className="text-white-dark ml-2">Status Active?</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3 mt-8">
-                            <Button type="button" size="sm" onClick={() => setModalOpen(false)} variant="outline">Cancel</Button>
-                            <Button type="submit" size="sm" disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save Leave Type'}
-                            </Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-5"
+        onClick={() => setModalOpen(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="leave-type-form"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : (editingLeaveType ? 'Save Changes' : 'Create Leave Type')}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
             <DeleteModal
                 isOpen={deleteModalOpen}

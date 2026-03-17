@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
-import { IconSearch, IconX, IconCheck, IconTrash, IconClock } from '@tabler/icons-react';
+import { IconSearch, IconX, IconCheck, IconTrash, IconClock, IconClockRecord } from '@tabler/icons-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog';
 import Pagination from '../../../components/ui/Pagination';
 import dayjs from 'dayjs';
@@ -280,6 +280,8 @@ export default function LeaveRecordIndex() {
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
+    
+    const hasActiveFilters = !!(statusFilter || employeeFilter || dateFilter?.from);
 
     const getStatusStyle = (status: string) => {
         switch (status) {
@@ -294,13 +296,14 @@ export default function LeaveRecordIndex() {
     return (
         <div>
             <FilterBar
+                icon={<IconClockRecord className="w-6 h-6 text-primary" />}
                 title="Leave Records"
                 description="Manage and approve organization leave applications."
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-                hasActiveFilters={!!statusFilter || !!employeeFilter || !!dateFilter}
+                hasActiveFilters={hasActiveFilters}
                 onClearFilters={() => {
                     setStatusFilter('ALL_STATUSES');
                     setEmployeeFilter('');
@@ -351,7 +354,15 @@ export default function LeaveRecordIndex() {
                     </Select>
                 </div>
             </FilterBar>
-
+                    {loading ? (
+                        <TableSkeleton columns={7} rows={5} />
+                    ) : paginatedItems.length === 0 ? (
+                        <EmptyState
+                            isSearch={!!search || hasActiveFilters}
+                            searchTerm={search}
+                            onClearFilter={() => { setSearch(''); setStatusFilter(''); setDateFilter(undefined); setEmployeeFilter(''); }}
+                        />
+                    ) : (
             <div className="rounded-lg border overflow-hidden mb-5">
                 <div className="table-responsive">
                     <table className="w-full text-sm">
@@ -367,19 +378,7 @@ export default function LeaveRecordIndex() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {loading ? (
-                                <TableSkeleton columns={7} rows={5} rowsOnly />
-                            ) : paginatedItems.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="p-0">
-                                        <EmptyState
-                                            title="No leave records found"
-                                            description="There are currently no leave requests matching your criteria."
-                                        />
-                                    </td>
-                                </tr>
-                            ) : (
-                                paginatedItems.map((req) => (
+                            {paginatedItems.map((req) => (
                                     <tr key={req.id} className="hover:bg-gray-50/30 dark:hover:bg-black/10 transition-colors group">
                                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
                                             {dayjs(req.created_at).format('MMM D, YYYY')}
@@ -453,10 +452,10 @@ export default function LeaveRecordIndex() {
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
+                                ))}
                         </tbody>
                     </table>
+                    
                 </div>
 
                 {!loading && filteredRequests.length > 0 && (
@@ -470,7 +469,7 @@ export default function LeaveRecordIndex() {
                     />
                 )}
             </div>
-
+)}
             {/* Reject Modal */}
             <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
                 <DialogContent className="sm:max-w-[500px]">

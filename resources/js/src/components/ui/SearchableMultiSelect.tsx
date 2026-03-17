@@ -9,6 +9,7 @@ import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 interface Option {
     value: string;
     label: string;
+    description?: string;
 }
 
 interface SearchableMultiSelectProps {
@@ -20,6 +21,7 @@ interface SearchableMultiSelectProps {
     emptyMessage?: string;
     disabled?: boolean;
     loading?: boolean;
+    allOptions?: Option[]; // Optional: complete list to resolve labels for selected items not in 'options'
 }
 
 const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
@@ -30,7 +32,8 @@ const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
     searchPlaceholder = "Search...",
     emptyMessage = "No results found.",
     disabled = false,
-    loading = false
+    loading = false,
+    allOptions
 }) => {
     const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -68,7 +71,12 @@ const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
         onChange([]);
     };
 
-    const selectedLabels = value.map(v => options.find(o => o.value === v)?.label).filter(Boolean);
+    const resolveLabel = (val: string) => {
+        const opt = (allOptions || options).find(o => o.value === val);
+        return opt ? opt.label : val;
+    };
+
+    const selectedLabels = value.map(v => resolveLabel(v));
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -171,7 +179,10 @@ const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
                                             `}
                                         >
                                             <div className="flex flex-1 flex-col">
-                                                <span>{option.label}</span>
+                                                <span className="font-medium text-gray-900 dark:text-gray-100">{option.label}</span>
+                                                {option.description && (
+                                                    <span className="text-xs text-gray-400 mt-0.5">{option.description}</span>
+                                                )}
                                             </div>
                                             <div className="flex items-center ml-2">
                                                 <div className={`

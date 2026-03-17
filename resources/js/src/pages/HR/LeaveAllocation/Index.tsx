@@ -2,8 +2,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { Label } from '../../../components/ui/label';
+import { ScrollArea } from '../../../components/ui/scroll-area';
 import { DatePicker } from '../../../components/ui/date-picker';
 import { Button } from '../../../components/ui/button';
+import { Checkbox } from '../../../components/ui/checkbox';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -11,8 +14,9 @@ import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
-import { X, Users, Building, Building2 } from 'lucide-react';
+import { IconUserCheck, IconX, IconUsers } from '@tabler/icons-react';
 import dayjs from 'dayjs';
+import { IconCalendar } from '@tabler/icons-react';
 
 const LeaveAllocationIndex = () => {
     const [allocations, setAllocations] = useState<any[]>([]);
@@ -345,6 +349,7 @@ const LeaveAllocationIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconCalendar className="w-6 h-6 text-primary" />}
                 title="Leave Allocations"
                 description="Assign leave policies to employees"
                 search={search}
@@ -443,179 +448,252 @@ const LeaveAllocationIndex = () => {
                 </div>
             )}
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>{editingAllocation ? 'Edit Allocation' : 'Assign Leave Policy'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="mt-4">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {/* Left Column (Employee Selection) */}
-                            <div className="space-y-4">
-                                {!editingAllocation ? (
-                                    <>
-                                        <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
-                                            <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
-                                                <Users className="w-4 h-4" /> Build Roster
-                                            </h3>
 
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label htmlFor="individual_search" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">1. Search Individuals</label>
-                                                    <SearchableSelect
-                                                        options={employees.map((emp: any) => ({ value: String(emp.id), label: emp.full_name }))}
-                                                        value=""
-                                                        onChange={(val) => handleEmployeeAdd(String(val))}
-                                                        placeholder="Search & add individual..."
-                                                        searchPlaceholder="Search employee name..."
-                                                    />
-                                                </div>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-[900px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconUserCheck className="text-primary w-7 h-7" />
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingAllocation ? 'Edit Leave Allocation' : 'Assign Leave Policy'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingAllocation
+            ? 'Update the allocation details below.'
+            : 'Select employees and configure policy settings.'}
+        </p>
+      </div>
+    </div>
 
-                                                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">2. Quick Add Departments & Branches</label>
-                                                    <div className="grid grid-cols-2 gap-2 mb-3">
-                                                        <SearchableSelect
-                                                            options={departments.map((dept: any) => ({ value: String(dept.id), label: dept.name }))}
-                                                            value=""
-                                                            onChange={(val) => handleQuickAssign('dept', val)}
-                                                            placeholder="Add Department..."
-                                                        />
-                                                        <SearchableSelect
-                                                            options={branches.map((branch: any) => ({ value: String(branch.id), label: branch.name }))}
-                                                            value=""
-                                                            onChange={(val) => handleQuickAssign('branch', val)}
-                                                            placeholder="Add Branch..."
-                                                        />
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <Button type="button" variant="outline" size="sm" onClick={() => handleQuickAssign('all')} className="flex-1 border-primary/20 hover:bg-primary/5 text-primary">
-                                                            Select All Staff
-                                                        </Button>
-                                                        <Button type="button" variant="soft-destructive" size="sm" onClick={() => setFormData(prev => ({ ...prev, employee_ids: [] }))} className="w-24">
-                                                            Clear
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+    <ScrollArea className="flex-1 min-h-0">
+      <form id="allocation-form" onSubmit={handleSubmit} className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column: Employee Selection */}
+          <div className="space-y-5">
+            {!editingAllocation ? (
+              <>
+                {/* Build Roster Section */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                    Build Roster
+                  </h3>
 
-                                        <div>
-                                            <label className="font-semibold text-gray-800 dark:text-gray-200 flex justify-between items-end">
-                                                <span>Selected Employees <span className="text-red-500">*</span></span>
-                                                <span className="text-xs font-normal text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">{formData.employee_ids.length} selected</span>
-                                            </label>
-                                            <div className="flex flex-wrap gap-2 mt-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg  overflow-y-auto bg-white dark:bg-black w-full">
-                                                {formData.employee_ids.length === 0 ? (
-                                                    <div className="w-full flex flex-col items-center justify-center text-sm text-gray-400 py-6">
-                                                        <Users className="w-8 h-8 opacity-20 mb-2" />
-                                                        <p>No employees selected yet</p>
-                                                    </div>
-                                                ) : (
-                                                    formData.employee_ids.map(id => {
-                                                        const emp = employees.find(e => String(e.id) === id);
-                                                        return (
-                                                            <div key={id} className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1.5 rounded-md text-sm border border-primary/20">
-                                                                <span className="truncate max-w-[120px]">{emp ? emp.full_name : 'Unknown Employee'}</span>
-                                                                <button type="button" onClick={() => handleEmployeeRemove(id)} className="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 text-gray-500 rounded p-0.5 transition-colors">
-                                                                    <X className="w-3.5 h-3.5" />
-                                                                </button>
-                                                            </div>
-                                                        );
-                                                    })
-                                                )}
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="bg-gray-50 dark:bg-gray-900/50 p-5 rounded-lg border border-gray-100 dark:border-gray-800 h-full flex flex-col justify-center">
-                                        <div className="text-center mb-4">
-                                            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                                                <Users className="w-8 h-8 text-primary" />
-                                            </div>
-                                            <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">Editing Single Allocation</h3>
-                                            <p className="text-sm text-gray-500 mt-1">Bulk editing is not supported. Use creation for bulk assign.</p>
-                                        </div>
-                                        <div className="mt-2 text-center">
-                                            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Target Employee <span className="text-red-500">*</span></label>
-                                            <div className="mt-2 p-3 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-md font-medium shadow-sm inline-block min-w-[200px]">
-                                                {employees.find(e => String(e.id) === formData.employee_ids[0])?.full_name || 'Loading...'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                  <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800 space-y-4">
+                    {/* Individual Search */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        1. Search Individuals
+                      </Label>
+                      <SearchableSelect
+                        options={employees.map((emp: any) => ({ value: String(emp.id), label: emp.full_name }))}
+                        value=""
+                        onChange={(val) => handleEmployeeAdd(String(val))}
+                        placeholder="Search & add individual..."
+                        searchPlaceholder="Search employee name..."
+                      />
+                    </div>
 
-                            {/* Right Column (Allocation Settings) */}
-                            <div className="space-y-5 bg-white dark:bg-black p-5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden">
-                               
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-800 pb-3">Policy Settings</h3>
+                    {/* Quick Add Departments & Branches */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        2. Quick Add Groups
+                      </Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <SearchableSelect
+                          options={departments.map((dept: any) => ({ value: String(dept.id), label: dept.name }))}
+                          value=""
+                          onChange={(val) => handleQuickAssign('dept', val)}
+                          placeholder="Add Department..."
+                        />
+                        <SearchableSelect
+                          options={branches.map((branch: any) => ({ value: String(branch.id), label: branch.name }))}
+                          value=""
+                          onChange={(val) => handleQuickAssign('branch', val)}
+                          placeholder="Add Branch..."
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleQuickAssign('all')}
+                          className="flex-1 border-primary/20 hover:bg-primary/5 text-primary"
+                        >
+                          Select All Staff
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setFormData(prev => ({ ...prev, employee_ids: [] }))}
+                          className="w-24"
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-                                <div>
-                                    <label htmlFor="leave_policy_id" className="text-sm font-medium">Leave Policy Required <span className="text-red-500">*</span></label>
-                                    <div className="mt-1">
-                                        <SearchableSelect
-                                            options={policies.map((policy: any) => ({ value: String(policy.id), label: policy.name }))}
-                                            value={formData.leave_policy_id}
-                                            onChange={(val) => handleSelectChange(String(val), 'leave_policy_id')}
-                                            placeholder="Select Leave Policy"
-                                        />
-                                    </div>
-                                </div>
+                {/* Selected Employees */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Selected Employees <span className="text-red-500">*</span>
+                    </Label>
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                      {formData.employee_ids.length} selected
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg min-h-[100px] max-h-[200px] overflow-y-auto bg-white dark:bg-black">
+                    {formData.employee_ids.length === 0 ? (
+                      <div className="w-full flex flex-col items-center justify-center text-sm text-gray-400 py-6">
+                        <IconUsers className="w-8 h-8 opacity-20 mb-2" />
+                        <p>No employees selected yet</p>
+                      </div>
+                    ) : (
+                      formData.employee_ids.map(id => {
+                        const emp = employees.find(e => String(e.id) === id);
+                        return (
+                          <div
+                            key={id}
+                            className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1.5 rounded-md text-sm border border-primary/20"
+                          >
+                            <span className="truncate max-w-[120px]">{emp ? emp.full_name : 'Unknown Employee'}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleEmployeeRemove(id)}
+                              className="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 text-gray-500 rounded p-0.5 transition-colors"
+                            >
+                              <IconX className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              // Single employee view when editing
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-lg border border-gray-100 dark:border-gray-800 h-full flex flex-col items-center justify-center text-center">
+                <div className="bg-primary/10 p-4 rounded-full mb-4">
+                  <IconUsers className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">Editing Single Allocation</h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xs">
+                  Bulk editing is not supported. Use creation for bulk assignment.
+                </p>
+                <div className="mt-4 w-full">
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Target Employee</Label>
+                  <div className="mt-1 p-3 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-md font-medium shadow-sm">
+                    {employees.find(e => String(e.id) === formData.employee_ids[0])?.full_name || 'Loading...'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label htmlFor="effective_date" className="text-sm font-medium">Effective Date <span className="text-red-500">*</span></label>
-                                        <div className="mt-1">
-                                            <DatePicker
-                                                value={formData.effective_date}
-                                                onChange={(date) => handleDateChange(date, 'effective_date')}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label htmlFor="expiration_date" className="text-sm font-medium">Expiration <span className="text-gray-400 font-normal">(Optional)</span></label>
-                                        <div className="mt-1">
-                                            <DatePicker
-                                                value={formData.expiration_date}
-                                                onChange={(date) => handleDateChange(date, 'expiration_date')}
-                                                placeholder="No expiration"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+          {/* Right Column: Policy Settings */}
+          <div className="space-y-5">
+            <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+              Policy Settings
+            </h3>
 
-                                <div>
-                                    <label htmlFor="approved_by" className="text-sm font-medium">Specific Approver <span className="text-gray-400 font-normal">(Optional)</span></label>
-                                    <div className="mt-1">
-                                        <SearchableSelect
-                                            options={employees.map((emp: any) => ({ value: String(emp.id), label: emp.full_name }))}
-                                            value={formData.approved_by}
-                                            onChange={(val) => handleSelectChange(String(val), 'approved_by')}
-                                            placeholder="Select manager (default: HR)"
-                                            searchPlaceholder="Search approver name..."
-                                        />
-                                    </div>
-                                </div>
+            <div className="space-y-4 bg-white dark:bg-black p-5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
+              <div className="space-y-1.5">
+                <Label htmlFor="leave_policy_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Leave Policy <span className="text-red-500">*</span>
+                </Label>
+                <SearchableSelect
+                  options={policies.map((policy: any) => ({ value: String(policy.id), label: policy.name }))}
+                  value={formData.leave_policy_id}
+                  onChange={(val) => handleSelectChange(String(val), 'leave_policy_id')}
+                  placeholder="Select Leave Policy"
+                />
+              </div>
 
-                                <div className="mt-6 p-4 border border-primary/20 bg-primary/5 rounded-md">
-                                    <label className="flex items-center cursor-pointer">
-                                        <input type="checkbox" className="form-checkbox text-primary rounded-sm focus:ring-primary" name="is_active" checked={formData.is_active} onChange={handleChange} />
-                                        <span className="text-gray-800 dark:text-gray-200 font-medium ml-2">Allocation is Active</span>
-                                    </label>
-                                    <p className="text-xs text-gray-500 mt-1.5 ml-7">Inactive allocations cannot be used to request leaves.</p>
-                                </div>
-                            </div>
-                        </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="effective_date" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Effective Date <span className="text-red-500">*</span>
+                  </Label>
+                  <DatePicker
+                    value={formData.effective_date}
+                    onChange={(date) => handleDateChange(date, 'effective_date')}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="expiration_date" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Expiration <span className="text-gray-400 font-normal">(Optional)</span>
+                  </Label>
+                  <DatePicker
+                    value={formData.expiration_date}
+                    onChange={(date) => handleDateChange(date, 'expiration_date')}
+                    placeholder="No expiration"
+                  />
+                </div>
+              </div>
 
-                        <div className="flex justify-end gap-2 pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
-                            <Button type="button" variant='outline' size='sm' onClick={() => setModalOpen(false)} >Cancel</Button>
-                            <Button type="submit" size='sm' disabled={isSaving}>
-                                {isSaving ? 'Saving...' : 'Save Allocation'}
-                            </Button>
-                        </div>
-                    </form>
-                </DialogContent>
-            </Dialog>
+              <div className="space-y-1.5">
+                <Label htmlFor="approved_by" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Specific Approver <span className="text-gray-400 font-normal">(Optional)</span>
+                </Label>
+                <SearchableSelect
+                  options={employees.map((emp: any) => ({ value: String(emp.id), label: emp.full_name }))}
+                  value={formData.approved_by}
+                  onChange={(val) => handleSelectChange(String(val), 'approved_by')}
+                  placeholder="Select manager (default: Line Manager)"
+                  searchPlaceholder="Search approver name..."
+                />
+              </div>
+
+              <div className="mt-4 p-4 border border-primary/20 bg-primary/5 rounded-md">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    name="is_active"
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                  />
+                  <span className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 select-none">
+                    Allocation is Active
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1.5 ml-6">
+                  Inactive allocations cannot be used to request leaves.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </ScrollArea>
+
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-5"
+        onClick={() => setModalOpen(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="allocation-form"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : (editingAllocation ? 'Save Changes' : 'Create Allocation')}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
             <DeleteModal
                 isOpen={deleteModalOpen}

@@ -204,6 +204,7 @@ const WarningIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconAlertTriangle className="w-6 h-6 text-primary" />}
                 title="Employee Warnings"
                 description="Issue and track formal employee warnings"
                 search={search}

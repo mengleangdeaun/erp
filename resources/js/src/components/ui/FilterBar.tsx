@@ -5,9 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { IconSearch, IconX, IconPlus, IconFilter, IconFilterOff, IconRefresh, IconAdjustmentsHorizontal } from '@tabler/icons-react';
 
 interface FilterBarProps {
-    // Title
+    // Title & Icon
     title?: string;
     description?: string;
+    icon?: React.ReactNode; // Optional icon with background (should include text-primary class)
 
     // Search
     search: string;
@@ -33,6 +34,7 @@ interface FilterBarProps {
 const FilterBar: React.FC<FilterBarProps> = ({
     title,
     description,
+    icon,
     search,
     setSearch,
     itemsPerPage,
@@ -59,14 +61,21 @@ const FilterBar: React.FC<FilterBarProps> = ({
     };
 
     return (
-        <div className="flex flex-col gap-4 mb-5">
+        <div className="flex flex-col gap-4 mb-4">
             {/* Top Row: Primary Search & Actions */}
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-between w-full">
 
-                {/* Left Side: Title */}
-                <div className="w-full sm:w-auto flex flex-col justify-center">
-                    {title && <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">{title}</h1>}
-                    {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
+                {/* Left Side: Icon with Background + Title + Description */}
+                <div className="w-full sm:w-auto flex items-start gap-3">
+                    {icon && (
+                        <div className="bg-primary/20 p-3 rounded-xl shrink-0">
+                            {icon}
+                        </div>
+                    )}
+                    <div className="flex flex-col">
+                        {title && <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">{title}</h1>}
+                        {description && <p className="text-sm text-gray-500">{description}</p>}
+                    </div>
                 </div>
 
                 {/* Right Side: Buttons */}

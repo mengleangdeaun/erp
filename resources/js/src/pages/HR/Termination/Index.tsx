@@ -209,6 +209,7 @@ const TerminationIndex = () => {
     return (
         <div>
             <FilterBar
+                icon={<IconBan className="w-6 h-6 text-primary" />}
                 title="Employee Terminations"
                 description="Track and manage employee termination records"
                 search={search}
