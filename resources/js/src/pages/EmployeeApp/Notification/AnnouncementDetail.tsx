@@ -77,7 +77,7 @@ const typeIcons: Record<string, React.ReactNode> = {
 
     return (
         <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900 overflow-y-auto pb-28">
-            <PageHeader title="Announcement" icon={<IconBell size={18} />} />
+            <PageHeader title="Announcement"/>
 
             {/* Featured Image Banner */}
             {announcement.featured_image && (

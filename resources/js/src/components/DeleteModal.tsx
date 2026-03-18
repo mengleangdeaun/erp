@@ -29,8 +29,8 @@ const DeleteModal: React.FC<DeleteModalProps> = ({ isOpen, setIsOpen, onConfirm,
                     <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isLoading}>
                         Cancel
                     </Button>
-                    <Button variant="destructive" onClick={onConfirm} disabled={isLoading} className="bg-red-600 hover:bg-red-700 text-white">
-                        {isLoading ? 'Deleting...' : 'Delete'}
+                    <Button variant="destructive" onClick={onConfirm} isLoading={isLoading} className="bg-red-600 hover:bg-red-700 text-white">
+                        Delete
                     </Button>
                 </DialogFooter>
             </DialogContent>

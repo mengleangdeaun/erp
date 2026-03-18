@@ -1,6 +1,8 @@
 import { lazy } from 'react';
 const Index = lazy(() => import('../pages/Index'));
 const Login = lazy(() => import('../pages/Auth/login'));
+const ForgotPassword = lazy(() => import('../pages/Auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('../pages/Auth/ResetPassword'));
 const ProfileSetting = lazy(() => import('../pages/Profile/ProfileSetting'));
 const BranchIndex = lazy(() => import('../pages/HR/Branch/Index'));
 const DepartmentIndex = lazy(() => import('../pages/HR/Department/Index'));
@@ -34,6 +36,8 @@ const AnnouncementIndex = lazy(() => import('../pages/HR/Announcement/Index'));
 const AnnouncementForm = lazy(() => import('../pages/HR/Announcement/Form'));
 const TelegramSettings = lazy(() => import('../pages/HR/Announcement/TelegramSettings'));
 
+const UserPreferences = lazy(() => import('../pages/Profile/UserPreferences'));
+
 const MediaLibrary = lazy(() => import('../pages/Apps/MediaLibrary'));
 const Error = lazy(() => import('../components/Error'));
 
@@ -58,6 +62,18 @@ const EmployeePwaAnnouncementDetail = lazy(() => import('../pages/EmployeeApp/No
 // HR - Activity Log
 const HrActivityIndex = lazy(() => import('../pages/HR/Activity/Index'));
 
+// Inventory Module
+const InventoryTagIndex = lazy(() => import('../pages/Inventory/Tags/Index'));
+const InventoryUomIndex = lazy(() => import('../pages/Inventory/Uom/Index'));
+const InventoryLocationIndex = lazy(() => import('../pages/Inventory/Locations/Index'));
+const InventoryCategoryIndex = lazy(() => import('../pages/Inventory/Categories/Index'));
+const InventoryProductIndex = lazy(() => import('../pages/Inventory/Products/Index'));
+const InventoryStockIndex = lazy(() => import('../pages/Inventory/Stocks/Index'));
+// Procurement Module
+const InventorySupplierIndex = lazy(() => import('../pages/Inventory/Suppliers/Index'));
+const InventoryPurchaseOrderIndex = lazy(() => import('../pages/Inventory/PurchaseOrders/Index'));
+const InventoryPurchaseReceiveIndex = lazy(() => import('../pages/Inventory/PurchaseReceives/Index'));
+
 const routes = [
     // dashboard
     {
@@ -71,10 +87,25 @@ const routes = [
         element: <Login />,
         layout: 'blank',
     },
+    {
+        path: '/auth/forgot-password',
+        element: <ForgotPassword />,
+        layout: 'blank',
+    },
+    {
+        path: '/auth/reset-password',
+        element: <ResetPassword />,
+        layout: 'blank',
+    },
     // profile
     {
-        path: '/profile/settings',
+        path: '/users/profile',
         element: <ProfileSetting />,
+        layout: 'default',
+    },
+    {
+        path: '/users/preferences',
+        element: <UserPreferences />,
         layout: 'default',
     },
     // Branch (Single Page with Modal)
@@ -325,6 +356,17 @@ const routes = [
         element: <EmployeePwaFeedbackCreate />,
         layout: 'mobile',
     },
+    // Inventory Routes
+    { path: '/inventory/categories', element: <InventoryCategoryIndex />, layout: 'default' },
+    { path: '/inventory/tags', element: <InventoryTagIndex />, layout: 'default' },
+    { path: '/inventory/uoms', element: <InventoryUomIndex />, layout: 'default' },
+    { path: '/inventory/locations', element: <InventoryLocationIndex />, layout: 'default' },
+    { path: '/inventory/products', element: <InventoryProductIndex />, layout: 'default' },
+    { path: '/inventory/stocks', element: <InventoryStockIndex />, layout: 'default' },
+    // Procurement
+    { path: '/inventory/suppliers', element: <InventorySupplierIndex />, layout: 'default' },
+    { path: '/inventory/purchase-orders', element: <InventoryPurchaseOrderIndex />, layout: 'default' },
+    { path: '/inventory/purchase-receives', element: <InventoryPurchaseReceiveIndex />, layout: 'default' },
     {
         path: '*',
         element: <Error />,

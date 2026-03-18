@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { IconBell, IconStar, IconSpeakerphone } from '@tabler/icons-react';
+import { IconBell, IconStar, IconSpeakerphone, IconDotsVertical, IconEye, IconEyeOff, IconLoader2 } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -17,10 +17,15 @@ import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import SortableHeader from '../../../components/ui/SortableHeader';
 import { DateRangePicker } from '../../../components/ui/date-range-picker';
+import { Badge } from '../../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '../../../components/ui/popover';
+import StatsDialog from './StatsDialog';
+import { useFormatDate } from '@/hooks/useFormatDate';
 
 const AnnouncementIndex = () => {
     const navigate = useNavigate();
+    const { formatDate, formatTime } = useFormatDate();
 
     const [announcements, setAnnouncements] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,6 +41,9 @@ const AnnouncementIndex = () => {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isUpdatingStatus, setIsUpdatingStatus] = useState<number | null>(null);
+    const [statsModalOpen, setStatsModalOpen] = useState(false);
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
 
     const getCookie = (name: string) => {
         const value = `; ${document.cookie}`;
@@ -135,6 +143,33 @@ const AnnouncementIndex = () => {
         }
     };
 
+    const handleToggleStatus = async (id: number, currentStatus: boolean) => {
+        setIsUpdatingStatus(id);
+        try {
+            await fetch('/sanctum/csrf-cookie');
+            const res = await fetch(`/api/hr/announcements/${id}`, {
+                method: 'PUT',
+                headers: { 
+                    'Accept': 'application/json', 
+                    'Content-Type': 'application/json',
+                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' 
+                },
+                body: JSON.stringify({ is_published: !currentStatus }),
+                credentials: 'include',
+            });
+            if (res.ok) {
+                toast.success(`Announcement ${!currentStatus ? 'published' : 'hidden'}`);
+                fetchData();
+            } else {
+                toast.error('Failed to update status');
+            }
+        } catch {
+            toast.error('An error occurred');
+        } finally {
+            setIsUpdatingStatus(null);
+        }
+    };
+
     const hasActiveFilters = !!(statusFilter || typeFilter || dateRange?.from);
 
     const typeColors: Record<string, string> = {
@@ -148,6 +183,24 @@ const AnnouncementIndex = () => {
         draft:     'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600',
         published: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800',
         expired:   'bg-red-100 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800',
+        scheduled: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800',
+        off:       'bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700',
+    };
+
+    const getStatusInfo = (a: any) => {
+        if (a.status === 'draft') return { label: 'Draft', color: statusColors.draft };
+        if (!a.is_published) return { label: 'Off', color: statusColors.off };
+
+        const now = dayjs();
+        const start = a.start_date ? dayjs(a.start_date) : null;
+        const end = a.end_date ? dayjs(a.end_date) : null;
+        const pub = a.published_at ? dayjs(a.published_at) : null;
+
+        if (end && now.isAfter(end)) return { label: 'Expired', color: statusColors.expired };
+        if (pub && pub.isAfter(now)) return { label: 'Scheduled', color: statusColors.scheduled };
+        if (start && start.isAfter(now)) return { label: 'Scheduled', color: statusColors.scheduled };
+        
+        return { label: 'Live', color: statusColors.published };
     };
 
     return (
@@ -228,10 +281,9 @@ const AnnouncementIndex = () => {
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700">
                                 <tr>
                                     <SortableHeader label="Title"        value="title"        currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
-                                    <SortableHeader label="Type"         value="type"         currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
-                                    <SortableHeader label="Targeting"    value="targeting_type" currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
                                     <SortableHeader label="Status"       value="status"       currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
-                                    <th className="px-6 py-4">Views</th>
+                                    <SortableHeader label="Targeting"    value="targeting_type" currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
+                                    <th className="px-6 py-4">Engagement</th>
                                     <SortableHeader label="Published At" value="published_at" currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
                                     <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
@@ -240,40 +292,110 @@ const AnnouncementIndex = () => {
                                 {paginated.map(a => (
                                     <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                {a.is_featured && (
-                                                    <IconStar className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
-                                                )}
-                                                <span className="font-semibold text-gray-900 dark:text-white">{a.title}</span>
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    {a.is_featured && (
+                                                        <IconStar className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
+                                                    )}
+                                                    <span className="font-bold text-gray-900 dark:text-white leading-tight">{a.title}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-1.5">
+                                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase border ${typeColors[a.type] || ''}`}>
+                                                        {a.type}
+                                                    </span>
+                                                    {a.short_description && (
+                                                        <span className="text-[11px] text-gray-400 truncate max-w-[200px]">{a.short_description}</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            {a.short_description && (
-                                                <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[260px]">{a.short_description}</p>
-                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase border ${typeColors[a.type] || ''}`}>
-                                                {a.type}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 capitalize text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                                            {a.targeting_type === 'all' ? 'All Employees' : a.targeting_type}
+                                            <div className="flex items-center gap-2 group/status">
+                                                {(() => {
+                                                    const info = getStatusInfo(a);
+                                                    return (
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-[10px] font-black uppercase border leading-none ${info.color}`}>
+                                                                {info.label}
+                                                            </span>
+                                                            {info.label === 'Scheduled' && a.published_at && (
+                                                                <span className="text-[10px] text-gray-400 font-medium">
+                                                                    {formatDate(a.published_at)} {formatTime(a.published_at)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
+                                                
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <button 
+                                                            className={`p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-all opacity-0 group-hover/status:opacity-100 ${isUpdatingStatus === a.id ? 'opacity-100' : ''}`}
+                                                            disabled={isUpdatingStatus !== null}
+                                                        >
+                                                            {isUpdatingStatus === a.id ? (
+                                                                <IconLoader2 size={14} className="animate-spin text-primary" />
+                                                            ) : (
+                                                                <IconDotsVertical size={14} />
+                                                            )}
+                                                        </button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="p-1 bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 shadow-xl overflow-hidden">
+                                                        <div className="flex flex-col">
+                                                            <div className="px-2 py-1.5 border-b border-gray-50 dark:border-gray-800 mb-1">
+                                                                <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Visibility</span>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => handleToggleStatus(a.id, !!a.is_published)}
+                                                                className={`flex items-center gap-2 px-2 py-2 rounded-md transition-colors text-sm font-medium ${a.is_published ? 'text-gray-600 hover:bg-rose-50 hover:text-rose-600' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-600'}`}
+                                                            >
+                                                                {a.is_published ? (
+                                                                    <>
+                                                                        <IconEyeOff size={16} />
+                                                                        <span>Hide Announcement</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <IconEye size={16} />
+                                                                        <span>Live Now</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase border ${statusColors[a.status] || ''}`}>
-                                                {a.status}
-                                            </span>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 capitalize">{a.targeting_type === 'all' ? 'All Employees' : a.targeting_type}</span>
+                                                {a.target_ids && a.target_ids.length > 0 && (
+                                                    <span className="text-[10px] text-gray-400">{a.target_ids.length} selected</span>
+                                                )}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
-                                            {a.views_count ?? 0}
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-900 dark:text-white">{a.views_count ?? 0}</span>
+                                                    <span className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter">Unique Views</span>
+                                                </div>
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-500 whitespace-nowrap">
-                                            {a.published_at ? dayjs(a.published_at).format('MMM D, YYYY') : '—'}
+                                        <td className="px-6 py-4 text-gray-500 whitespace-nowrap font-medium">
+                                            {a.published_at ? (
+                                                <div className="flex flex-col">
+                                                    <span>{formatDate(a.published_at)}</span>
+                                                    <span className="text-[10px] text-gray-400">{formatTime(a.published_at)}</span>
+                                                </div>
+                                            ) : '—'}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <ActionButtons
                                                 skipDeleteConfirm
                                                 onEdit={() => navigate(`/hr/announcements/${a.id}/edit`)}
                                                 onDelete={() => confirmDelete(a.id)}
+                                                onStats={() => { setSelectedAnnouncement(a); setStatsModalOpen(true); }}
                                             />
                                         </td>
                                     </tr>
@@ -293,6 +415,13 @@ const AnnouncementIndex = () => {
                     />
                 )}
             </div>
+
+            <StatsDialog
+                open={statsModalOpen}
+                onOpenChange={setStatsModalOpen}
+                announcementId={selectedAnnouncement?.id}
+                announcementTitle={selectedAnnouncement?.title}
+            />
 
             <DeleteModal
                 isOpen={deleteModalOpen}

@@ -14,16 +14,19 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::post('/login', [App\Http\Controllers\Auth\LoginController::class, 'login']);
+Route::post('login', [App\Http\Controllers\Auth\LoginController::class, 'login']);
+Route::post('forgot-password', [App\Http\Controllers\Auth\PasswordResetController::class, 'sendResetLinkEmail']);
+Route::post('reset-password', [App\Http\Controllers\Auth\PasswordResetController::class, 'reset']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', function (Request $request) {
+    Route::get('user', function (Request $request) {
         return $request->user();
     });
     
     Route::post('/profile/update', [App\Http\Controllers\ProfileController::class, 'update']);
     Route::post('/profile/password', [App\Http\Controllers\ProfileController::class, 'updatePassword']);
     Route::post('/profile/email', [App\Http\Controllers\ProfileController::class, 'updateEmail']);
+    Route::put('/user/preferences', [App\Http\Controllers\ProfileController::class, 'updatePreferences']);
 
     Route::post('/email/verification-notification', function (Request $request) {
         $request->user()->sendEmailVerificationNotification();
@@ -81,6 +84,43 @@ Route::middleware('auth:sanctum')->group(function () {
         
         Route::get('employee-config', [App\Http\Controllers\Attendance\EmployeeConfigController::class, 'index']);
         Route::put('employee-config/{employee}', [App\Http\Controllers\Attendance\EmployeeConfigController::class, 'updateField']);
+        Route::get('branch-qr/{branch}', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'generateBranchQr']);
+        Route::get('employee-qr/{employee}', [App\Http\Controllers\Attendance\QrAttendanceController::class, 'generateEmployeeQr']);
+    });
+
+    Route::prefix('media')->group(function () {
+        Route::get('folders', [App\Http\Controllers\MediaFolderController::class, 'index']);
+        Route::post('folders', [App\Http\Controllers\MediaFolderController::class, 'store']);
+        Route::put('folders/{folder}', [App\Http\Controllers\MediaFolderController::class, 'update']);
+        Route::delete('folders/{folder}', [App\Http\Controllers\MediaFolderController::class, 'destroy']);
+
+        Route::get('files', [App\Http\Controllers\MediaFileController::class, 'index']);
+        Route::post('files/upload', [App\Http\Controllers\MediaFileController::class, 'upload']);
+        Route::put('files/{file}', [App\Http\Controllers\MediaFileController::class, 'update']);
+        Route::delete('files/{file}', [App\Http\Controllers\MediaFileController::class, 'destroy']);
+        Route::put('files/{file}/favorite', [App\Http\Controllers\MediaFileController::class, 'favorite']);
+        Route::get('storage-info', [App\Http\Controllers\MediaFileController::class, 'storageInfo']);
+    });
+
+    Route::prefix('settings')->group(function () {
+        Route::get('storage', [App\Http\Controllers\StorageSettingController::class, 'index']);
+        Route::put('storage/{provider}', [App\Http\Controllers\StorageSettingController::class, 'update']);
+    });
+
+    Route::prefix('inventory')->group(function () {
+        Route::apiResource('categories', \App\Http\Controllers\Inventory\CategoryController::class);
+        Route::apiResource('tags', \App\Http\Controllers\Inventory\TagController::class);
+        Route::apiResource('uoms', \App\Http\Controllers\Inventory\UomController::class);
+        Route::apiResource('locations', \App\Http\Controllers\Inventory\LocationController::class);
+        Route::apiResource('products', \App\Http\Controllers\Inventory\ProductController::class);
+        Route::apiResource('stocks', \App\Http\Controllers\Inventory\StockController::class)->except(['update', 'destroy', 'show']);
+        Route::put('stocks/{id}/adjust', [\App\Http\Controllers\Inventory\StockController::class, 'adjust']);
+
+        // Procurement
+        Route::apiResource('suppliers', \App\Http\Controllers\Inventory\SupplierController::class);
+        Route::apiResource('purchase-orders', \App\Http\Controllers\Inventory\PurchaseOrderController::class);
+        Route::apiResource('purchase-receives', \App\Http\Controllers\Inventory\PurchaseReceiveController::class)->except(['update']);
+        Route::get('purchase-orders/{id}/pending-items', [\App\Http\Controllers\Inventory\PurchaseReceiveController::class, 'getPendingItems']);
     });
 
 });

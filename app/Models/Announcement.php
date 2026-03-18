@@ -23,16 +23,20 @@ class Announcement extends Model
         'targeting_type',
         'target_ids',
         'published_at',
+        'is_published',
         'status',
         'created_by',
         'notifications_sent_at',
         'send_telegram',
     ];
+    
+    protected $appends = ['views_count'];
 
     protected $casts = [
         'attachments' => 'array',
         'target_ids' => 'array',
         'is_featured' => 'boolean',
+        'is_published' => 'boolean',
         'send_telegram' => 'boolean',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
@@ -52,10 +56,18 @@ class Announcement extends Model
 
     public function scopePublished($query)
     {
-        return $query->where('status', 'published')
+        return $query->where('is_published', true)
             ->where(function($q) {
                 $q->where('published_at', '<=', now())
                   ->orWhereNull('published_at');
+            })
+            ->where(function($q) {
+                $q->where('start_date', '<=', now())
+                  ->orWhereNull('start_date');
+            })
+            ->where(function($q) {
+                $q->where('end_date', '>=', now())
+                  ->orWhereNull('end_date');
             });
     }
 
@@ -64,7 +76,7 @@ class Announcement extends Model
         return $query->where('is_featured', true);
     }
 
-    public function getViewCountAttribute(): int
+    public function getViewsCountAttribute(): int
     {
         return $this->views()->count();
     }

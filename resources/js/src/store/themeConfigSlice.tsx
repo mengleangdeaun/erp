@@ -40,12 +40,23 @@ const initialState = {
         { code: 'en', name: 'English' },
         { code: 'zh', name: 'Chinese' },
     ],
+    fontFamily: 'Google Sans',
+    dateFormat: 'DD MMM YYYY',
+    timeFormat: '12h',
+    cookieConsent: 'pending',
 };
 
 const themeConfigSlice = createSlice({
     name: 'auth',
     initialState: initialState,
     reducers: {
+        setUserPreferences(state, { payload }) {
+            if (payload) {
+                state.fontFamily = payload.font_family || state.fontFamily;
+                state.dateFormat = payload.date_format || state.dateFormat;
+                state.timeFormat = payload.time_format || state.timeFormat;
+            }
+        },
         toggleTheme(state, { payload }) {
             payload = payload || state.theme; // light | dark | system
             localStorage.setItem('theme', payload);
@@ -111,11 +122,11 @@ const themeConfigSlice = createSlice({
         },
 
         setPageTitle(state, { payload }) {
-            document.title = `${payload} | VRISTO - Multipurpose Tailwind Dashboard Template`;
+            document.title = `${payload} | S-Cool`;
         },
     },
 });
 
-export const { toggleTheme, toggleMenu, toggleLayout, toggleRTL, toggleAnimation, toggleNavbar, toggleSemidark, toggleLocale, toggleSidebar, setPageTitle } = themeConfigSlice.actions;
+export const { setUserPreferences, toggleTheme, toggleMenu, toggleLayout, toggleRTL, toggleAnimation, toggleNavbar, toggleSemidark, toggleLocale, toggleSidebar, setPageTitle } = themeConfigSlice.actions;
 
 export default themeConfigSlice.reducer;

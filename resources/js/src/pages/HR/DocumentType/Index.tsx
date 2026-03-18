@@ -15,6 +15,7 @@ import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
+import { Badge } from '../../../components/ui/badge';
 
 const DocumentTypeIndex = () => {
     const [documentTypes, setDocumentTypes] = useState<any[]>([]);
@@ -301,14 +302,19 @@ const DocumentTypeIndex = () => {
                                     <td className="whitespace-nowrap font-medium">{type.name}</td>
                                     <td className="max-w-xs truncate">{type.description}</td>
                                     <td>
-                                        <span className={`badge ${type.is_required ? 'bg-warning/20 text-warning' : 'bg-info/20 text-info'}`}>
+                                        <Badge 
+                                        size='sm'
+                                        variant={type.is_required ? 'warning' : 'secondary'}>
                                             {type.is_required ? 'Yes' : 'No'}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
-                                        <span className={`badge ${type.status === 'active' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                                        <Badge 
+                                        dot={true}
+                                        size='sm'
+                                        variant={type.status === 'active' ? 'success' : 'destructive'}>
                                             {type.status}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
                                         <ActionButtons skipDeleteConfirm={true}

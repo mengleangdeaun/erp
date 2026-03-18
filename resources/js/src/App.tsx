@@ -23,7 +23,8 @@ function App({ children }: PropsWithChildren) {
     return (
         <div
             className={`${(store.getState().themeConfig.sidebar && 'toggle-sidebar') || ''} ${themeConfig.menu} ${themeConfig.layout} ${themeConfig.rtlClass
-                } main-section antialiased relative font-nunito text-sm font-normal`}
+                } main-section antialiased relative text-sm font-normal`}
+            style={{ fontFamily: themeConfig.fontFamily }}
         >
             {children}
             <Toaster richColors position="top-center" />

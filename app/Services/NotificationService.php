@@ -125,7 +125,7 @@ class NotificationService
     public static function recallAnnouncement(int $announcementId): void
     {
         Notification::where('type', 'announcement')
-            ->whereJsonContains('data->announcement_id', $announcementId)
+            ->where('data->announcement_id', $announcementId)
             ->delete();
     }
 }

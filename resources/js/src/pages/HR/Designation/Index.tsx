@@ -14,6 +14,7 @@ import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import SearchableMultiSelect from '../../../components/ui/SearchableMultiSelect';
+import { Badge } from '../../../components/ui/badge';
 import { IconBadge } from '@tabler/icons-react';
 
 const DesignationIndex = () => {
@@ -348,9 +349,12 @@ const DesignationIndex = () => {
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={`badge ${desig.status === 'active' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                                        <Badge 
+                                        dot={true}
+                                        size='sm'
+                                        variant={desig.status === 'active' ? 'success' : 'destructive'}>
                                             {desig.status}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
                                         <ActionButtons skipDeleteConfirm={true}

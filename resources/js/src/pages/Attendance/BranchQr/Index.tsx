@@ -518,10 +518,10 @@ export default function BranchQrSetup() {
               type="submit"
               form="gps-form"
               onClick={handleSaveConfig}
-              disabled={saving}
+              isLoading={saving}
               className="px-6 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
             >
-              {saving ? 'Saving...' : 'Save Configuration'}
+              Save Configuration
             </Button>
           </div>
         </DialogContent>
@@ -546,14 +546,54 @@ export default function BranchQrSetup() {
           </div>
 
           <ScrollArea className="max-h-[80vh]">
-            {qrLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="animate-pulse text-center">
-                  <IconQrcode className="w-12 h-12 text-primary/50 mx-auto mb-3" />
-                  <p className="text-gray-500">Generating secure payload...</p>
-                </div>
-              </div>
-            ) : qrData ? (
+{qrLoading ? (
+  <div className="flex items-center justify-center py-16">
+    <div className="flex flex-col items-center gap-4">
+      {/* QR grid building up */}
+      <div className="relative w-36 h-36">
+        {/* Corner markers (static — these are always "known") */}
+        <div className="absolute top-0 left-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
+        <div className="absolute top-0 left-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
+
+        <div className="absolute top-0 right-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
+        <div className="absolute top-0 right-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
+
+        <div className="absolute bottom-0 left-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
+        <div className="absolute bottom-0 left-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
+
+        {/* Data cells appearing randomly */}
+        <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 gap-0.5 p-1">
+          {Array.from({ length: 36 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-[2px] bg-primary animate-[appear_0.3s_ease-out_forwards] opacity-0"
+              style={{
+                animationDelay: `${Math.floor(Math.random() * 900)}ms`,
+                animationIterationCount: "infinite",
+                animationDuration: `${900 + (i * 37) % 600}ms`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="text-center space-y-1">
+        <p className="text-sm font-medium text-foreground">Generating secure payload</p>
+        <p className="text-xs text-muted-foreground">
+          Building your QR code
+          {["·", "·", "·"].map((dot, i) => (
+            <span
+              key={i}
+              className="inline-block animate-bounce ml-0.5"
+              style={{ animationDelay: `${i * 150}ms` }}
+            >
+              {dot}
+            </span>
+          ))}
+        </p>
+      </div>
+    </div>
+  </div>    ) : qrData ? (
               <div className="p-6 space-y-6">
                 {/* QR Code Card */}
                 <div className="flex justify-center">

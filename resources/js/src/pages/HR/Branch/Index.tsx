@@ -12,6 +12,7 @@ import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
+import { Badge } from '../../../components/ui/badge';
 import { IconBuilding } from '@tabler/icons-react';
 
 const BranchIndex = () => {
@@ -305,9 +306,12 @@ const BranchIndex = () => {
                                     <td>{branch.code}</td>
                                     <td>{branch.city}</td>
                                     <td>
-                                        <span className={`badge ${branch.status === 'active' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                                        <Badge 
+                                        dot={true}
+                                        size='sm'
+                                        variant={branch.status === 'active' ? 'success' : 'destructive'}>
                                             {branch.status}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
                                         <ActionButtons skipDeleteConfirm={true}

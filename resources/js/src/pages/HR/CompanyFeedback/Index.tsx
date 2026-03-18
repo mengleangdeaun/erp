@@ -6,6 +6,7 @@ import EmptyState from '../../../components/ui/EmptyState';
 import Pagination from '../../../components/ui/Pagination';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
+import { Badge } from '../../../components/ui/badge';
 import { IconMessageHeart, IconMessageChatbot  } from '@tabler/icons-react';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -159,10 +160,11 @@ const CompanyFeedbackIndex = () => {
                                             {new Date(item.created_at).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${item.type === 'positive' ? 'bg-green-100 dark:bg-green-900/20 border border-green-500 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/20 border border-red-500 text-red-700 dark:text-red-400'
-                                                }`}>
+                                            <Badge 
+                                            size='sm'
+                                            variant={item.type === 'positive' ? 'success' : 'destructive'}>
                                                 {item.type}
-                                            </span>
+                                            </Badge>
                                         </td>
                                         <td className="px-6 py-4 text-gray-700 dark:text-gray-300 max-w-md">
                                             <div className="line-clamp-3" title={item.message}>

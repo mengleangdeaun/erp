@@ -51,6 +51,7 @@ class Employee extends Model
         'account_number',
         'tax_payer_id',
         'base_salary',
+        'preferences',
     ];
 
     protected $hidden = [
@@ -61,6 +62,7 @@ class Employee extends Model
         'date_of_birth'  => 'date',
         'date_of_joining' => 'date',
         'base_salary'    => 'decimal:2',
+        'preferences'    => 'array',
     ];
 
     public function branch()

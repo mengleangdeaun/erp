@@ -11,6 +11,7 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import QRCode from 'react-qr-code';
 import { IconUser } from '@tabler/icons-react';
+import { Badge } from '../../../components/ui/badge';
 
 const getCookie = (name: string) => {
     const value = `; ${document.cookie}`;
@@ -120,12 +121,6 @@ const EmployeeIndex = () => {
         }
     };
 
-    const statusColor: Record<string, string> = {
-        active: 'bg-success',
-        inactive: 'bg-danger',
-        on_leave: 'bg-warning',
-        terminated: 'bg-dark',
-    };
 
     // Derived state for table
     const filteredAndSortedEmployees = useMemo(() => {
@@ -263,9 +258,12 @@ const EmployeeIndex = () => {
                                     <td>{emp.department?.name || '—'}</td>
                                     <td>{emp.designation?.name || '—'}</td>
                                     <td>
-                                        <span className={`badge ${statusColor[emp.status] || 'bg-secondary'}`}>
+                                        <Badge 
+                                        size='sm'
+                                        dot={true}
+                                        variant={emp.status === 'active' ? 'success' : 'destructive'}>
                                             {emp.status?.replace('_', ' ')}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
                                         <ActionButtons skipDeleteConfirm={true}

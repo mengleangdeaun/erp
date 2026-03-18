@@ -13,6 +13,7 @@ import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import SearchableMultiSelect from '../../../components/ui/SearchableMultiSelect';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { Badge } from '../../../components/ui/badge';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { IconHierarchy } from '@tabler/icons-react';
@@ -41,9 +42,11 @@ const DepartmentIndex = () => {
         branch_ids: [] as string[],
         description: '',
         status: 'active',
+        telegram_chat_id: '',
+        telegram_topic_id: '',
     };
 
-    const [formData, setFormData] = useState<{ name: string, branch_ids: string[], description: string, status: string }>(initialFormState);
+    const [formData, setFormData] = useState<{ name: string, branch_ids: string[], description: string, status: string, telegram_chat_id: string, telegram_topic_id: string }>(initialFormState);
 
     // Helper to get cookie
     const getCookie = (name: string) => {
@@ -121,6 +124,8 @@ const DepartmentIndex = () => {
             branch_ids: dept.branches ? dept.branches.map((b: any) => String(b.id)) : [],
             description: dept.description || '',
             status: dept.status,
+            telegram_chat_id: dept.telegram_chat_id || '',
+            telegram_topic_id: dept.telegram_topic_id || '',
         });
         setModalOpen(true);
     };
@@ -320,9 +325,12 @@ const DepartmentIndex = () => {
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={`badge ${dept.status === 'active' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                                        <Badge 
+                                        dot={true}
+                                        size='sm'
+                                        variant={dept.status === 'active' ? 'success' : 'destructive'}>
                                             {dept.status}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
                                         <ActionButtons skipDeleteConfirm={true}
@@ -423,6 +431,41 @@ const DepartmentIndex = () => {
               rows={4}
               className="bg-gray-50 dark:bg-gray-800/50 resize-none"
             />
+          </div>
+        </div>
+
+        {/* Telegram Notifications */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+            Telegram Notifications
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Telegram Chat ID <span className="text-gray-400 text-xs">(Optional)</span>
+              </label>
+              <Input
+                id="telegram_chat_id"
+                name="telegram_chat_id"
+                type="text"
+                value={formData.telegram_chat_id}
+                onChange={handleChange}
+                placeholder="e.g. -100123456789"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Telegram Topic ID <span className="text-gray-400 text-xs">(Optional)</span>
+              </label>
+              <Input
+                id="telegram_topic_id"
+                name="telegram_topic_id"
+                type="text"
+                value={formData.telegram_topic_id}
+                onChange={handleChange}
+                placeholder="e.g. 123"
+              />
+            </div>
           </div>
         </div>
 

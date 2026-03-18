@@ -14,6 +14,7 @@ import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
+import { Badge } from '../../../components/ui/badge';
 
 const AwardTypeIndex = () => {
     const [awardTypes, setAwardTypes] = useState<any[]>([]);
@@ -234,9 +235,11 @@ const AwardTypeIndex = () => {
                                     <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                         <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{item.name}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${item.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                                {item.status === 'active' ? 'Active' : 'Inactive'}
-                                            </span>
+                                            <Badge 
+                                            size='sm'
+                                            variant={item.status === 'active' ? 'success' : 'destructive'}>
+                                                {item.status}
+                                            </Badge>
                                         </td>
                                         <td className="px-6 py-4 text-gray-500 max-w-xs truncate">{item.description || '-'}</td>
                                         <td className="px-6 py-4">

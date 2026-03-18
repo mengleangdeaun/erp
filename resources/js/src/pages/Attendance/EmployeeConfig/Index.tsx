@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
 import { Label } from '../../../components/ui/label';
+import { ScrollArea } from '../../../components/ui/scroll-area';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import {
     IconCalendarStats,
@@ -24,7 +25,8 @@ import {
     IconDownload,
     IconFileTypePdf,
     IconCheck,
-    IconUserCog
+    IconUserCog,
+    IconAlertTriangle,
 
 } from '@tabler/icons-react';
 import QRCode from 'react-qr-code';
@@ -573,71 +575,160 @@ const EmployeeConfigIndex = () => {
             </Dialog>
 
             {/* QR Modal */}
-            <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <IconQrcode className="text-indigo-600" /> Employee Login QR
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="flex flex-col items-center justify-center p-8 space-y-6">
-                        {loadingQr && (
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-                                <div className="text-sm font-medium animate-pulse">Generating Secure Login Token...</div>
+<Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
+    <DialogContent className="sm:max-w-[600px] p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4 print:hidden">
+            <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+                <IconQrcode className="text-primary w-6 h-6" />
+            </div>
+            <div>
+                <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+                    Employee Login QR
+                </DialogTitle>
+                <p className="text-sm text-gray-500 mt-1">
+                    Scan this code with the mobile app to log in securely.
+                </p>
+            </div>
+        </div>
+
+        <ScrollArea className="max-h-[80vh]">
+            {loadingQr ? (
+                <div className="flex items-center justify-center py-16">
+                    <div className="flex flex-col items-center gap-4">
+                        {/* QR grid building animation */}
+                        <div className="relative w-36 h-36">
+                            {/* Corner markers */}
+                            <div className="absolute top-0 left-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
+                            <div className="absolute top-0 left-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
+
+                            <div className="absolute top-0 right-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
+                            <div className="absolute top-0 right-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
+
+                            <div className="absolute bottom-0 left-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
+                            <div className="absolute bottom-0 left-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
+
+                            {/* Data cells appearing */}
+                            <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 gap-0.5 p-1">
+                                {Array.from({ length: 36 }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="rounded-[2px] bg-primary animate-[appear_0.3s_ease-out_forwards] opacity-0"
+                                        style={{
+                                            animationDelay: `${Math.floor(Math.random() * 900)}ms`,
+                                            animationIterationCount: "infinite",
+                                            animationDuration: `${900 + (i * 37) % 600}ms`,
+                                        }}
+                                    />
+                                ))}
                             </div>
-                        )}
-                        {qrData && !loadingQr && (
-                            <>
-                                <div className="text-center">
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">{qrData.employee}</h3>
-                                    <p className="text-sm text-gray-500 mt-1">Scan this QR to login to the App</p>
-                                </div>
-                                <div className="bg-white p-6 rounded-2xl border-2 border-primary/20 shadow-lg relative overflow-hidden" ref={qrRef}>
-                                    <QRCode value={qrData.url} size={220} level="H" />
-                                </div>
+                        </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="gap-2"
-                                        onClick={handleCopyLink}
-                                        disabled={isCopying}
+                        <div className="text-center space-y-1">
+                            <p className="text-sm font-medium text-foreground">Generating secure payload</p>
+                            <p className="text-xs text-muted-foreground">
+                                Building your QR code
+                                {["·", "·", "·"].map((dot, i) => (
+                                    <span
+                                        key={i}
+                                        className="inline-block animate-bounce ml-0.5"
+                                        style={{ animationDelay: `${i * 150}ms` }}
                                     >
-                                        {isCopying ? <IconCheck size={16} className="text-success" /> : <IconCopy size={16} />}
-                                        {isCopying ? 'Copied' : 'Copy Link'}
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="gap-2"
-                                        onClick={handleDownloadPng}
-                                        isLoading={isDownloadingPng}
-                                    >
-                                        <IconDownload size={16} /> PNG (HD)
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="gap-2"
-                                        onClick={handleDownloadPdf}
-                                        isLoading={isDownloadingPdf}
-                                    >
-                                        <IconFileTypePdf size={16} /> PDF
-                                    </Button>
-                                </div>
-
-                                <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-100 dark:border-amber-800 rounded-xl">
-                                    <p className="text-[11px] text-amber-700 dark:text-amber-300 text-center leading-relaxed font-medium">
-                                        SECURITY WARNING: This QR code contains sensitive session credentials. Do not share or leave it unattended.
-                                    </p>
-                                </div>
-                            </>
-                        )}
+                                        {dot}
+                                    </span>
+                                ))}
+                            </p>
+                        </div>
                     </div>
-                </DialogContent>
-            </Dialog>
+                </div>
+            ) : qrData ? (
+                <div className="p-6 space-y-6">
+                    {/* Employee Name */}
+                    <div className="text-center">
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            {qrData.employee}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">Scan to log in to the mobile app</p>
+                    </div>
+
+                    {/* QR Code Card */}
+                    <div className="flex justify-center">
+                        <div className="bg-white p-4 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 inline-block">
+                            <QRCode value={qrData.url} size={220} level="H" />
+                        </div>
+                    </div>
+
+                    {/* URL Field with Copy (optional, but nice) */}
+                    <div className="space-y-2">
+                        <Label htmlFor="qr-url" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Login Link
+                        </Label>
+                        <div className="flex gap-2">
+                            <Input
+                                id="qr-url"
+                                value={qrData.url}
+                                readOnly
+                                className="bg-gray-50 dark:bg-gray-800 font-mono text-sm"
+                            />
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={handleCopyLink}
+                                className="shrink-0 h-10 w-10 border-gray-200 dark:border-gray-700"
+                                title="Copy link"
+                                disabled={isCopying}
+                            >
+                                {isCopying ? <IconCheck size={18} className="text-green-500" /> : <IconCopy size={18} />}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 border-gray-200 dark:border-gray-700"
+                            onClick={handleDownloadPng}
+                            disabled={isDownloadingPng}
+                        >
+                            <IconDownload size={16} />
+                            {isDownloadingPng ? 'Downloading...' : 'PNG (HD)'}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 border-gray-200 dark:border-gray-700"
+                            onClick={handleDownloadPdf}
+                            disabled={isDownloadingPdf}
+                        >
+                            <IconFileTypePdf size={16} />
+                            {isDownloadingPdf ? 'Downloading...' : 'PDF'}
+                        </Button>
+                        {/* The copy button is already above, but if you prefer a dedicated button, you can keep one here. We already have copy in the URL row, so we can use that. */}
+                    </div>
+
+                    {/* Security Warning */}
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
+                        <div className="flex gap-2 items-start">
+                            <IconAlertTriangle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                            <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed font-medium">
+                                SECURITY WARNING: This QR code contains sensitive session credentials. Do not share or leave it unattended.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+        </ScrollArea>
+
+        {/* Footer Actions */}
+        <div className="flex justify-end px-6 py-4 border-t border-gray-100 dark:border-gray-800 print:hidden">
+            <Button variant="ghost" onClick={() => setQrModalOpen(false)} className="h-9 px-4 rounded-lg">
+                Close
+            </Button>
+        </div>
+    </DialogContent>
+</Dialog>
         </div>
     );
 };

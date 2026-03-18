@@ -89,4 +89,21 @@ class ProfileController extends Controller
             'email_changed' => false,
         ]);
     }
+
+    public function updatePreferences(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'preferences' => ['required', 'array'],
+        ]);
+
+        $user->preferences = $request->preferences;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Preferences updated successfully.',
+            'preferences' => $user->preferences,
+        ]);
+    }
 }

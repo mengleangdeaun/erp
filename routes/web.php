@@ -14,4 +14,5 @@ use Illuminate\Support\Facades\Route;
 |
 */
 Route::get('/auth/login', [AppController::class, 'index'])->name('login');
+Route::get('/auth/reset-password', [AppController::class, 'index'])->name('password.reset');
 Route::get('/{any}', [AppController::class, 'index'])->where('any', '.*');
