@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../compo
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { ScrollArea } from '../../../components/ui/scroll-area';
 import { Checkbox } from '../../../components/ui/checkbox';
+import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
@@ -304,9 +305,11 @@ const LeaveTypeIndex = () => {
                                     <td className="whitespace-nowrap font-medium">{type.name}</td>
                                     <td>{type.max_per_year || '-'}</td>
                                     <td>
-                                        <span className={`badge ${type.is_paid ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
+                                        <Badge 
+                                          size='sm'
+                                          variant={type.is_paid ? 'success' : 'warning'}>
                                             {type.is_paid ? 'Paid' : 'Unpaid'}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
                                         <div className="flex items-center gap-2">
@@ -315,9 +318,11 @@ const LeaveTypeIndex = () => {
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={`badge ${type.status ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                                        <Badge 
+                                          size='sm'
+                                          variant={type.status ? 'success' : 'destructive'}>
                                             {type.status ? 'Active' : 'Inactive'}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
                                         <ActionButtons

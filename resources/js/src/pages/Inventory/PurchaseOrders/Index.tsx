@@ -7,7 +7,7 @@ import { Textarea } from '../../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { ScrollArea } from '../../../components/ui/scroll-area';
 import { toast } from 'sonner';
-import { PlusCircle, Pencil, Trash2, ShoppingCart, Plus, X, Calendar as IconCalendarIcon } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, ShoppingCart, Plus, X, Calendar as IconCalendarIcon, PackageCheck } from 'lucide-react';
 import { IconShoppingCart, IconCalendar, IconClock } from '@tabler/icons-react';
 
 // Custom components (adjust paths as needed)
@@ -22,6 +22,7 @@ import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { DatePicker } from '../../../components/ui/date-picker';
 import { TimePicker } from '../../../components/ui/time-picker';
 import { format } from 'date-fns';
+import { useFormatDate } from '@/hooks/useFormatDate';
 
 interface Supplier { id: number; name: string; }
 interface Product { id: number; code: string; name: string; }
@@ -60,9 +61,11 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
     });
 
 export default function PurchaseOrdersPage() {
+    const { formatDate } = useFormatDate();
     const [orders, setOrders] = useState<PO[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [locations, setLocations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Filter, sort, pagination state
@@ -90,13 +93,27 @@ export default function PurchaseOrdersPage() {
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Good Receive modal state
+    const [receiveModalOpen, setReceiveModalOpen] = useState(false);
+    const [receivingPo, setReceivingPo] = useState<PO | null>(null);
+    const [pendingItems, setPendingItems] = useState<any[]>([]);
+    const [loadingPending, setLoadingPending] = useState(false);
+    const [receiving, setReceiving] = useState(false);
+    const [receiveFormData, setReceiveFormData] = useState({
+        location_id: '',
+        receive_date: new Date().toISOString().slice(0, 10),
+        reference_number: '',
+        receiving_note: '',
+    });
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [ordersRes, suppliersRes, productsRes] = await Promise.all([
+            const [ordersRes, suppliersRes, productsRes, locationsRes] = await Promise.all([
                 apiFetch('/api/inventory/purchase-orders'),
                 apiFetch('/api/inventory/suppliers'),
                 apiFetch('/api/inventory/products'),
+                apiFetch('/api/inventory/locations'),
             ]);
             if (ordersRes.status === 401) {
                 window.location.href = '/auth/login';
@@ -105,6 +122,7 @@ export default function PurchaseOrdersPage() {
             setOrders(await ordersRes.json());
             setSuppliers(await suppliersRes.json());
             setProducts(await productsRes.json());
+            setLocations(await locationsRes.json());
         } catch {
             toast.error('Failed to load data');
         } finally {
@@ -149,6 +167,31 @@ export default function PurchaseOrdersPage() {
             unit_cost: String(i.unit_cost),
         })));
         setModalOpen(true);
+    };
+
+    const openReceive = async (po: PO) => {
+        setReceivingPo(po);
+        setReceiveFormData({
+            location_id: '',
+            receive_date: new Date().toISOString().slice(0, 10),
+            reference_number: '',
+            receiving_note: '',
+        });
+        setReceiveModalOpen(true);
+        setLoadingPending(true);
+        try {
+            const res = await apiFetch(`/api/inventory/purchase-orders/${po.id}/pending-items`);
+            if (res.ok) {
+                const items = await res.json();
+                setPendingItems(items.map((i: any) => ({ ...i, qty_received: i.remaining_qty })));
+            } else {
+                toast.error('Failed to load pending items');
+            }
+        } catch {
+            toast.error('Failed to load pending items');
+        } finally {
+            setLoadingPending(false);
+        }
     };
 
     const confirmDelete = (id: number) => {
@@ -225,6 +268,50 @@ export default function PurchaseOrdersPage() {
             toast.error('An error occurred');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleReceiveSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!receiveFormData.location_id) {
+            toast.error('Please select a receiving location');
+            return;
+        }
+        
+        const itemsToReceive = pendingItems.filter(i => parseFloat(i.qty_received) > 0);
+        if (itemsToReceive.length === 0) {
+            toast.error('Please enter at least one quantity to receive');
+            return;
+        }
+
+        setReceiving(true);
+        await fetch('/sanctum/csrf-cookie');
+        const payload = {
+            purchase_order_id: receivingPo?.id,
+            location_id: parseInt(receiveFormData.location_id),
+            receive_date: receiveFormData.receive_date,
+            reference_number: receiveFormData.reference_number,
+            receiving_note: receiveFormData.receiving_note,
+            items: itemsToReceive.map(i => ({
+                purchase_order_item_id: i.id,
+                product_id: i.product.id,
+                qty_received: parseFloat(i.qty_received)
+            }))
+        };
+        try {
+            const res = await apiFetch('/api/inventory/purchase-receives', { method: 'POST', body: JSON.stringify(payload) });
+            if (res.ok) {
+                toast.success('Items received successfully');
+                setReceiveModalOpen(false);
+                fetchData();
+            } else {
+                const err = await res.json();
+                toast.error(err.message || 'Failed to receive items');
+            }
+        } catch {
+            toast.error('An error occurred');
+        } finally {
+            setReceiving(false);
         }
     };
 
@@ -380,12 +467,12 @@ export default function PurchaseOrdersPage() {
                                     <td className="font-mono font-semibold text-primary">{o.po_number}</td>
                                     <td className="text-gray-700 dark:text-gray-200">{o.supplier?.name}</td>
                                     <td className="text-gray-600 dark:text-gray-300">
-                                        {o.order_date ? new Date(o.order_date).toLocaleDateString() : '—'}
+                                        {formatDate(o.order_date)}
                                     </td>
                                     <td className="text-gray-600 dark:text-gray-300">
-                                        {o.expected_delivery_date ? new Date(o.expected_delivery_date).toLocaleDateString() : '—'}
+                                        {formatDate(o.expected_delivery_date)}
                                     </td>
-                                    <td className="text-right font-semibold">
+                                    <td className="text-left font-semibold">
                                         ${parseFloat(String(o.total_amount)).toFixed(2)}
                                     </td>
                                     <td>
@@ -394,23 +481,12 @@ export default function PurchaseOrdersPage() {
                                         </span>
                                     </td>
                                     <td className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            {!['Completed', 'Cancelled'].includes(o.status) && (
-                                                <Button size="sm" variant="ghost" onClick={() => openEdit(o)}>
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                            {o.status === 'Draft' && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    className="text-red-500 hover:text-red-600"
-                                                    onClick={() => confirmDelete(o.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
+                                        <ActionButtons
+                                            onReceive={['Ordered', 'Partial'].includes(o.status) ? () => openReceive(o) : undefined}
+                                            onEdit={!['Completed', 'Cancelled'].includes(o.status) ? () => openEdit(o) : undefined}
+                                            onDelete={o.status === 'Draft' ? () => confirmDelete(o.id) : undefined}
+                                            skipDeleteConfirm
+                                        />
                                     </td>
                                 </tr>
                             ))}
@@ -449,7 +525,7 @@ export default function PurchaseOrdersPage() {
         </div>
 
         {/* Two‑column form area */}
-        <div className="flex flex-col lg:flex-row gap-6 p-6">
+        <form id="po-form" onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6 p-6">
             {/* Left column – Order Details */}
             <div className="lg:w-80 space-y-4">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -469,7 +545,7 @@ export default function PurchaseOrdersPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <Label className="text-sm font-medium">
+                            <Label className="text-sm font-medium mb-0">
                                 Order Date <span className="text-red-500">*</span>
                             </Label>
                             <DatePicker
@@ -483,7 +559,7 @@ export default function PurchaseOrdersPage() {
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-sm font-medium">Time</Label>
+                            <Label className="text-sm font-medium mb-0">Time</Label>
                             <TimePicker
                                 value={formData.order_date ? formData.order_date.split('T')[1]?.slice(0, 5) : '00:00'}
                                 onChange={(time) => {
@@ -623,7 +699,7 @@ export default function PurchaseOrdersPage() {
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
 
         {/* Footer */}
         <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
@@ -651,6 +727,129 @@ export default function PurchaseOrdersPage() {
                 title="Delete Purchase Order"
                 message="Are you sure you want to delete this purchase order? This action cannot be undone."
             />
+
+            {/* Good Receive Modal */}
+            <Dialog open={receiveModalOpen} onOpenChange={setReceiveModalOpen}>
+                <DialogContent className="sm:max-w-4xl p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                    <div className="shrink-0 bg-gradient-to-r from-green-500/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+                        <div className="bg-green-500/20 p-3 rounded-2xl shadow-sm">
+                            <PackageCheck className="text-green-600 w-7 h-7" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+                                Receive Goods - {receivingPo?.po_number}
+                            </DialogTitle>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Record items received from this purchase order.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form id="receive-form" onSubmit={handleReceiveSubmit} className="flex flex-col gap-6 p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="space-y-1">
+                                <Label className="text-sm font-medium">
+                                    Location <span className="text-red-500">*</span>
+                                </Label>
+                                <SearchableSelect
+                                    options={locations.map(l => ({ value: String(l.id), label: l.name }))}
+                                    value={receiveFormData.location_id}
+                                    onChange={(val) => setReceiveFormData(p => ({ ...p, location_id: String(val) }))}
+                                    placeholder="Select location..."
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-sm font-medium">Receive Date <span className="text-red-500">*</span></Label>
+                                <DatePicker
+                                    value={receiveFormData.receive_date ? new Date(receiveFormData.receive_date) : undefined}
+                                    onChange={(date) => {
+                                        setReceiveFormData(p => ({ ...p, receive_date: date ? format(date, 'yyyy-MM-dd') : '' }));
+                                    }}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-sm font-medium">Reference Book</Label>
+                                <Input
+                                    value={receiveFormData.reference_number}
+                                    onChange={e => setReceiveFormData(p => ({ ...p, reference_number: e.target.value }))}
+                                    placeholder="e.g. Delivery Note"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-sm font-medium">Note</Label>
+                                <Input
+                                    value={receiveFormData.receiving_note}
+                                    onChange={e => setReceiveFormData(p => ({ ...p, receiving_note: e.target.value }))}
+                                    placeholder="Optional note"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border dark:border-gray-700 overflow-hidden">
+                            <div className="max-h-96 overflow-y-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left">Product</th>
+                                            <th className="px-3 py-2 text-center">Ordered</th>
+                                            <th className="px-3 py-2 text-center">Received</th>
+                                            <th className="px-3 py-2 text-center">Remaining</th>
+                                            <th className="px-3 py-2 text-center w-32">Qty to Receive</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y dark:divide-gray-700">
+                                        {loadingPending ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-3 py-6 text-center text-gray-500">Loading items...</td>
+                                            </tr>
+                                        ) : pendingItems.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-3 py-6 text-center text-gray-500">No pending items found.</td>
+                                            </tr>
+                                        ) : pendingItems.map((it, idx) => (
+                                            <tr key={it.id}>
+                                                <td className="px-3 py-2 font-medium">{it.product?.code} - {it.product?.name}</td>
+                                                <td className="px-3 py-2 text-center text-gray-600">{it.order_qty}</td>
+                                                <td className="px-3 py-2 text-center text-green-600">{it.received_qty}</td>
+                                                <td className="px-3 py-2 text-center text-orange-600 font-semibold">{it.remaining_qty}</td>
+                                                <td className="px-3 py-2">
+                                                    <Input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        max={it.remaining_qty > 0 ? it.remaining_qty : undefined}
+                                                        value={it.qty_received}
+                                                        onChange={e => {
+                                                            const val = e.target.value;
+                                                            setPendingItems(prev => prev.map((item, i) => i === idx ? { ...item, qty_received: val } : item));
+                                                        }}
+                                                        className="text-center"
+                                                        disabled={it.remaining_qty <= 0}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+                        <Button type="button" variant="ghost" onClick={() => setReceiveModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            form="receive-form"
+                            disabled={receiving || pendingItems.length === 0 || loadingPending}
+                            className="px-7 bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-600/20"
+                        >
+                            {receiving ? 'Receiving...' : 'Receive Goods'}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

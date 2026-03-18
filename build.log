@@ -1,0 +1,26 @@
+
+> build
+> tsc && vite build
+
+resources/js/src/components/ui/custom-quill-editor.tsx(338,24): error TS2540: Cannot assign to 'current' because it is a read-only property.
+resources/js/src/pages/HR/DocumentType/Index.tsx(409,72): error TS2322: Type 'string | boolean' is not assignable to type 'boolean'.
+  Type 'string' is not assignable to type 'boolean'.
+resources/js/src/pages/HR/LeaveAllocation/Index.tsx(663,78): error TS2322: Type 'string | boolean' is not assignable to type 'boolean'.
+resources/js/src/pages/HR/LeavePolicy/Index.tsx(566,31): error TS2345: Argument of type '(prev: { name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; status: boolean; }) => { ...; }' is not assignable to parameter of type 'SetStateAction<{ name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; status: boolean; }>'.
+  Type '(prev: { name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; status: boolean; }) => { ...; }' is not assignable to type '(prevState: { name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; status: boolean; }) => { ...; }'.
+    Call signature return types '{ require_approval: CheckedState; name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; status: boolean; }' and '{ name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; status: boolean; }' are incompatible.
+      The types of 'require_approval' are incompatible between these types.
+        Type 'string | boolean' is not assignable to type 'boolean'.
+resources/js/src/pages/HR/LeavePolicy/Index.tsx(579,31): error TS2345: Argument of type '(prev: { name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; status: boolean; }) => { ...; }' is not assignable to parameter of type 'SetStateAction<{ name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; status: boolean; }>'.
+  Type '(prev: { name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; status: boolean; }) => { ...; }' is not assignable to type '(prevState: { name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; status: boolean; }) => { ...; }'.
+    Call signature return types '{ status: CheckedState; name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; }' and '{ name: string; description: string; leave_type_id: string; accrual_type: string; accrual_rate: number; carry_forward_limit: number; min_days_per_app: number; max_days_per_app: number; require_approval: boolean; status: boolean; }' are incompatible.
+      The types of 'status' are incompatible between these types.
+        Type 'string | boolean' is not assignable to type 'boolean'.
+resources/js/src/pages/HR/LeaveType/Index.tsx(457,72): error TS2322: Type 'string | boolean' is not assignable to type 'boolean'.
+resources/js/src/pages/HR/LeaveType/Index.tsx(475,72): error TS2322: Type 'string | boolean' is not assignable to type 'boolean'.
+resources/js/src/pages/Inventory/Stocks/Index.tsx(164,223): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+  Type 'number' is not assignable to type 'string'.
+resources/js/src/pages/Inventory/Stocks/Index.tsx(167,208): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'string'.
+  Type 'number' is not assignable to type 'string'.
+resources/js/src/pages/Inventory/Suppliers/Index.tsx(458,57): error TS2339: Property 'attachment_file' does not exist on type '{ name: string; contact_person: string; phone: string; email: string; address: string; note: string; is_active: boolean; }'.
+resources/js/src/pages/Inventory/Suppliers/Index.tsx(460,69): error TS2339: Property 'attachment_file' does not exist on type '{ name: string; contact_person: string; phone: string; email: string; address: string; note: string; is_active: boolean; }'.

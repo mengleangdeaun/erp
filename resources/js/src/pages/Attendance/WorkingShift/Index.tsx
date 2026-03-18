@@ -7,6 +7,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { Checkbox } from '../../../components/ui/checkbox';
+import { Badge } from '../../../components/ui/badge';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -260,9 +261,11 @@ const WorkingShiftIndex = () => {
                                         <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{shift.name}</td>
                                         <td className="px-6 py-4">{renderScheduleSummary(shift.working_days)}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${shift.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                            <Badge 
+                                              size='sm'
+                                              variant={shift.status === 'active' ? 'success' : 'destructive'}>
                                                 {shift.status === 'active' ? 'Active' : 'Inactive'}
-                                            </span>
+                                            </Badge>
                                         </td>
                                         <td className="px-6 py-4 text-gray-500 max-w-xs truncate">{shift.description || '-'}</td>
                                         <td className="px-6 py-4">

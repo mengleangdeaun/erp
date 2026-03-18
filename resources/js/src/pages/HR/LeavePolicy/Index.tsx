@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Button } from '../../../components/ui/button';
+import { Badge } from '../../../components/ui/badge';
 import { Label } from '../../../components/ui/label';
 import { ScrollArea } from '../../../components/ui/scroll-area';   
 import { Checkbox } from '../../../components/ui/checkbox';
@@ -349,9 +350,11 @@ const LeavePolicyIndex = () => {
                                     <td>{parseFloat(policy.accrual_rate)} days</td>
                                     <td>{policy.max_days_per_app > 0 ? `${policy.max_days_per_app} max` : 'No Limit'}</td>
                                     <td>
-                                        <span className={`badge ${policy.status ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                                        <Badge 
+                                          size='sm'
+                                          variant={policy.status ? 'success' : 'destructive'}>
                                             {policy.status ? 'Active' : 'Inactive'}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
                                         <ActionButtons

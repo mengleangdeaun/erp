@@ -21,12 +21,13 @@ import {
     IconLockOpen,
     IconUser,
     IconBrandTelegram,
-    IconChartBar
+    IconChartBar,
+    IconBox
 } from '@tabler/icons-react';
 import * as Popover from '@radix-ui/react-popover';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
-export type ActionType = 'edit' | 'delete' | 'view' | 'qr' | 'approve' | 'reject' | 'status' | 'telegram' | 'stats';
+export type ActionType = 'edit' | 'delete' | 'view' | 'qr' | 'approve' | 'reject' | 'status' | 'telegram' | 'stats' | 'receive';
 
 interface ActionConfig {
     icon: React.ElementType;
@@ -46,6 +47,7 @@ interface ActionButtonsProps {
     onStatus?: () => void;
     onTelegram?: () => void;
     onStats?: () => void;
+    onReceive?: () => void;
 
     // Custom labels
     editLabel?: string;
@@ -57,6 +59,7 @@ interface ActionButtonsProps {
     statusLabel?: string;
     telegramLabel?: string;
     statsLabel?: string;
+    receiveLabel?: string;
 
     // Confirmation messages
     deleteConfirmMessage?: string;
@@ -95,6 +98,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     onStatus,
     onTelegram,
     onStats,
+    onReceive,
 
     // Labels
     editLabel = "Edit",
@@ -106,6 +110,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     statusLabel = "Edit Staff Status",
     telegramLabel = "Edit Telegram ID",
     statsLabel = "View Statistics",
+    receiveLabel = "Receive Goods",
 
     // Confirm messages
     deleteConfirmMessage = "Are you sure you want to delete this item?",
@@ -123,7 +128,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     tooltipPlacement = 'top',
 
     // Customization
-    actionOrder = ['approve', 'reject', 'view', 'stats', 'qr', 'status', 'telegram', 'edit', 'delete'],
+    actionOrder = ['approve', 'reject', 'receive', 'view', 'stats', 'qr', 'status', 'telegram', 'edit', 'delete'],
     showApproveReject = true,
 
     skipDeleteConfirm = false,
@@ -188,6 +193,11 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
             icon: IconChartBar,
             label: statsLabel,
             style: 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/50'
+        },
+        receive: {
+            icon: IconBox,
+            label: receiveLabel,
+            style: 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/50'
         }
     };
 
@@ -343,6 +353,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
             status: onStatus,
             telegram: onTelegram,
             stats: onStats,
+            receive: onReceive,
             edit: onEdit,
             delete: onDelete
         };
@@ -375,6 +386,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                                 status: onStatus,
                                 telegram: onTelegram,
                                 stats: onStats,
+                                receive: onReceive,
                                 edit: onEdit,
                                 delete: onDelete
                             }[type]}
@@ -458,6 +470,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                                         status: onStatus,
                                         telegram: onTelegram,
                                         stats: onStats,
+                                        receive: onReceive,
                                         edit: onEdit,
                                         delete: onDelete
                                     }[type];
@@ -521,6 +534,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                             status: onStatus,
                             telegram: onTelegram,
                             stats: onStats,
+                            receive: onReceive,
                             edit: onEdit,
                             delete: onDelete
                         }[type]}

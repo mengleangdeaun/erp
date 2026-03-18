@@ -7,6 +7,7 @@ import { Textarea } from '../../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { toast } from 'sonner';
 import { PlusCircle, Search, PackageCheck, CheckCircle2 } from 'lucide-react';
+import { useFormatDate } from '../../../hooks/useFormatDate';
 
 interface Location { id: number; name: string; }
 interface PO { id: number; po_number: string; supplier: { name: string }; status: string; }
@@ -46,6 +47,7 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
     });
 
 export default function PurchaseReceivesPage() {
+    const { formatDateTime } = useFormatDate();
     const [receives, setReceives] = useState<PR[]>([]);
     const [pendingOrders, setPendingOrders] = useState<PO[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
@@ -193,7 +195,7 @@ export default function PurchaseReceivesPage() {
                             <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                 <td className="px-4 py-3 font-mono font-semibold text-primary">{r.purchaseOrder?.po_number}</td>
                                 <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{r.purchaseOrder?.supplier?.name}</td>
-                                <td className="px-4 py-3 text-gray-600">{r.receive_date ? new Date(r.receive_date).toLocaleString() : '—'}</td>
+                                <td className="px-4 py-3 text-gray-600">{formatDateTime(r.receive_date)}</td>
                                 <td className="px-4 py-3 text-gray-600">{r.location?.name}</td>
                                 <td className="px-4 py-3 text-gray-600">{r.reference_number || '—'}</td>
                                 <td className="px-4 py-3 text-gray-600">{r.items?.length || 0} products</td>

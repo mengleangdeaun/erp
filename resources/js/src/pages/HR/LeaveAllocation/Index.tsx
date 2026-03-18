@@ -7,6 +7,7 @@ import { ScrollArea } from '../../../components/ui/scroll-area';
 import { DatePicker } from '../../../components/ui/date-picker';
 import { Button } from '../../../components/ui/button';
 import { Checkbox } from '../../../components/ui/checkbox';
+import { Badge } from '../../../components/ui/badge';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -422,9 +423,11 @@ const LeaveAllocationIndex = () => {
                                     <td>{dayjs(allocation.effective_date).format('MMM DD, YYYY')}</td>
                                     <td>{allocation.approver?.full_name ? <span className="text-sm">{allocation.approver.full_name}</span> : <span className="text-gray-400 text-xs italic">N/A</span>}</td>
                                     <td>
-                                        <span className={`badge ${allocation.is_active ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                                        <Badge 
+                                          size='sm'
+                                          variant={allocation.is_active ? 'success' : 'destructive'}>
                                             {allocation.is_active ? 'Active' : 'Inactive'}
-                                        </span>
+                                        </Badge>
                                     </td>
                                     <td>
                                         <ActionButtons
