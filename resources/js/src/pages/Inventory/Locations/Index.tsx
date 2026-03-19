@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import { ScrollArea } from '../../../components/ui/scroll-area';
 import { Button } from '../../../components/ui/button';
+import { Badge } from '../../../components/ui/badge';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -155,7 +156,9 @@ const LocationIndex = () => {
                                 <tr key={row.id}>
                                     <td className="whitespace-nowrap font-medium">{row.name}</td>
                                     <td className="text-gray-500 max-w-xs truncate">{row.address || '-'}</td>
-                                    <td><span className={`badge ${row.is_active ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>{row.is_active ? 'Active' : 'Inactive'}</span></td>
+                                    <td><Badge 
+                                        size="sm"
+                                        variant={row.is_active ? 'success' : 'destructive'}>{row.is_active ? 'Active' : 'Inactive'}</Badge></td>
                                     <td><ActionButtons skipDeleteConfirm={true} onEdit={() => handleEdit(row)} onDelete={() => confirmDelete(row.id)} /></td>
                                 </tr>
                             ))}

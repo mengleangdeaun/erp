@@ -35,6 +35,7 @@ const LeaveBalanceIndex = lazy(() => import('../pages/HR/LeaveBalance/Index'));
 const AnnouncementIndex = lazy(() => import('../pages/HR/Announcement/Index'));
 const AnnouncementForm = lazy(() => import('../pages/HR/Announcement/Form'));
 const TelegramSettings = lazy(() => import('../pages/HR/Announcement/TelegramSettings'));
+const PrefixSuffixSettings = lazy(() => import('../pages/Settings/PrefixSuffix/Index'));
 
 const UserPreferences = lazy(() => import('../pages/Profile/UserPreferences'));
 
@@ -69,10 +70,27 @@ const InventoryLocationIndex = lazy(() => import('../pages/Inventory/Locations/I
 const InventoryCategoryIndex = lazy(() => import('../pages/Inventory/Categories/Index'));
 const InventoryProductIndex = lazy(() => import('../pages/Inventory/Products/Index'));
 const InventoryStockIndex = lazy(() => import('../pages/Inventory/Stocks/Index'));
+const InventoryStockMovementIndex = lazy(() => import('../pages/Inventory/StockMovements/Index'));
 // Procurement Module
 const InventorySupplierIndex = lazy(() => import('../pages/Inventory/Suppliers/Index'));
 const InventoryPurchaseOrderIndex = lazy(() => import('../pages/Inventory/PurchaseOrders/Index'));
 const InventoryPurchaseReceiveIndex = lazy(() => import('../pages/Inventory/PurchaseReceives/Index'));
+const InventoryStockAdjustmentIndex = lazy(() => import('../pages/Inventory/StockAdjustments/Index'));
+const InventoryStockAdjustmentForm = lazy(() => import('../pages/Inventory/StockAdjustments/Form'));
+const InventoryStockTransferIndex = lazy(() => import('../pages/Inventory/StockTransfers/Index'));
+const InventoryStockTransferForm = lazy(() => import('../pages/Inventory/StockTransfers/Form'));
+
+// CRM Module
+const CRM_CustomerTypeIndex = lazy(() => import('../pages/Customers/Types/Index'));
+const CRM_CustomerIndex = lazy(() => import('../pages/Customers/Index'));
+
+// Sale & Service Module
+const ServiceIndex = lazy(() => import('../pages/Services/Index'));
+const ServicePartIndex = lazy(() => import('../pages/Services/Parts/Index'));
+const VehicleBrandIndex = lazy(() => import('../pages/Services/Vehicles/Brands/Index'));
+const VehicleModelIndex = lazy(() => import('../pages/Services/Vehicles/Models/Index'));
+const SalesOrderIndex = lazy(() => import('../pages/Sales/Index'));
+const JobCardIndex = lazy(() => import('../pages/Services/JobCards/Index'));
 
 const routes = [
     // dashboard
@@ -235,6 +253,11 @@ const routes = [
         element: <TelegramSettings />,
         layout: 'default',
     },
+    {
+        path: '/settings/document-numbers',
+        element: <PrefixSuffixSettings />,
+        layout: 'default',
+    },
     // Employee App - Notifications
     {
         path: '/employee/notifications',
@@ -363,10 +386,28 @@ const routes = [
     { path: '/inventory/locations', element: <InventoryLocationIndex />, layout: 'default' },
     { path: '/inventory/products', element: <InventoryProductIndex />, layout: 'default' },
     { path: '/inventory/stocks', element: <InventoryStockIndex />, layout: 'default' },
+    { path: '/inventory/stock-movements', element: <InventoryStockMovementIndex />, layout: 'default' },
     // Procurement
     { path: '/inventory/suppliers', element: <InventorySupplierIndex />, layout: 'default' },
     { path: '/inventory/purchase-orders', element: <InventoryPurchaseOrderIndex />, layout: 'default' },
     { path: '/inventory/purchase-receives', element: <InventoryPurchaseReceiveIndex />, layout: 'default' },
+    { path: '/inventory/stock-adjustments', element: <InventoryStockAdjustmentIndex />, layout: 'default' },
+    { path: '/inventory/stock-adjustments/create', element: <InventoryStockAdjustmentForm />, layout: 'default' },
+    { path: '/inventory/stock-adjustments/:id/edit', element: <InventoryStockAdjustmentForm />, layout: 'default' },
+    { path: '/inventory/stock-transfers', element: <InventoryStockTransferIndex />, layout: 'default' },
+    { path: '/inventory/stock-transfers/create', element: <InventoryStockTransferForm />, layout: 'default' },
+    { path: '/inventory/stock-transfers/:id/edit', element: <InventoryStockTransferForm />, layout: 'default' },
+    // CRM
+    { path: '/crm/customer-types', element: <CRM_CustomerTypeIndex />, layout: 'default' },
+    { path: '/crm/customers', element: <CRM_CustomerIndex />, layout: 'default' },
+
+    // Sale & Service
+    { path: '/services/list', element: <ServiceIndex />, layout: 'default' },
+    { path: '/services/parts', element: <ServicePartIndex />, layout: 'default' },
+    { path: '/services/vehicles/brands', element: <VehicleBrandIndex />, layout: 'default' },
+    { path: '/services/vehicles/models', element: <VehicleModelIndex />, layout: 'default' },
+    { path: '/services/job-cards', element: <JobCardIndex />, layout: 'default' },
+    { path: '/sales/orders', element: <SalesOrderIndex />, layout: 'default' },
     {
         path: '*',
         element: <Error />,

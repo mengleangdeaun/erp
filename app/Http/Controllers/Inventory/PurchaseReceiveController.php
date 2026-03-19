@@ -7,11 +7,19 @@ use App\Models\Inventory\InventoryPurchaseReceive;
 use App\Models\Inventory\InventoryPurchaseReceiveItem;
 use App\Models\Inventory\InventoryPurchaseOrderItem;
 use App\Models\Inventory\InventoryStock;
+use App\Services\Inventory\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PurchaseReceiveController extends Controller
 {
+    protected $stockService;
+
+    public function __construct(StockService $stockService)
+    {
+        $this->stockService = $stockService;
+    }
+
     public function index()
     {
         $receives = InventoryPurchaseReceive::with([
@@ -57,14 +65,16 @@ class PurchaseReceiveController extends Controller
                 ]);
 
                 // ============================================================
-                // AUTO-INCREMENT STOCK in inventory_stocks at selected location
+                // UPDATE STOCK & LOG MOVEMENT
                 // ============================================================
-                $stock = InventoryStock::firstOrNew([
-                    'product_id'  => $item['product_id'],
-                    'location_id' => $validated['location_id'],
-                ]);
-                $stock->quantity = ($stock->quantity ?? 0) + $item['qty_received'];
-                $stock->save();
+                $this->stockService->updateStock(
+                    $item['product_id'],
+                    $validated['location_id'],
+                    $item['qty_received'],
+                    'PURCHASE_RECEIVE',
+                    $receive,
+                    $validated['receiving_note'] ?? "Received from PO #{$receive->purchaseOrder?->po_number}"
+                );
 
                 // Update received_qty on the PO Item
                 $poItem = InventoryPurchaseOrderItem::find($item['purchase_order_item_id']);

@@ -19,7 +19,7 @@ class PurchaseOrderController extends Controller
         return response()->json($orders);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\DocumentNumberService $documentNumberService)
     {
         $validated = $request->validate([
             'supplier_id'            => 'required|exists:inventory_suppliers,id',
@@ -33,11 +33,9 @@ class PurchaseOrderController extends Controller
             'items.*.unit_cost'      => 'required|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($validated, $request, &$order) {
+        DB::transaction(function () use ($validated, $request, $documentNumberService, &$order) {
             // Auto-generate PO number
-            $lastPo = InventoryPurchaseOrder::orderBy('id', 'desc')->first();
-            $nextNum = $lastPo ? ($lastPo->id + 1) : 1;
-            $poNumber = 'PO-' . date('Ymd') . '-' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+            $poNumber = $documentNumberService->generate('purchase_order');
 
             $totalAmount = 0;
             foreach ($validated['items'] as $item) {

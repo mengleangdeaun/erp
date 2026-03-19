@@ -105,6 +105,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('settings')->group(function () {
         Route::get('storage', [App\Http\Controllers\StorageSettingController::class, 'index']);
         Route::put('storage/{provider}', [App\Http\Controllers\StorageSettingController::class, 'update']);
+        Route::get('document-numbers', [App\Http\Controllers\Settings\DocumentSettingController::class, 'index']);
+        Route::put('document-numbers/{id}', [App\Http\Controllers\Settings\DocumentSettingController::class, 'update']);
     });
 
     Route::prefix('inventory')->group(function () {
@@ -121,6 +123,47 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('purchase-orders', \App\Http\Controllers\Inventory\PurchaseOrderController::class);
         Route::apiResource('purchase-receives', \App\Http\Controllers\Inventory\PurchaseReceiveController::class)->except(['update']);
         Route::get('purchase-orders/{id}/pending-items', [\App\Http\Controllers\Inventory\PurchaseReceiveController::class, 'getPendingItems']);
+        
+        // Stock Movements
+        Route::get('stock-movements', [\App\Http\Controllers\Inventory\StockMovementController::class, 'index']);
+        Route::get('stock-movements/{id}', [\App\Http\Controllers\Inventory\StockMovementController::class, 'show']);
+
+        // Stock Adjustments
+        Route::apiResource('stock-adjustments', \App\Http\Controllers\Inventory\StockAdjustmentController::class);
+        Route::post('stock-adjustments/{id}/approve', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'approve']);
+        Route::post('stock-adjustments/{id}/reject', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'reject']);
+        Route::post('stock-adjustments/{id}/complete', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'complete']);
+
+        // Stock Transfers
+        Route::post('stock-transfers/{id}/approve', [\App\Http\Controllers\Inventory\StockTransferController::class, 'approve']);
+        Route::post('stock-transfers/{id}/reject', [\App\Http\Controllers\Inventory\StockTransferController::class, 'reject']);
+        Route::apiResource('stock-transfers', \App\Http\Controllers\Inventory\StockTransferController::class);
+    });
+
+    Route::prefix('crm')->group(function () {
+        Route::get('customers/next-code', [\App\Http\Controllers\CustomerController::class, 'getNextCode']);
+        Route::apiResource('customer-types', \App\Http\Controllers\CustomerTypeController::class);
+        Route::apiResource('customers', \App\Http\Controllers\CustomerController::class);
+        Route::apiResource('customer-vehicles', \App\Http\Controllers\CustomerVehicleController::class);
+    });
+
+    Route::prefix('services')->group(function () {
+        Route::apiResource('list', \App\Http\Controllers\ServiceController::class);
+        Route::apiResource('parts', \App\Http\Controllers\JobPartController::class);
+        Route::apiResource('vehicle-brands', \App\Http\Controllers\VehicleBrandController::class);
+        Route::apiResource('vehicle-models', \App\Http\Controllers\VehicleModelController::class);
+        
+        // Job Cards
+        Route::get('job-cards', [\App\Http\Controllers\JobCardController::class, 'index']);
+        Route::get('job-cards/{id}', [\App\Http\Controllers\JobCardController::class, 'show']);
+        Route::put('job-cards/items/{itemId}', [\App\Http\Controllers\JobCardController::class, 'updateItem']);
+        Route::put('job-cards/material-usage/{usageId}', [\App\Http\Controllers\JobCardController::class, 'updateMaterialUsage']);
+        Route::post('job-cards/{id}/complete', [\App\Http\Controllers\JobCardController::class, 'complete']);
+    });
+
+    Route::prefix('sales')->group(function () {
+        Route::apiResource('orders', \App\Http\Controllers\SalesOrderController::class);
+        Route::post('orders/{id}/cancel', [\App\Http\Controllers\SalesOrderController::class, 'cancel']);
     });
 
 });

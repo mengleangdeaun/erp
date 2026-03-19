@@ -155,7 +155,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
             style: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/50'
         },
         reject: {
-            icon: IconXboxA,
+            icon: IconX,
             label: rejectLabel,
             style: 'text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/50'
         },

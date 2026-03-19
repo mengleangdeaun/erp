@@ -143,6 +143,8 @@
     "description": "Description",
     "is_required": "Required?",
     "actions": "Actions",
+    "settings": "Settings",
+    "document_numbers": "Document Numbers",
     "add_document_type": "Add Document Type",
     "edit_document_type": "Edit Document Type",
     "delete_document_type": "Delete Document Type",
@@ -152,5 +154,8 @@
     "document_type_already_exists": "Document type already exists",
     "document_type_not_found": "Document type not found",
     "document_type_in_use": "Document type is in use",
-    "document_type_in_use_cannot_be_deleted": "Document type is in use and cannot be deleted"
+    "document_type_in_use_cannot_be_deleted": "Document type is in use and cannot be deleted",
+    "crm": "CRM",
+    "customers": "Customers",
+    "customer_types": "Customer Types"
 }

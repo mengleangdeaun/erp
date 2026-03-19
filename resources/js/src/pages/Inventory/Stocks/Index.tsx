@@ -161,10 +161,10 @@ const StockIndex = () => {
                         <form id="stock-form" onSubmit={handleSubmit} className="p-6 space-y-6">
                             <div className="space-y-4">
                                 <div className="space-y-1"><label className="text-sm font-medium">Select Product Node <span className="text-red-500">*</span></label>
-                                    <SearchableSelect options={products.map((p: any) => ({ value: String(p.id), label: `${p.code} - ${p.name}` }))} value={String(formData.product_id)} onChange={(val) => handleSelectChange(val, 'product_id')} placeholder="Search Product DB..." />
+                                    <SearchableSelect options={products.map((p: any) => ({ value: String(p.id), label: `${p.code} - ${p.name}` }))} value={String(formData.product_id)} onChange={(val) => handleSelectChange(String(val), 'product_id')} placeholder="Search Product DB..." />
                                 </div>
                                 <div className="space-y-1"><label className="text-sm font-medium">Target Physical Grid Repository <span className="text-red-500">*</span></label>
-                                    <SearchableSelect options={locations.map((l: any) => ({ value: String(l.id), label: l.name }))} value={String(formData.location_id)} onChange={(val) => handleSelectChange(val, 'location_id')} placeholder="Select Logistics Warehouse..." />
+                                    <SearchableSelect options={locations.map((l: any) => ({ value: String(l.id), label: l.name }))} value={String(formData.location_id)} onChange={(val) => handleSelectChange(String(val), 'location_id')} placeholder="Select Logistics Warehouse..." />
                                 </div>
                                 <div className="space-y-1"><label className="text-sm font-medium text-emerald-600">Differential Quantity Modification (Negative drops stock) <span className="text-red-500">*</span></label>
                                     <Input name="quantity" type="number" step="0.01" value={formData.quantity} onChange={handleChange} required className="text-lg font-bold" />

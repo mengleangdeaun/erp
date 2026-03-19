@@ -253,20 +253,20 @@ export default function Login() {
                 </svg>
 
 {/* Bottom horizontal glow */}
-{/* <div
+<div
   className="absolute bottom-0 left-0 w-full h-64
   bg-gradient-to-t from-primary/25 via-primary/10 to-transparent
   pointer-events-none z-0 
   animate-[floatLineBottom_8s_ease-in-out_infinite]"
-></div> */}
+></div>
 
 {/* Top horizontal glow */}
-{/* <div
+<div
   className="absolute top-0 left-0 w-full h-64
   bg-gradient-to-b from-primary/25 via-primary/10 to-transparent
   pointer-events-none z-0 
   animate-[floatLineTop_10s_ease-in-out_infinite]"
-></div> */}
+></div>
 
 
       {/* Bottom horizontal glow */}

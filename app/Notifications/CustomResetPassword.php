@@ -42,7 +42,7 @@ class CustomResetPassword extends Notification implements ShouldQueue
         $url = rtrim(config('app.url'), '/') . '/auth/reset-password?token=' . $this->token . '&email=' . urlencode($this->email);
 
         return (new MailMessage)
-            ->subject(Lang::get('Reset Your S-COOL Password'))
+            ->subject(Lang::get('Reset Your Password'))
             ->view('emails.auth.reset_password', [
                 'url' => $url,
                 'email' => $this->email

@@ -133,6 +133,7 @@ export default function PurchaseOrdersPage() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+    
 
     // Reset page when search changes
     useEffect(() => {

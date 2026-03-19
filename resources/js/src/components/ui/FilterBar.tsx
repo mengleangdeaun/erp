@@ -13,6 +13,7 @@ interface FilterBarProps {
     // Search
     search: string;
     setSearch: (val: string) => void;
+    placeholder?: string;
 
     // Items Per Page
     itemsPerPage: number;
@@ -37,6 +38,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
     icon,
     search,
     setSearch,
+    placeholder = 'Search records...',
     itemsPerPage,
     setItemsPerPage,
     onAdd,
@@ -68,7 +70,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                 {/* Left Side: Icon with Background + Title + Description */}
                 <div className="w-full sm:w-auto flex items-start gap-3">
                     {icon && (
-                        <div className="bg-primary/20 p-3 rounded-xl shrink-0">
+                        <div className="bg-primary/10 p-3 rounded-xl shrink-0 border border-primary/20">
                             {icon}
                         </div>
                     )}
@@ -118,7 +120,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                     <div className="relative w-full sm:max-w-xs transition-all">
                         <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                         <Input
-                            placeholder="Search records..."
+                            placeholder={placeholder}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="pl-9 pr-9 h-10 w-full focus-visible:ring-primary shadow-sm"

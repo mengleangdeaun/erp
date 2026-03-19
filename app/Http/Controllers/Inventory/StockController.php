@@ -8,9 +8,27 @@ use Illuminate\Http\Request;
 
 class StockController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(InventoryStock::with(['product', 'location'])->get());
+        $query = InventoryStock::with(['product', 'location']);
+
+        if ($request->has('product_id')) {
+            $query->where('product_id', $request->product_id);
+        }
+
+        if ($request->has('location_id')) {
+            $query->where('location_id', $request->location_id);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->whereHas('product', function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        return response()->json($query->get());
     }
 
     public function store(Request $request)
