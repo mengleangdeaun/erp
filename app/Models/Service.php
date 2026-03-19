@@ -22,7 +22,7 @@ class Service extends Model
 
     public function category()
     {
-        return $this->belongsTo(\App\Models\Inventory\Category::class, 'category_id');
+        return $this->belongsTo(\App\Models\Inventory\InventoryCategory::class, 'category_id');
     }
 
     public function materials()

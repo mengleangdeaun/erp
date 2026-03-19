@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IconReceipt, IconPlus, IconTrash, IconCar, IconUser, IconPackage, IconTools, IconDeviceFloppy, IconLoader2, IconX, IconInfoCircle } from '@tabler/icons-react';
+import { IconReceipt, IconPlus, IconTrash, IconCar, IconUser, IconPackage, IconTools, IconDeviceFloppy, IconLoader2, IconX, IconInfoCircle, IconSearch } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { format } from 'date-fns';
@@ -110,7 +110,7 @@ const SalesOrderDialog = ({ isOpen, setIsOpen, order, onSave }: SalesOrderDialog
         setLoading(true);
         try {
             const [custRes, servRes, prodRes, branchRes, brandRes] = await Promise.all([
-                fetch('/api/crm/customers'),
+                fetch('/api/crm/customers?all=true'),
                 fetch('/api/services/list'),
                 fetch('/api/inventory/products'),
                 fetch('/api/hr/branches'), 
@@ -121,7 +121,7 @@ const SalesOrderDialog = ({ isOpen, setIsOpen, order, onSave }: SalesOrderDialog
                 custRes.json(), servRes.json(), prodRes.json(), branchRes.json(), brandRes.json()
             ]);
 
-            setCustomers(cust);
+            setCustomers(Array.isArray(cust) ? cust : (cust.data || []));
             setServices(serv);
             setProducts(prod);
             setBranches(bran);
@@ -155,9 +155,11 @@ const SalesOrderDialog = ({ isOpen, setIsOpen, order, onSave }: SalesOrderDialog
         let item: any;
         if (type === 'service') {
             const s = services.find(x => x.id === id);
-            item = { service_id: s.id, product_id: null, qty: 1, unit_price: parseFloat(s.price), discount: 0 };
+            if (!s) return;
+            item = { service_id: s.id, product_id: null, qty: 1, unit_price: parseFloat(s.base_price || 0), discount: 0 };
         } else {
             const p = products.find(x => x.id === id);
+            if (!p) return;
             item = { service_id: null, product_id: p.id, qty: 1, unit_price: parseFloat(p.price || 0), discount: 0 };
         }
         setForm(prev => ({ ...prev, items: [...prev.items, item] }));
@@ -175,7 +177,7 @@ const SalesOrderDialog = ({ isOpen, setIsOpen, order, onSave }: SalesOrderDialog
 
     // Calculate totals whenever items change
     useEffect(() => {
-        const subtotal = form.items.reduce((acc, item) => acc + (item.qty * item.unit_price), 0);
+        const subtotal = form.items.reduce((acc, item) => acc + ((item.qty || 0) * (item.unit_price || 0)), 0);
         const discount_total = form.items.reduce((acc, item) => acc + (parseFloat(item.discount as any) || 0), 0);
         const grand_total = subtotal - discount_total;
         setForm(prev => ({ ...prev, subtotal, discount_total, grand_total }));
@@ -286,34 +288,34 @@ const SalesOrderDialog = ({ isOpen, setIsOpen, order, onSave }: SalesOrderDialog
                 <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-0">
                     {/* Left Side: Order Builder */}
                     <div className="flex-1 flex flex-col bg-white dark:bg-gray-950 border-r dark:border-gray-800 overflow-hidden">
-                        <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
-                            {/* Customer & Vehicle Header */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1.5 p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:bg-white dark:hover:bg-gray-900">
-                                    <Label className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-1">
-                                        <IconUser size={12} className="text-primary" /> Active Customer
+                        <div className="p-8 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
+                            {/* Customer & Vehicle Selection */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2.5 p-5 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:ring-2 hover:ring-primary/10">
+                                    <Label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Active Customer
                                     </Label>
                                     <SearchableSelect 
-                                        options={customers.map(c => ({ value: c.id, label: `${c.name} (${c.customer_code})` }))}
+                                        options={customers.map(c => ({ value: c.id, label: `${c.name || 'No Name'} (${c.customer_code})` }))}
                                         value={form.customer_id}
                                         onChange={(val) => { setForm({ ...form, customer_id: val as number, vehicle_id: null }); }}
                                         placeholder="Search by Name/PIN..."
                                         disabled={!!order}
-                                        className="border-0 bg-transparent shadow-none focus:ring-0 p-0 text-lg font-bold"
+                                        className="border-0 bg-transparent shadow-none focus:ring-0 p-0 text-lg font-black text-gray-900 dark:text-white"
                                     />
                                 </div>
-                                <div className="space-y-1.5 p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:bg-white dark:hover:bg-gray-900">
+                                <div className="space-y-2.5 p-5 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:ring-2 hover:ring-primary/10">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-[10px] font-black uppercase text-gray-400 tracking-widest flex items-center gap-1">
-                                            <IconCar size={12} className="text-primary" /> Service Vehicle
+                                        <Label className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Service Vehicle
                                         </Label>
                                         {!order && form.customer_id && (
                                             <button 
                                                 type="button" 
-                                                className="text-[10px] font-bold text-primary hover:underline uppercase tracking-tighter"
+                                                className="text-[10px] font-black text-primary hover:text-primary/80 uppercase tracking-widest transition-colors"
                                                 onClick={() => setShowAddVehicle(true)}
                                             >
-                                                + New Car
+                                                + New Vehicle
                                             </button>
                                         )}
                                     </div>
@@ -323,72 +325,77 @@ const SalesOrderDialog = ({ isOpen, setIsOpen, order, onSave }: SalesOrderDialog
                                         onChange={(val) => setForm({ ...form, vehicle_id: val as number })}
                                         placeholder={form.customer_id ? "Select Vehicle..." : "Select Customer First"}
                                         disabled={!!order || !form.customer_id}
-                                        className="border-0 bg-transparent shadow-none focus:ring-0 p-0 text-lg font-bold"
+                                        className="border-0 bg-transparent shadow-none focus:ring-0 p-0 text-lg font-black text-gray-900 dark:text-white"
                                     />
                                 </div>
                             </div>
 
-                            {/* Order Items */}
-                            <div className="space-y-4 pt-4">
-                                <div className="flex items-center justify-between border-b dark:border-gray-800 pb-2">
-                                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-gray-400 flex items-center gap-2">
-                                        Order Composition
-                                        <Badge variant="secondary" className="rounded-full h-5 min-w-[20px] p-0 flex items-center justify-center text-[10px]">
+                            {/* Order Items Section */}
+                            <div className="space-y-5">
+                                <div className="flex items-center justify-between border-b dark:border-gray-800 pb-3">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-400 flex items-center gap-3">
+                                        Order Items
+                                        <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary border-0 px-2.5 py-0.5 text-[10px] font-bold">
                                             {form.items.length}
                                         </Badge>
                                     </h3>
                                 </div>
                                 
                                 {form.items.length === 0 ? (
-                                    <div className="py-12 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 dark:bg-gray-900/20 rounded-3xl border-2 border-dashed border-gray-100 dark:border-gray-800 italic">
-                                        <IconReceipt size={48} className="opacity-10 mb-4" />
-                                        <p className="text-sm font-medium tracking-tight">The order manifest is currently empty.</p>
-                                        <p className="text-[10px] uppercase font-bold tracking-widest mt-1">Add catalog items from the sidebar</p>
+                                    <div className="py-20 flex flex-col items-center justify-center text-gray-300 dark:text-gray-700 bg-gray-50/50 dark:bg-gray-900/20 rounded-[2.5rem] border-2 border-dashed border-gray-100 dark:border-gray-800 transition-colors">
+                                        <div className="p-6 rounded-full bg-white dark:bg-gray-900 shadow-sm mb-6">
+                                            <IconReceipt size={40} className="text-gray-200 dark:text-gray-800" />
+                                        </div>
+                                        <p className="text-base font-bold text-gray-400 dark:text-gray-600 tracking-tight">Your order manifest is empty</p>
+                                        <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-300 dark:text-gray-700 mt-2">Select items from catalog to proceed</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                         {form.items.map((item, idx) => {
                                             const s = item.service_id ? services.find(x => x.id === item.service_id) : null;
                                             const p = item.product_id ? products.find(x => x.id === item.product_id) : null;
                                             return (
-                                                <div key={idx} className="group relative flex items-center gap-4 p-4 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all">
-                                                    <div className={`p-3 rounded-xl ${item.service_id ? 'bg-primary/5 text-primary' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                                                        {item.service_id ? <IconTools size={20} /> : <IconPackage size={20} />}
+                                                <div key={idx} className="group relative flex items-center gap-5 p-5 rounded-[1.5rem] bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all duration-300">
+                                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${item.service_id ? 'bg-primary/10 text-primary' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                                                        {item.service_id ? <IconTools size={28} stroke={1.5} /> : <IconPackage size={28} stroke={1.5} />}
                                                     </div>
-                                                    <div className="flex-1">
-                                                        <h4 className="font-bold text-gray-900 dark:text-white leading-tight">
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-black text-gray-900 dark:text-white text-base truncate pr-8">
                                                             {s ? s.name : p ? p.name : 'Unknown Item'}
                                                         </h4>
-                                                        <div className="flex items-center gap-2 mt-1">
-                                                            <Badge variant="outline" className="text-[9px] font-black h-4 uppercase tracking-tighter opacity-70">
-                                                                {item.service_id ? 'Service' : 'Product'}
+                                                        <div className="flex items-center gap-3 mt-1.5">
+                                                            <Badge className={`text-[9px] font-black px-2 py-0 h-4 uppercase tracking-widest border-0 rounded-full ${item.service_id ? 'bg-primary/10 text-primary' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                                                                {item.service_id ? 'Professional' : 'Retail Item'}
                                                             </Badge>
-                                                            {item.service_id && (
-                                                                <span className="text-[10px] text-primary/70 font-bold uppercase tracking-widest flex items-center gap-0.5">
-                                                                    <IconInfoCircle size={10} /> {s.parts?.length || 0} Parts Mapped
+                                                            {item.service_id && s?.parts?.length > 0 && (
+                                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                                                    <div className="w-1 h-1 rounded-full bg-gray-300" /> {s.parts.length} Parts Defined
                                                                 </span>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-6">
-                                                        <div className="flex flex-col items-end">
-                                                            <Label className="text-[9px] font-bold text-gray-400 uppercase">Qty</Label>
-                                                            <Input 
-                                                                type="number" 
-                                                                value={item.qty} 
-                                                                onChange={e => updateItem(idx, { qty: parseFloat(e.target.value) || 0 })}
-                                                                className="w-16 h-8 text-right font-bold border-0 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                                                                disabled={!!order}
-                                                            />
+                                                    <div className="flex items-center gap-8 shrink-0">
+                                                        <div className="flex flex-col items-center">
+                                                            <Label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Qty</Label>
+                                                            <div className="flex items-center bg-gray-50 dark:bg-gray-800 rounded-xl p-1 shadow-inner">
+                                                                <Input 
+                                                                    type="number" 
+                                                                    value={item.qty} 
+                                                                    onChange={e => updateItem(idx, { qty: parseFloat(e.target.value) || 0 })}
+                                                                    className="w-14 h-8 text-center font-black border-0 bg-transparent p-0 focus-visible:ring-0 text-sm"
+                                                                    disabled={!!order}
+                                                                />
+                                                            </div>
                                                         </div>
-                                                        <div className="flex flex-col items-end min-w-[80px]">
-                                                            <Label className="text-[9px] font-bold text-gray-400 uppercase">Price</Label>
-                                                            <span className="font-black text-gray-900 dark:text-white">${(item.qty * item.unit_price).toFixed(2)}</span>
+                                                        <div className="flex flex-col items-end min-w-[100px]">
+                                                            <Label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Amount</Label>
+                                                            <span className="text-lg font-black text-gray-900 dark:text-white tracking-tighter">${(item.qty * item.unit_price).toFixed(2)}</span>
                                                         </div>
                                                         {!order && (
                                                             <button 
                                                                 onClick={() => removeItem(idx)}
-                                                                className="opacity-0 group-hover:opacity-100 p-2 text-danger hover:bg-danger/10 rounded-lg transition-all"
+                                                                className="opacity-0 group-hover:opacity-100 p-2.5 text-danger bg-danger/5 hover:bg-danger/20 rounded-xl transition-all duration-200"
+                                                                title="Remove Item"
                                                             >
                                                                 <IconTrash size={18} />
                                                             </button>
@@ -402,64 +409,83 @@ const SalesOrderDialog = ({ isOpen, setIsOpen, order, onSave }: SalesOrderDialog
                             </div>
                         </div>
 
-                        {/* Order Notes */}
-                        <div className="p-6 border-t dark:border-gray-800 bg-white/50 dark:bg-black/20 shrink-0">
-                            <Label className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1.5 block">Internal Order Remarks</Label>
-                            <Input 
-                                value={form.notes} 
-                                onChange={e => setForm({ ...form, notes: e.target.value })}
-                                placeholder="Add special instructions or customer requests..."
-                                className="h-10 text-sm font-medium border-0 bg-transparent p-0 focus-visible:ring-0 placeholder:text-gray-300"
-                                disabled={!!order}
-                            />
+                        {/* Order Footer / Meta */}
+                        <div className="p-6 border-t dark:border-gray-800 bg-gray-50/50 dark:bg-black/20 shrink-0">
+                            <div className="flex items-center gap-4">
+                                <IconInfoCircle size={20} className="text-gray-300 shrink-0" />
+                                <div className="flex-1">
+                                    <Label className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1 block">Internal Order Remarks</Label>
+                                    <Input 
+                                        value={form.notes} 
+                                        onChange={e => setForm({ ...form, notes: e.target.value })}
+                                        placeholder="Add special instructions, warranty notes or customer preferences..."
+                                        className="h-8 text-sm font-bold border-0 bg-transparent p-0 focus-visible:ring-0 placeholder:text-gray-300 dark:placeholder:text-gray-700"
+                                        disabled={!!order}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Right Side: Catalog & Summary */}
-                    <div className="w-full lg:w-[320px] bg-gray-50 dark:bg-gray-900 border-l dark:border-gray-800 flex flex-col shrink-0">
-                        {/* Selector Tabs/Catalog */}
+                    {/* Right Side: Smart Catalog */}
+                    <div className="w-full lg:w-[360px] bg-gray-50 dark:bg-gray-900 border-l dark:border-gray-800 flex flex-col shrink-0">
                         <div className="flex-1 overflow-hidden flex flex-col">
-                            <div className="p-4 border-b dark:border-gray-800">
-                                <Label className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Global Catalog Search</Label>
-                                <div className="mt-2 text-xs text-gray-400 font-medium">Add items by selecting below:</div>
+                            <div className="p-6 border-b dark:border-gray-800 bg-white/50 dark:bg-white/5">
+                                <Label className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em]">Master Catalog</Label>
+                                <div className="mt-2 relative">
+                                    <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <Input 
+                                        placeholder="Quick filter catalog..."
+                                        className="h-10 pl-9 rounded-xl border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-xs font-bold shadow-sm"
+                                        disabled={!!order}
+                                    />
+                                </div>
                             </div>
                             
-                            <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
                                 <section>
-                                    <h5 className="text-[10px] font-black uppercase tracking-widest text-primary mb-3">Service Packages</h5>
-                                    <div className="grid grid-cols-1 gap-2">
+                                    <h5 className="text-[11px] font-black uppercase tracking-[0.2em] text-primary mb-4 flex items-center gap-2">
+                                        <div className="w-2 h-0.5 bg-primary" /> Service Packages
+                                    </h5>
+                                    <div className="grid grid-cols-1 gap-3">
                                         {services.map(s => (
                                             <button 
                                                 key={s.id}
                                                 onClick={() => handleAddItem('service', s.id)}
                                                 disabled={!!order}
-                                                className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-primary/50 hover:shadow-md transition-all text-left"
+                                                className="group flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-gray-850 border border-gray-100 dark:border-gray-800 hover:border-primary/40 hover:shadow-lg transition-all text-left relative overflow-hidden active:scale-95"
                                             >
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-gray-900 dark:text-white text-xs">{s.name}</span>
-                                                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">${s.price}</span>
+                                                <div className="flex flex-col relative z-10">
+                                                    <span className="font-black text-gray-900 dark:text-white text-xs tracking-tight">{s.name}</span>
+                                                    <span className="text-[10px] text-primary font-black uppercase mt-1 tracking-widest">${parseFloat(s.base_price || 0).toLocaleString()}</span>
                                                 </div>
-                                                <IconPlus size={14} className="text-primary" />
+                                                <div className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:bg-primary group-hover:text-white transition-colors relative z-10 shadow-sm">
+                                                    <IconPlus size={14} stroke={3} />
+                                                </div>
                                             </button>
                                         ))}
                                     </div>
                                 </section>
                                 
                                 <section>
-                                    <h5 className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-3">Retail Products</h5>
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {products.slice(0, 10).map(p => (
+                                    <h5 className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-600 mb-4 flex items-center gap-2">
+                                        <div className="w-2 h-0.5 bg-emerald-600" /> Retail Products
+                                    </h5>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {products.slice(0, 15).map(p => (
                                             <button 
                                                 key={p.id}
                                                 onClick={() => handleAddItem('product', p.id)}
                                                 disabled={!!order}
-                                                className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-emerald-500/50 hover:shadow-md transition-all text-left"
+                                                className="group flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-gray-850 border border-gray-100 dark:border-gray-800 hover:border-emerald-500/40 hover:shadow-lg transition-all text-left relative overflow-hidden active:scale-95"
                                             >
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-gray-900 dark:text-white text-xs">{p.name}</span>
-                                                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">${p.price || 0}</span>
+                                                <div className="flex flex-col relative z-10">
+                                                    <span className="font-black text-gray-900 dark:text-white text-xs tracking-tight">{p.name}</span>
+                                                    <span className="text-[10px] text-emerald-600 font-black uppercase mt-1 tracking-widest">${parseFloat(p.price || 0).toLocaleString()}</span>
                                                 </div>
-                                                <IconPlus size={14} className="text-emerald-600" />
+                                                <div className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:bg-emerald-600 group-hover:text-white transition-colors relative z-10 shadow-sm">
+                                                    <IconPlus size={14} stroke={3} />
+                                                </div>
                                             </button>
                                         ))}
                                     </div>
@@ -467,35 +493,49 @@ const SalesOrderDialog = ({ isOpen, setIsOpen, order, onSave }: SalesOrderDialog
                             </div>
                         </div>
 
-                        {/* Totals Summary */}
-                        <div className="p-6 bg-white dark:bg-gray-950 border-t-4 border-primary shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
-                            <div className="space-y-2 mb-6">
-                                <div className="flex justify-between text-xs font-bold text-gray-400 uppercase">
-                                    <span>Subtotal</span>
-                                    <span>${form.subtotal.toFixed(2)}</span>
+                        {/* Checkout Summary - Premium Section */}
+                        <div className="p-8 bg-white dark:bg-gray-950 border-t-2 border-primary/20 shadow-[0_-15px_40px_-15px_rgba(0,0,0,0.15)] relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 opacity-5">
+                                <IconReceipt size={120} stroke={1} className="text-primary rotate-12" />
+                            </div>
+                            
+                            <div className="space-y-3 mb-8 relative z-10">
+                                <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    <span>Subtotal Base</span>
+                                    <span className="text-gray-900 dark:text-white">${form.subtotal.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-xs font-bold text-danger uppercase opacity-80">
-                                    <span>Discounts</span>
+                                <div className="flex justify-between items-center text-[10px] font-black text-danger uppercase tracking-widest">
+                                    <span>Applied Discounts</span>
                                     <span>-${form.discount_total.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between items-center pt-3 border-t dark:border-gray-800">
-                                    <span className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Grand Total</span>
-                                    <span className="text-2xl font-black text-primary tracking-tighter">${form.grand_total.toFixed(2)}</span>
+                                <div className="pt-5 mt-4 border-t-2 border-dashed border-gray-100 dark:border-gray-800">
+                                    <div className="flex justify-between items-end">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Total Amount</span>
+                                            <span className="text-4xl font-black text-gray-900 dark:text-white tracking-tighter leading-none mt-1">
+                                                ${form.grand_total.toFixed(2)}
+                                            </span>
+                                        </div>
+                                        <Badge className="bg-primary/10 text-primary border-0 rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest">USD</Badge>
+                                    </div>
                                 </div>
                             </div>
                             
                             {!order ? (
                                 <Button 
-                                    className="w-full h-14 rounded-2xl text-base font-black uppercase tracking-widest gap-3 shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                    className="w-full h-16 rounded-2xl text-base font-black uppercase tracking-[0.2em] gap-3 shadow-2xl shadow-primary/30 transition-all hover:scale-[1.03] active:scale-[0.97] bg-primary hover:bg-primary/90 text-white relative z-10"
                                     onClick={handleSubmit}
                                     disabled={saving || form.items.length === 0}
                                 >
-                                    {saving ? <><IconLoader2 className="animate-spin" /> Finalizing...</> : <><IconDeviceFloppy /> Process Checkout</>}
+                                    {saving ? <><IconLoader2 className="animate-spin" /> Finalizing Transaction</> : <><IconDeviceFloppy size={24} /> Process Checkout</>}
                                 </Button>
                             ) : (
-                                <Button variant="outline" className="w-full h-12 rounded-xl text-xs font-black uppercase opacity-50 cursor-default">
-                                    Transaction Record
-                                </Button>
+                                <div className="relative z-10 flex flex-col items-center gap-3">
+                                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Transaction Sealed</div>
+                                    <Button variant="outline" className="w-full h-12 rounded-xl text-xs font-black uppercase tracking-widest bg-gray-50/50 dark:bg-white/5 border-gray-100 dark:border-gray-800 cursor-default opacity-60">
+                                        View Record
+                                    </Button>
+                                </div>
                             )}
                         </div>
                     </div>

@@ -39,6 +39,10 @@ class CustomerController extends Controller
             $query->where('customer_type_id', $request->customer_type_id);
         }
 
+        if ($request->has('all') || $request->paginate === 'false') {
+            return $query->latest()->get();
+        }
+
         return $query->latest()->paginate($request->per_page ?? 15);
     }
 

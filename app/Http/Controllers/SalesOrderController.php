@@ -71,27 +71,41 @@ class SalesOrderController extends Controller
                 'tax_total' => $validated['tax_total'] ?? 0,
                 'discount_total' => $validated['discount_total'] ?? 0,
                 'grand_total' => $validated['grand_total'],
-                'status' => 'Pending',
-                'payment_status' => 'Unpaid',
+                'status' => 'CONFIRMED',
+                'payment_status' => 'UNPAID',
                 'notes' => $validated['notes'] ?? null,
-                'created_by' => Auth::id() ?? 1, // Fallback if no auth session
+                'created_by' => Auth::id() ?? 1,
             ]);
 
             $hasService = false;
             foreach ($validated['items'] as $itemData) {
-                SalesOrderItem::create([
-                    'sales_order_id' => $order->id,
-                    'service_id' => $itemData['service_id'] ?? null,
-                    'product_id' => $itemData['product_id'] ?? null,
-                    'qty' => $itemData['qty'],
-                    'unit_price' => $itemData['unit_price'],
-                    'discount' => $itemData['discount'] ?? 0,
-                    'total_price' => ($itemData['qty'] * $itemData['unit_price']) - ($itemData['discount'] ?? 0),
-                ]);
+                $itemable_type = null;
+                $itemable_id = null;
+                $item_name = 'Unknown Item';
 
                 if (!empty($itemData['service_id'])) {
+                    $service = Service::find($itemData['service_id']);
+                    $itemable_type = Service::class;
+                    $itemable_id = $service->id;
+                    $item_name = $service->name;
                     $hasService = true;
+                } elseif (!empty($itemData['product_id'])) {
+                    $product = \App\Models\Inventory\InventoryProduct::find($itemData['product_id']);
+                    $itemable_type = \App\Models\Inventory\InventoryProduct::class;
+                    $itemable_id = $product->id;
+                    $item_name = $product->name;
                 }
+
+                SalesOrderItem::create([
+                    'sales_order_id' => $order->id,
+                    'itemable_type' => $itemable_type,
+                    'itemable_id' => $itemable_id,
+                    'item_name' => $item_name,
+                    'quantity' => $itemData['qty'],
+                    'unit_price' => $itemData['unit_price'],
+                    'discount_amount' => $itemData['discount'] ?? 0,
+                    'subtotal' => ($itemData['qty'] * $itemData['unit_price']) - ($itemData['discount'] ?? 0),
+                ]);
             }
 
             // If any item is a service, create a Job Card
@@ -103,32 +117,40 @@ class SalesOrderController extends Controller
                     'branch_id' => $order->branch_id,
                     'customer_id' => $order->customer_id,
                     'vehicle_id' => $order->vehicle_id,
-                    'status' => 'Pending',
+                    'status' => 'PENDING',
                 ]);
 
-                // Populate Job Card Items from Service Mappings
                 foreach ($validated['items'] as $itemData) {
                     if (!empty($itemData['service_id'])) {
                         $service = Service::with(['parts', 'materials'])->find($itemData['service_id']);
                         
+                        // Create a specific Job Card Item for the service itself
+                        $parentJobItem = JobCardItem::create([
+                            'job_card_id' => $jobCard->id,
+                            'service_id' => $service->id,
+                            'part_id' => null,
+                            'status' => 'PENDING',
+                        ]);
+
                         // Map specific car parts to the job card
                         foreach ($service->parts as $part) {
                             JobCardItem::create([
                                 'job_card_id' => $jobCard->id,
                                 'service_id' => $service->id,
                                 'part_id' => $part->id,
-                                'status' => 'Pending',
+                                'status' => 'PENDING',
                             ]);
                         }
 
-                        // Map expected materials to the job card
+                        // Map expected materials to the job card, linked to the parent service item
                         foreach ($service->materials as $mat) {
                             JobCardMaterialUsage::create([
                                 'job_card_id' => $jobCard->id,
+                                'job_card_item_id' => $parentJobItem->id,
                                 'product_id' => $mat->product_id,
-                                'spent_qty' => $mat->quantity * $itemData['qty'], // Suggested qty * service qty
+                                'spent_qty' => $mat->suggested_qty * $itemData['qty'],
                                 'actual_qty' => 0,
-                                'unit' => $mat->unit ?? 'm', 
+                                'unit' => 'pcs', // Default unit as it's missing in service_materials
                             ]);
                         }
                     }

@@ -37,7 +37,7 @@ class JobCardItem extends Model
 
     public function technician()
     {
-        return $this->belongsTo(Employee::class, 'technician_id');
+        return $this->belongsTo(HR\Employee::class, 'technician_id');
     }
 
     public function materialUsage()

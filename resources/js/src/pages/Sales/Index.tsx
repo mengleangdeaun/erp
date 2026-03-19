@@ -159,7 +159,7 @@ const SalesOrderIndex: React.FC = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <span className="font-bold text-gray-900 dark:text-gray-100">${parseFloat(order.grand_total).toFixed(2)}</span>
+                                            <span className="font-bold text-gray-900 dark:text-gray-100">${parseFloat(order.grand_total || 0).toFixed(2)}</span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <Badge variant={getStatusColor(order.status)} className="text-[9px] h-5 px-2 font-bold uppercase">

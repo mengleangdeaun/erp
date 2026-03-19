@@ -18,6 +18,6 @@ class ServiceMaterial extends Model
 
     public function product()
     {
-        return $this->belongsTo(\App\Models\Inventory\Product::class, 'product_id');
+        return $this->belongsTo(\App\Models\Inventory\InventoryProduct::class, 'product_id');
     }
 }
