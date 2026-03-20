@@ -12,7 +12,7 @@ class JobPartController extends Controller
      */
     public function index()
     {
-        return JobPartMaster::orderBy('type')->orderBy('name')->get();
+        return JobPartMaster::orderBy('code')->orderBy('name')->get();
     }
 
     /**
@@ -22,7 +22,8 @@ class JobPartController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|string|max:10',
+            'code' => 'nullable|string|max:50|unique:job_parts_master,code',
+            'type' => 'nullable|string|max:20',
             'is_active' => 'boolean'
         ]);
 
@@ -34,33 +35,34 @@ class JobPartController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(JobPartMaster $jobPart)
+    public function show(JobPartMaster $part)
     {
-        return $jobPart;
+        return $part;
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, JobPartMaster $jobPart)
+    public function update(Request $request, JobPartMaster $part)
     {
         $validated = $request->validate([
             'name' => 'string|max:255',
-            'type' => 'string|max:10',
+            'code' => 'nullable|string|max:50|unique:job_parts_master,code,' . $part->id,
+            'type' => 'nullable|string|max:20',
             'is_active' => 'boolean'
         ]);
 
-        $jobPart->update($validated);
+        $part->update($validated);
 
-        return response()->json($jobPart);
+        return response()->json($part);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(JobPartMaster $jobPart)
+    public function destroy(JobPartMaster $part)
     {
-        $jobPart->delete();
+        $part->delete();
         return response()->json(null, 204);
     }
 }

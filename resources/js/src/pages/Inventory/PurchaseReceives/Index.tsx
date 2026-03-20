@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '../../../components/ui/button';
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from '../../../components/ui/input';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import { Label } from '../../../components/ui/label';
@@ -364,170 +365,214 @@ export default function PurchaseReceivesPage() {
                 </div>
             )}
 
-            {/* Create PR Modal */}
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-4xl w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
-                    {/* Header */}
-                    <div className="shrink-0 bg-gradient-to-r from-green-600/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
-                        <div className="bg-green-600/20 p-3 rounded-2xl shadow-sm">
-                            <IconPackageImport className="text-green-600 w-7 h-7" />
-                        </div>
-                        <div>
-                            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                                Record Goods Received
-                            </DialogTitle>
-                            <p className="text-sm text-gray-500 mt-1">
-                                Record items received from a purchase order into a specific location.
-                            </p>
-                        </div>
-                    </div>
+{/* Create PR Modal */}
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-4xl w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-green-600/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-green-600/20 p-3 rounded-2xl shadow-sm">
+        <IconPackageImport className="text-green-600 w-7 h-7" />
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          Record Goods Received
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          Record items received from a purchase order into a specific location.
+        </p>
+      </div>
+    </div>
 
-                    <form id="receive-form" onSubmit={handleSubmit} className="flex flex-col gap-6 p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="col-span-1 lg:col-span-2 space-y-1">
-                                <Label className="text-sm font-medium">Purchase Order <span className="text-red-500">*</span></Label>
-                                <SearchableSelect
-                                    options={pendingOrders.map(po => ({ 
-                                        value: String(po.id), 
-                                        label: `${po.po_number} — ${po.supplier?.name}` 
-                                    }))}
-                                    value={selectedPoId}
-                                    onChange={(val) => handlePoChange(String(val))}
-                                    placeholder="Select a Purchase Order..."
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-sm font-medium">Destination Location <span className="text-red-500">*</span></Label>
-                                <SearchableSelect
-                                    options={locations.map(l => ({ value: String(l.id), label: l.name }))}
-                                    value={formData.location_id}
-                                    onChange={(val) => setFormData(p => ({ ...p, location_id: String(val) }))}
-                                    placeholder="Select location..."
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-sm font-medium mb-0">Receive Date <span className="text-red-500">*</span></Label>
-                                <div className="flex gap-2">
-                                    <DatePicker
-                                        value={formData.receive_date ? new Date(formData.receive_date) : undefined}
-                                        onChange={(date) => {
-                                            if (!date) return;
-                                            const time = formData.receive_date ? formData.receive_date.split('T')[1]?.slice(0, 5) || '00:00' : '00:00';
-                                            const newDate = format(date, 'yyyy-MM-dd') + 'T' + time;
-                                            setFormData(p => ({ ...p, receive_date: newDate }));
-                                        }}
-                                    />
-                                    <TimePicker
-                                        value={formData.receive_date ? formData.receive_date.split('T')[1]?.slice(0, 5) : '00:00'}
-                                        onChange={(time) => {
-                                            const date = formData.receive_date ? formData.receive_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
-                                            const newDate = date + 'T' + time;
-                                            setFormData(p => ({ ...p, receive_date: newDate }));
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-1 lg:col-span-2">
-                                <Label className="text-sm font-medium">Reference Number</Label>
-                                <Input 
-                                    value={formData.reference_number} 
-                                    onChange={e => setFormData(p => ({ ...p, reference_number: e.target.value }))} 
-                                    placeholder="e.g. Supplier Invoice / Delivery Note" 
-                                />
-                            </div>
-                            <div className="space-y-1 lg:col-span-2">
-                                <Label className="text-sm font-medium">Receiving Note</Label>
-                                <Input 
-                                    value={formData.receiving_note} 
-                                    onChange={e => setFormData(p => ({ ...p, receiving_note: e.target.value }))} 
-                                    placeholder="Optional note about this receipt" 
-                                />
-                            </div>
-                        </div>
+    <form id="receive-form" onSubmit={handleSubmit} className="flex flex-col gap-6 p-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Purchase Order - takes more space */}
+        <div className="md:col-span-3 space-y-1">
+          <Label className="text-sm font-medium">Purchase Order <span className="text-red-500">*</span></Label>
+          <SearchableSelect
+            options={pendingOrders.map(po => ({ 
+              value: String(po.id), 
+              label: `${po.po_number} — ${po.supplier?.name}` 
+            }))}
+            value={selectedPoId}
+            onChange={(val) => handlePoChange(String(val))}
+            placeholder="Select a Purchase Order..."
+          />
+        </div>
 
-                        {/* Pending Items */}
-                        {selectedPoId && (
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                        Items to Receive
-                                    </h3>
-                                </div>
-                                
-                                {loadingItems ? (
-                                    <div className="p-8 text-center text-gray-400">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-                                        Loading items...
-                                    </div>
-                                ) : pendingItems.length === 0 ? (
-                                    <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/20 p-6 flex items-center gap-4 text-green-700 dark:text-green-400">
-                                        <CheckCircle2 className="h-6 w-6 shrink-0" />
-                                        <div>
-                                            <p className="font-semibold">All caught up!</p>
-                                            <p className="text-sm">All items on this Purchase Order have been fully received.</p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="rounded-lg border dark:border-gray-700 overflow-hidden">
-                                        <div className="max-h-80 overflow-y-auto">
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
-                                                    <tr>
-                                                        <th className="px-4 py-3 text-left">Product</th>
-                                                        <th className="px-3 py-3 text-right">Ordered</th>
-                                                        <th className="px-3 py-3 text-right">Received</th>
-                                                        <th className="px-3 py-3 text-right text-primary">Remaining</th>
-                                                        <th className="px-4 py-3 text-right w-40">Qty Receiving Now</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y dark:divide-gray-700">
-                                                    {pendingItems.map(it => (
-                                                        <tr key={it.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
-                                                            <td className="px-4 py-3">
-                                                                <p className="font-semibold text-gray-900 dark:text-white">{it.product.name}</p>
-                                                                <p className="text-xs text-gray-500 font-mono tracking-tighter">{it.product.code}</p>
-                                                            </td>
-                                                            <td className="px-3 py-3 text-right text-gray-500">{it.order_qty}</td>
-                                                            <td className="px-3 py-3 text-right text-green-600">{it.received_qty}</td>
-                                                            <td className="px-3 py-3 text-right text-primary font-bold">{it.remaining_qty}</td>
-                                                            <td className="px-4 py-3 text-right">
-                                                                <Input
-                                                                    type="number"
-                                                                    step="0.01"
-                                                                    min="0"
-                                                                    max={it.remaining_qty}
-                                                                    value={receiveQtys[it.id] || ''}
-                                                                    onChange={e => setReceiveQtys(prev => ({ ...prev, [it.id]: e.target.value }))}
-                                                                    className="text-right font-semibold"
-                                                                />
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </form>
+        {/* Destination Location */}
+        <div className="md:col-span-1 space-y-1">
+          <Label className="text-sm font-medium">Destination Location <span className="text-red-500">*</span></Label>
+          <SearchableSelect
+            options={locations.map(l => ({ value: String(l.id), label: l.name }))}
+            value={formData.location_id}
+            onChange={(val) => setFormData(p => ({ ...p, location_id: String(val) }))}
+            placeholder="Select location..."
+          />
+        </div>
 
-                    {/* Footer */}
-                    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
-                        <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button 
-                            type="submit" 
-                            form="receive-form"
-                            disabled={submitting || pendingItems.length === 0}
-                            className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
-                        >
-                            {submitting ? 'Processing...' : 'Confirm Receipt & Update Stock'}
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+        {/* Reference Number */}
+        <div className="md:col-span-2 space-y-1">
+          <Label className="text-sm font-medium">Reference Number</Label>
+          <Input 
+            value={formData.reference_number} 
+            onChange={e => setFormData(p => ({ ...p, reference_number: e.target.value }))} 
+            placeholder="e.g. Supplier Invoice / Delivery Note" 
+          />
+        </div>
+
+        {/* Receiving Note */}
+        <div className="md:col-span-2 space-y-1">
+          <Label className="text-sm font-medium">Receiving Note</Label>
+          <Input 
+            value={formData.receiving_note} 
+            onChange={e => setFormData(p => ({ ...p, receiving_note: e.target.value }))} 
+            placeholder="Optional note about this receipt" 
+          />
+        </div>
+      </div>
+
+    
+{/* Pending Items */}
+{selectedPoId && (
+  <div className="space-y-3">
+    {/* Header with title and receive date/time */}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+        Items to Receive
+      </h3>
+
+      {/* Receive Date & Time moved here */}
+      <div className="flex items-center gap-2">
+        <Label className="text-sm font-medium whitespace-nowrap">
+          Receive Date <span className="text-red-500">*</span>
+        </Label>
+        <DatePicker
+          value={formData.receive_date ? new Date(formData.receive_date) : undefined}
+          onChange={(date) => {
+            if (!date) return;
+            const time = formData.receive_date ? formData.receive_date.split('T')[1]?.slice(0, 5) || '00:00' : '00:00';
+            const newDate = format(date, 'yyyy-MM-dd') + 'T' + time;
+            setFormData(p => ({ ...p, receive_date: newDate }));
+          }}
+        />
+        <TimePicker
+          value={formData.receive_date ? formData.receive_date.split('T')[1]?.slice(0, 5) : '00:00'}
+          onChange={(time) => {
+            const date = formData.receive_date ? formData.receive_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
+            const newDate = date + 'T' + time;
+            setFormData(p => ({ ...p, receive_date: newDate }));
+          }}
+        />
+      </div>
+    </div>
+
+    {/* Items list with ScrollArea */}
+    <div className="rounded-lg border dark:border-gray-700">
+      {loadingItems ? (
+        <ScrollArea className="h-80">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
+              <tr>
+                <th className="px-4 py-3 text-left">Product</th>
+                <th className="px-3 py-3 text-right">Ordered</th>
+                <th className="px-3 py-3 text-right">Received</th>
+                <th className="px-3 py-3 text-right text-primary">Remaining</th>
+                <th className="px-4 py-3 text-right w-40">Qty Receiving Now</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y dark:divide-gray-700">
+              {/* Skeleton rows */}
+              {[...Array(3)].map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="px-4 py-3">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 ml-auto"></div>
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 ml-auto"></div>
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 ml-auto"></div>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24 ml-auto"></div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ScrollArea>
+      ) : pendingItems.length === 0 ? (
+        <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/20 p-6 flex items-center gap-4 text-green-700 dark:text-green-400">
+          <CheckCircle2 className="h-6 w-6 shrink-0" />
+          <div>
+            <p className="font-semibold">All caught up!</p>
+            <p className="text-sm">All items on this Purchase Order have been fully received.</p>
+          </div>
+        </div>
+      ) : (
+        <ScrollArea className="h-80">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
+              <tr>
+                <th className="px-4 py-3 text-left">Product</th>
+                <th className="px-3 py-3 text-right">Ordered</th>
+                <th className="px-3 py-3 text-right">Received</th>
+                <th className="px-3 py-3 text-right text-primary">Remaining</th>
+                <th className="px-4 py-3 text-right w-40">Qty Receiving Now</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y dark:divide-gray-700">
+              {pendingItems.map(it => (
+                <tr key={it.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-gray-900 dark:text-white">{it.product.name}</p>
+                    <p className="text-xs text-gray-500 font-mono tracking-tighter">{it.product.code}</p>
+                  </td>
+                  <td className="px-3 py-3 text-right text-gray-500">{it.order_qty}</td>
+                  <td className="px-3 py-3 text-right text-green-600">{it.received_qty}</td>
+                  <td className="px-3 py-3 text-right text-primary font-bold">{it.remaining_qty}</td>
+                  <td className="px-4 py-3 text-right">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max={it.remaining_qty}
+                      value={receiveQtys[it.id] || ''}
+                      onChange={e => setReceiveQtys(prev => ({ ...prev, [it.id]: e.target.value }))}
+                      className="text-right font-semibold"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ScrollArea>
+      )}
+    </div>
+  </div>
+)}
+    </form>
+
+    {/* Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
+        Cancel
+      </Button>
+      <Button 
+        type="submit" 
+        form="receive-form"
+        disabled={submitting || pendingItems.length === 0}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {submitting ? 'Processing...' : 'Confirm Receipt & Update Stock'}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
         </div>
     );
 }

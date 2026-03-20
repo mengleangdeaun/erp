@@ -12,9 +12,22 @@ class ServiceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Service::with(['category', 'materials.product', 'parts'])->get();
+        $query = Service::with(['category', 'materials.product', 'parts']);
+
+        if ($request->has('branch_id')) {
+            $branchId = $request->branch_id;
+            $query->whereExists(function ($q) use ($branchId) {
+                $q->select(DB::raw(1))
+                    ->from('branch_service')
+                    ->whereColumn('branch_service.service_id', 'services.id')
+                    ->where('branch_service.branch_id', $branchId)
+                    ->where('branch_service.is_active', true);
+            });
+        }
+
+        return $query->get();
     }
 
     /**

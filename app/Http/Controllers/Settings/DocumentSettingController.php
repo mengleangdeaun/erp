@@ -75,12 +75,12 @@ class DocumentSettingController extends Controller
     private function getDefaultPrefix(string $type): string
     {
         $map = [
-            'purchase_order' => 'PO-',
-            'purchase_receive' => 'PR-',
-            'stock_adjustment' => 'ADJ-',
-            'stock_transfer' => 'TRF-',
-            'invoice' => 'INV-',
-            'quote' => 'QT-',
+            'purchase_order' => 'PO',
+            'purchase_receive' => 'PR',
+            'stock_adjustment' => 'ADJ',
+            'stock_transfer' => 'TRF',
+            'invoice' => 'INV',
+            'quote' => 'QT',
         ];
 
         return $map[$type] ?? strtoupper(substr($type, 0, 3)) . '-';

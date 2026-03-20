@@ -8,9 +8,49 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(InventoryProduct::with(['category', 'baseUom', 'purchaseUom', 'tags', 'stocks.location'])->orderBy('name')->get());
+        $query = InventoryProduct::with(['category', 'baseUom', 'purchaseUom', 'tags', 'stocks.location'])
+            ->where('is_active', true);
+
+        if ($request->has('branch_id')) {
+            $branchId = $request->branch_id;
+            $query->whereExists(function ($query) use ($branchId) {
+                $query->select(\Illuminate\Support\Facades\DB::raw(1))
+                    ->from('branch_inventory_product')
+                    ->whereColumn('branch_inventory_product.inventory_product_id', 'inventory_products.id')
+                    ->where('branch_inventory_product.branch_id', $branchId)
+                    ->where('branch_inventory_product.is_active', true);
+            });
+
+            $query->addSelect([
+                'inventory_products.*',
+                'branch_stock_qty' => \App\Models\Inventory\InventoryStock::select(\Illuminate\Support\Facades\DB::raw('SUM(quantity)'))
+                    ->join('inventory_locations', 'inventory_locations.id', '=', 'inventory_stocks.location_id')
+                    ->where('inventory_locations.branch_id', $branchId)
+                    ->where('inventory_locations.is_active', true)
+                    ->whereColumn('inventory_stocks.product_id', 'inventory_products.id')
+            ]);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->has('all') || $request->paginate === 'false') {
+            return response()->json($query->orderBy('name')->get());
+        }
+
+        return response()->json($query->orderBy('name')->paginate($request->per_page ?? 24));
     }
 
     public function store(Request $request)
@@ -32,14 +72,20 @@ class ProductController extends Controller
             'price' => 'numeric',
             'reorder_level' => 'integer',
             'is_active' => 'boolean',
+            'img' => 'nullable',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:inventory_tags,id'
         ]);
 
         // Handle Image upload dynamically if sent
+        $imageService = new \App\Services\ImageService();
         if ($request->hasFile('img')) {
-            $path = $request->file('img')->store('products', 'public');
-            $validated['img'] = '/storage/' . $path;
+            $path = $imageService->compressToWebp($request->file('img'));
+            if ($path) {
+                $validated['img'] = '/storage/' . $path;
+            }
+        } elseif ($request->img) {
+            $validated['img'] = $request->img;
         }
 
         $product = InventoryProduct::create($validated);
@@ -77,13 +123,19 @@ class ProductController extends Controller
             'price' => 'numeric',
             'reorder_level' => 'integer',
             'is_active' => 'boolean',
+            'img' => 'nullable',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:inventory_tags,id'
         ]);
 
+        $imageService = new \App\Services\ImageService();
         if ($request->hasFile('img')) {
-            $path = $request->file('img')->store('products', 'public');
-            $validated['img'] = '/storage/' . $path;
+            $path = $imageService->compressToWebp($request->file('img'));
+            if ($path) {
+                $validated['img'] = '/storage/' . $path;
+            }
+        } elseif ($request->img) {
+            $validated['img'] = $request->img;
         }
 
         $product->update($validated);

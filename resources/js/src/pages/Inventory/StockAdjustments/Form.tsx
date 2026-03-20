@@ -102,11 +102,14 @@ export default function StockAdjustmentForm() {
         setConfigsLoading(true);
         try {
             const [prodRes, locRes] = await Promise.all([
-                apiFetch('/api/inventory/products'),
+                apiFetch('/api/inventory/products?all=true'),
                 apiFetch('/api/inventory/locations')
             ]);
-            setProducts(await prodRes.json());
-            setLocations(await locRes.json());
+            const prodData = await prodRes.json();
+            const locData = await locRes.json();
+            
+            setProducts(Array.isArray(prodData) ? prodData : (prodData.data || []));
+            setLocations(Array.isArray(locData) ? locData : (locData.data || []));
         } catch {
             toast.error('Failed to load configuration data');
         } finally {

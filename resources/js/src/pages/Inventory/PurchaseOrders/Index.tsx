@@ -112,17 +112,22 @@ export default function PurchaseOrdersPage() {
             const [ordersRes, suppliersRes, productsRes, locationsRes] = await Promise.all([
                 apiFetch('/api/inventory/purchase-orders'),
                 apiFetch('/api/inventory/suppliers'),
-                apiFetch('/api/inventory/products'),
+                apiFetch('/api/inventory/products?all=true'),
                 apiFetch('/api/inventory/locations'),
             ]);
             if (ordersRes.status === 401) {
                 window.location.href = '/auth/login';
                 return;
             }
-            setOrders(await ordersRes.json());
-            setSuppliers(await suppliersRes.json());
-            setProducts(await productsRes.json());
-            setLocations(await locationsRes.json());
+            const orderData = await ordersRes.json();
+            const supplierData = await suppliersRes.json();
+            const productData = await productsRes.json();
+            const locationData = await locationsRes.json();
+
+            setOrders(Array.isArray(orderData) ? orderData : (orderData.data || []));
+            setSuppliers(Array.isArray(supplierData) ? supplierData : (supplierData.data || []));
+            setProducts(Array.isArray(productData) ? productData : (productData.data || []));
+            setLocations(Array.isArray(locationData) ? locationData : (locationData.data || []));
         } catch {
             toast.error('Failed to load data');
         } finally {

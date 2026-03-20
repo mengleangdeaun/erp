@@ -46,7 +46,7 @@ const StockIndex = () => {
         try {
             const [stockRes, prodRes, locRes] = await Promise.all([
                 fetch('/api/inventory/stocks', { headers: { 'Accept': 'application/json' }, credentials: 'include' }),
-                fetch('/api/inventory/products', { headers: { 'Accept': 'application/json' }, credentials: 'include' }),
+                fetch('/api/inventory/products?all=true', { headers: { 'Accept': 'application/json' }, credentials: 'include' }),
                 fetch('/api/inventory/locations', { headers: { 'Accept': 'application/json' }, credentials: 'include' })
             ]);
 
@@ -55,7 +55,7 @@ const StockIndex = () => {
             const [s, p, l] = await Promise.all([stockRes.json(), prodRes.json(), locRes.json()]);
 
             setStocks(Array.isArray(s) ? s : []);
-            setProducts(Array.isArray(p) ? p : []);
+            setProducts(Array.isArray(p) ? p : (p.data || []));
             setLocations(Array.isArray(l) ? l : []);
         } catch (error) {
             console.error(error);

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconReceipt, IconSearch, IconFilter, IconCalendar, IconUser, IconCar, IconDotsVertical, IconTrash, IconX } from '@tabler/icons-react';
 import { toast } from 'sonner';
@@ -8,15 +9,13 @@ import Pagination from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
 import ActionButtons from '@/components/ui/ActionButtons';
 import { Badge } from '@/components/ui/badge';
-import SalesOrderDialog from './SalesOrderDialog';
 import { format } from 'date-fns';
 
 const SalesOrderIndex: React.FC = () => {
+    const navigate = useNavigate();
     const { t } = useTranslation();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedOrder, setSelectedOrder] = useState<any>(null);
-    const [dialogOpen, setDialogOpen] = useState(false);
     
     // Search and Pagination state
     const [search, setSearch] = useState('');
@@ -100,7 +99,7 @@ const SalesOrderIndex: React.FC = () => {
                 description="Manage customer transactions and service orders."
                 search={search}
                 setSearch={setSearch}
-                onAdd={() => { setSelectedOrder(null); setDialogOpen(true); }}
+                onAdd={() => navigate('/sales/create')}
                 addLabel="New Sale / POS"
                 onRefresh={fetchOrders}
                 itemsPerPage={itemsPerPage}
@@ -119,7 +118,7 @@ const SalesOrderIndex: React.FC = () => {
                     searchTerm={search}
                     title="No Sales Found"
                     description={search ? "Adjust your search parameters." : "Initiate your first sale to start tracking transactions."}
-                    onAction={() => { setSelectedOrder(null); setDialogOpen(true); }}
+                    onAction={() => navigate('/sales/create')}
                     actionLabel="Create New Sale"
                 />
             ) : (
@@ -172,7 +171,7 @@ const SalesOrderIndex: React.FC = () => {
                                                     variant="ghost" 
                                                     size="sm" 
                                                     className="h-8 w-8 p-0 text-gray-400 hover:text-primary"
-                                                    onClick={() => { setSelectedOrder(order); setDialogOpen(true); }}
+                                                    onClick={() => toast.info('View/Edit mode coming soon to new POS page')}
                                                 >
                                                     <IconReceipt size={16} />
                                                 </Button>
@@ -208,12 +207,6 @@ const SalesOrderIndex: React.FC = () => {
                 </div>
             )}
 
-            <SalesOrderDialog 
-                isOpen={dialogOpen} 
-                setIsOpen={setDialogOpen} 
-                order={selectedOrder} 
-                onSave={fetchOrders} 
-            />
         </div>
     );
 };

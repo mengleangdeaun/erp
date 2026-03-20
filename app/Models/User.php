@@ -58,4 +58,26 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordC
         'email_verified_at' => 'datetime',
         'preferences' => 'array',
     ];
+
+    public function roles()
+    {
+        return $this->belongsToMany(Auth\Role::class, 'user_roles');
+    }
+
+    public function branches()
+    {
+        return $this->belongsToMany(HR\Branch::class, 'user_branches')->withPivot('is_primary');
+    }
+
+    public function hasPermission($permission)
+    {
+        return $this->roles()->whereHas('permissions', function ($query) use ($permission) {
+            $query->where('slug', $permission);
+        })->exists();
+    }
+
+    public function hasRole($role)
+    {
+        return $this->roles()->where('slug', $role)->exists();
+    }
 }

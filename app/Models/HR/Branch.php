@@ -26,4 +26,19 @@ class Branch extends Model
         'telegram_chat_id',
         'telegram_topic_id',
     ];
+
+    public function locations()
+    {
+        return $this->hasMany(\App\Models\Inventory\InventoryLocation::class);
+    }
+
+    public function inventoryProducts()
+    {
+        return $this->belongsToMany(\App\Models\Inventory\InventoryProduct::class, 'branch_inventory_product', 'branch_id', 'inventory_product_id')->withPivot('is_active')->withTimestamps();
+    }
+
+    public function services()
+    {
+        return $this->belongsToMany(\App\Models\Service::class, 'branch_service', 'branch_id', 'service_id')->withPivot('is_active')->withTimestamps();
+    }
 }

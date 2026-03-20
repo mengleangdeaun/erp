@@ -9,5 +9,10 @@ class InventoryLocation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'address', 'is_active'];
+    protected $fillable = ['name', 'description', 'address', 'is_active', 'branch_id'];
+
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\HR\Branch::class);
+    }
 }

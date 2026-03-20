@@ -9,6 +9,7 @@ import Pagination from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
 import ActionButtons from '@/components/ui/ActionButtons';
 import { Badge } from '@/components/ui/badge';
+import DeleteModal from '@/components/DeleteModal';
 
 const JobPartIndex: React.FC = () => {
     const { t } = useTranslation();
@@ -16,6 +17,11 @@ const JobPartIndex: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [selectedPart, setSelectedPart] = useState<any>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
+    
+    // Delete Modal state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [partToDelete, setPartToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     
     // Search and Pagination state
     const [search, setSearch] = useState('');
@@ -44,11 +50,17 @@ const JobPartIndex: React.FC = () => {
         setDialogOpen(true);
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this part?')) return;
+    const handleDeleteClick = (part: any) => {
+        setPartToDelete(part);
+        setDeleteDialogOpen(true);
+    };
 
+    const handleDeleteConfirm = async () => {
+        if (!partToDelete) return;
+
+        setIsDeleting(true);
         try {
-            const response = await fetch(`/api/services/parts/${id}`, {
+            const response = await fetch(`/api/services/parts/${partToDelete.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Accept': 'application/json',
@@ -58,6 +70,8 @@ const JobPartIndex: React.FC = () => {
 
             if (response.ok) {
                 toast.success('Part deleted successfully');
+                setDeleteDialogOpen(false);
+                setPartToDelete(null);
                 fetchParts();
             } else {
                 const data = await response.json();
@@ -65,6 +79,8 @@ const JobPartIndex: React.FC = () => {
             }
         } catch (error) {
             toast.error('Failed to delete part');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -73,7 +89,8 @@ const JobPartIndex: React.FC = () => {
         if (!search) return parts;
         return parts.filter(p => 
             p.name.toLowerCase().includes(search.toLowerCase()) || 
-            p.type.toLowerCase().includes(search.toLowerCase())
+            (p.code && p.code.toLowerCase().includes(search.toLowerCase())) ||
+            (p.type && p.type.toLowerCase().includes(search.toLowerCase()))
         );
     }, [parts, search]);
 
@@ -128,17 +145,26 @@ const JobPartIndex: React.FC = () => {
                                                 <IconTools size={20} />
                                             </div>
                                             <div>
-                                                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                                                    {part.name}
-                                                </h3>
-                                                <Badge variant="outline" className="mt-1 font-medium text-[10px] uppercase tracking-wider">
-                                                    {part.type}
-                                                </Badge>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                                                        {part.name}
+                                                    </h3>
+                                                    {part.code && (
+                                                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded cursor-help" title="Part Code">
+                                                            {part.code}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {part.type && (
+                                                    <Badge variant="outline" className="mt-1 font-medium text-[10px] uppercase tracking-wider">
+                                                        {part.type}
+                                                    </Badge>
+                                                )}
                                             </div>
                                         </div>
                                         <ActionButtons 
                                             onEdit={() => handleEdit(part)}
-                                            onDelete={() => handleDelete(part.id)}
+                                            onDelete={() => handleDeleteClick(part)}
                                             skipDeleteConfirm
                                             className="opacity-0 group-hover:opacity-100 transition-opacity"
                                         />
@@ -177,6 +203,15 @@ const JobPartIndex: React.FC = () => {
                 setIsOpen={setDialogOpen} 
                 part={selectedPart} 
                 onSave={fetchParts} 
+            />
+
+            <DeleteModal 
+                isOpen={deleteDialogOpen}
+                setIsOpen={setDeleteDialogOpen}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+                title="Delete Part"
+                message={`Are you sure you want to delete the part "${partToDelete?.name}"? This action cannot be undone.`}
             />
         </div>
     );

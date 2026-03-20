@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Inventory\PurchaseReceiveController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -20,7 +22,7 @@ Route::post('reset-password', [App\Http\Controllers\Auth\PasswordResetController
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('user', function (Request $request) {
-        return $request->user();
+        return $request->user()->load('roles');
     });
     
     Route::post('/profile/update', [App\Http\Controllers\ProfileController::class, 'update']);
@@ -34,6 +36,11 @@ Route::middleware('auth:sanctum')->group(function () {
     })->middleware(['throttle:6,1'])->name('verification.send');
     Route::prefix('hr')->group(function () {
         Route::apiResource('branches', App\Http\Controllers\HR\BranchController::class);
+        Route::post('branches/{id}/link-location', [App\Http\Controllers\HR\BranchController::class, 'linkLocation']);
+        Route::get('branches/{id}/products', [App\Http\Controllers\HR\BranchProductController::class, 'index']);
+        Route::post('branches/{id}/products/sync', [App\Http\Controllers\HR\BranchProductController::class, 'sync']);
+        Route::get('branches/{id}/services', [App\Http\Controllers\HR\BranchServiceController::class, 'index']);
+        Route::post('branches/{id}/services/sync', [App\Http\Controllers\HR\BranchServiceController::class, 'sync']);
         Route::apiResource('departments', App\Http\Controllers\HR\DepartmentController::class);
         Route::apiResource('designations', App\Http\Controllers\HR\DesignationController::class);
         Route::apiResource('document-types', App\Http\Controllers\HR\DocumentTypeController::class);
@@ -121,8 +128,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Procurement
         Route::apiResource('suppliers', \App\Http\Controllers\Inventory\SupplierController::class);
         Route::apiResource('purchase-orders', \App\Http\Controllers\Inventory\PurchaseOrderController::class);
-        Route::apiResource('purchase-receives', \App\Http\Controllers\Inventory\PurchaseReceiveController::class)->except(['update']);
-        Route::get('purchase-orders/{id}/pending-items', [\App\Http\Controllers\Inventory\PurchaseReceiveController::class, 'getPendingItems']);
+        Route::apiResource('purchase-receives', PurchaseReceiveController::class)->except(['update']);
+        Route::get('purchase-orders/{id}/pending-items', [PurchaseReceiveController::class, 'getPendingItems']);
         
         // Stock Movements
         Route::get('stock-movements', [\App\Http\Controllers\Inventory\StockMovementController::class, 'index']);
@@ -164,6 +171,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('sales')->group(function () {
         Route::apiResource('orders', \App\Http\Controllers\SalesOrderController::class);
         Route::post('orders/{id}/cancel', [\App\Http\Controllers\SalesOrderController::class, 'cancel']);
+    });
+
+    Route::prefix('finance')->group(function () {
+        Route::apiResource('payment-accounts', \App\Http\Controllers\Finance\PaymentAccountController::class);
+    });
+
+    // Access Control Routes
+    Route::prefix('access-control')->group(function () {
+        Route::apiResource('users', \App\Http\Controllers\Auth\UserController::class);
+        Route::apiResource('roles', \App\Http\Controllers\Auth\RoleController::class);
+        Route::get('permissions', [\App\Http\Controllers\Auth\PermissionController::class, 'index']);
+        Route::post('unlock', [\App\Http\Controllers\Auth\LockScreenController::class, 'unlock']);
     });
 
 });

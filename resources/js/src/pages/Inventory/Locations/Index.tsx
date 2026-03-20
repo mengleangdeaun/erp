@@ -14,7 +14,7 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { IconBuildingWarehouse } from '@tabler/icons-react';
+import { IconBuildingWarehouse, IconLink } from '@tabler/icons-react';
 
 const LocationIndex = () => {
     const [locations, setLocations] = useState<any[]>([]);
@@ -22,6 +22,11 @@ const LocationIndex = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [editingLocation, setEditingLocation] = useState<any>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [branches, setBranches] = useState<any[]>([]);
+    const [linkModalOpen, setLinkModalOpen] = useState(false);
+    const [linkingLocation, setLinkingLocation] = useState<any>(null);
+    const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+    const [isLinking, setIsLinking] = useState(false);
 
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('name');
@@ -53,7 +58,17 @@ const LocationIndex = () => {
             .catch(err => { console.error(err); setLocations([]); setLoading(false); });
     };
 
-    useEffect(() => { fetchLocations(); }, []);
+    const fetchBranches = () => {
+        fetch('/api/hr/branches?compact=true', {
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
+            credentials: 'include',
+        })
+            .then(res => res.json())
+            .then(data => setBranches(Array.isArray(data) ? data : []))
+            .catch(err => console.error(err));
+    };
+
+    useEffect(() => { fetchLocations(); fetchBranches(); }, []);
 
     const handleCreate = () => { setEditingLocation(null); setFormData(initialFormState); setModalOpen(true); };
 
@@ -92,6 +107,31 @@ const LocationIndex = () => {
                 const data = await response.json(); toast.error(data.message || 'Failed to save location');
             }
         } catch (error) { console.error(error); toast.error('An error occurred'); } finally { setIsSaving(false); }
+    };
+
+    const handleLinkBranch = async () => {
+        if (!selectedBranchId || !linkingLocation) return;
+        setIsLinking(true);
+        try {
+            const response = await fetch(`/api/inventory/locations/${linkingLocation.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
+                credentials: 'include',
+                body: JSON.stringify({ branch_id: selectedBranchId }),
+            });
+            if (response.ok) {
+                toast.success('Branch linked successfully');
+                setLinkModalOpen(false);
+                fetchLocations();
+            } else {
+                toast.error('Failed to link branch');
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('An error occurred');
+        } finally {
+            setIsLinking(false);
+        }
     };
 
     const filteredAndSorted = useMemo(() => {
@@ -159,7 +199,14 @@ const LocationIndex = () => {
                                     <td><Badge 
                                         size="sm"
                                         variant={row.is_active ? 'success' : 'destructive'}>{row.is_active ? 'Active' : 'Inactive'}</Badge></td>
-                                    <td><ActionButtons skipDeleteConfirm={true} onEdit={() => handleEdit(row)} onDelete={() => confirmDelete(row.id)} /></td>
+                                    <td>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button variant="ghost" size="sm" onClick={() => { setLinkingLocation(row); setSelectedBranchId(row.branch_id?.toString() || ''); setLinkModalOpen(true); }} title="Link Branch">
+                                                <IconLink size={16} className="text-primary" />
+                                            </Button>
+                                            <ActionButtons skipDeleteConfirm={true} onEdit={() => handleEdit(row)} onDelete={() => confirmDelete(row.id)} />
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -186,6 +233,36 @@ const LocationIndex = () => {
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
                         <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
                         <Button type="submit" form="loc-form" disabled={isSaving} className="bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20">{isSaving ? 'Saving...' : 'Save Storage'}</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={linkModalOpen} onOpenChange={setLinkModalOpen}>
+                <DialogContent className="sm:max-w-[400px] rounded-2xl">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="bg-primary/10 p-2 rounded-xl"><IconLink className="text-primary w-6 h-6" /></div>
+                        <DialogTitle className="text-lg font-bold">Link Branch to {linkingLocation?.name}</DialogTitle>
+                    </div>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium">Select Branch</label>
+                            <Select onValueChange={setSelectedBranchId} value={selectedBranchId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Choose a branch..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {branches.map(b => (
+                                        <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-2 mt-4">
+                        <Button variant="ghost" onClick={() => setLinkModalOpen(false)}>Cancel</Button>
+                        <Button onClick={handleLinkBranch} disabled={isLinking || !selectedBranchId} className="bg-primary text-white">
+                            {isLinking ? 'Linking...' : 'Confirm Link'}
+                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>

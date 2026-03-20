@@ -34,4 +34,9 @@ class Service extends Model
     {
         return $this->belongsToMany(JobPartMaster::class, 'service_parts_mapping', 'service_id', 'part_id');
     }
+
+    public function branches()
+    {
+        return $this->belongsToMany(\App\Models\HR\Branch::class, 'branch_service', 'service_id', 'branch_id')->withPivot('is_active')->withTimestamps();
+    }
 }

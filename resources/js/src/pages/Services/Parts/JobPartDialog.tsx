@@ -17,7 +17,8 @@ import {
 interface JobPart {
     id: number;
     name: string;
-    type: string;
+    code?: string;
+    type?: string;
     is_active: boolean;
 }
 
@@ -32,7 +33,8 @@ const JobPartDialog = ({ isOpen, setIsOpen, part, onSave }: JobPartDialogProps) 
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({
         name: '',
-        type: 'PPF',
+        code: '',
+        type: '',
         is_active: true,
     });
 
@@ -40,13 +42,15 @@ const JobPartDialog = ({ isOpen, setIsOpen, part, onSave }: JobPartDialogProps) 
         if (part) {
             setForm({
                 name: part.name,
-                type: part.type,
+                code: part.code || '',
+                type: part.type || '',
                 is_active: Boolean(part.is_active),
             });
         } else {
             setForm({
                 name: '',
-                type: 'PPF',
+                code: '',
+                type: '',
                 is_active: true,
             });
         }
@@ -112,22 +116,23 @@ const JobPartDialog = ({ isOpen, setIsOpen, part, onSave }: JobPartDialogProps) 
                     </div>
 
                     <div className="space-y-2">
-                        <Label className="text-xs font-bold uppercase text-gray-500">Service Type</Label>
-                        <Select 
+                        <Label className="text-xs font-bold uppercase text-gray-500">Part Code</Label>
+                        <Input 
+                            value={form.code} 
+                            onChange={e => setForm({ ...form, code: e.target.value })}
+                            placeholder="e.g. FM-001"
+                            className="h-10"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-gray-500">Category (Optional)</Label>
+                         <Input 
                             value={form.type} 
-                            onValueChange={val => setForm({ ...form, type: val })}
-                        >
-                            <SelectTrigger className="h-10">
-                                <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="PPF">PPF (Paint Protection Film)</SelectItem>
-                                <SelectItem value="HPF">HPF (High Performance Film)</SelectItem>
-                                <SelectItem value="WIND">WIND (Window Tint)</SelectItem>
-                                <SelectItem value="WR">WRAP (Vinyl Wrap)</SelectItem>
-                                <SelectItem value="OTHER">Other</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            onChange={e => setForm({ ...form, type: e.target.value })}
+                            placeholder="e.g. Exterior, Interior, Glass"
+                            className="h-10"
+                        />
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white-dark/5 rounded-xl border border-gray-100 dark:border-gray-800">

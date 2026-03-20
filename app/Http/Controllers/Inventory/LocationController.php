@@ -19,7 +19,8 @@ class LocationController extends Controller
             'name' => 'required|string',
             'description' => 'nullable|string',
             'address' => 'nullable|string',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'branch_id' => 'nullable|exists:branches,id'
         ]);
 
         return response()->json(InventoryLocation::create($validated), 201);
@@ -38,7 +39,8 @@ class LocationController extends Controller
             'name' => 'sometimes|required|string',
             'description' => 'nullable|string',
             'address' => 'nullable|string',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
+            'branch_id' => 'nullable|exists:branches,id'
         ]);
 
         $location->update($validated);

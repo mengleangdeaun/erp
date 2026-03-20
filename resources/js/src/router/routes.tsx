@@ -3,6 +3,7 @@ const Index = lazy(() => import('../pages/Index'));
 const Login = lazy(() => import('../pages/Auth/login'));
 const ForgotPassword = lazy(() => import('../pages/Auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('../pages/Auth/ResetPassword'));
+const LockScreen = lazy(() => import('../pages/Auth/LockScreen'));
 const ProfileSetting = lazy(() => import('../pages/Profile/ProfileSetting'));
 const BranchIndex = lazy(() => import('../pages/HR/Branch/Index'));
 const DepartmentIndex = lazy(() => import('../pages/HR/Department/Index'));
@@ -79,6 +80,8 @@ const InventoryStockAdjustmentIndex = lazy(() => import('../pages/Inventory/Stoc
 const InventoryStockAdjustmentForm = lazy(() => import('../pages/Inventory/StockAdjustments/Form'));
 const InventoryStockTransferIndex = lazy(() => import('../pages/Inventory/StockTransfers/Index'));
 const InventoryStockTransferForm = lazy(() => import('../pages/Inventory/StockTransfers/Form'));
+const InventoryBranchProductIndex = lazy(() => import('../pages/Inventory/BranchProducts/Index'));
+const InventoryBranchServiceIndex = lazy(() => import('../pages/Inventory/BranchServices/Index'));
 
 // CRM Module
 const CRM_CustomerTypeIndex = lazy(() => import('../pages/Customers/Types/Index'));
@@ -90,7 +93,13 @@ const ServicePartIndex = lazy(() => import('../pages/Services/Parts/Index'));
 const VehicleBrandIndex = lazy(() => import('../pages/Services/Vehicles/Brands/Index'));
 const VehicleModelIndex = lazy(() => import('../pages/Services/Vehicles/Models/Index'));
 const SalesOrderIndex = lazy(() => import('../pages/Sales/Index'));
+const SalesCreate = lazy(() => import('../pages/Sales/Create'));
+const PaymentAccountIndex = lazy(() => import('../pages/Finance/PaymentAccounts/Index'));
 const JobCardIndex = lazy(() => import('../pages/Services/JobCards/Index'));
+
+// Access Control
+const RoleManagement = lazy(() => import('../pages/AccessControl/Roles'));
+const UserManagement = lazy(() => import('../pages/AccessControl/Users'));
 
 const routes = [
     // dashboard
@@ -115,6 +124,11 @@ const routes = [
         element: <ResetPassword />,
         layout: 'blank',
     },
+    {
+        path: '/auth/lockscreen',
+        element: <LockScreen />,
+        layout: 'blank',
+    },
     // profile
     {
         path: '/users/profile',
@@ -124,6 +138,17 @@ const routes = [
     {
         path: '/users/preferences',
         element: <UserPreferences />,
+        layout: 'default',
+    },
+    // Access Control
+    {
+        path: '/access-control/roles',
+        element: <RoleManagement />,
+        layout: 'default',
+    },
+    {
+        path: '/access-control/users',
+        element: <UserManagement />,
         layout: 'default',
     },
     // Branch (Single Page with Modal)
@@ -387,6 +412,8 @@ const routes = [
     { path: '/inventory/products', element: <InventoryProductIndex />, layout: 'default' },
     { path: '/inventory/stocks', element: <InventoryStockIndex />, layout: 'default' },
     { path: '/inventory/stock-movements', element: <InventoryStockMovementIndex />, layout: 'default' },
+    { path: '/inventory/branch-products', element: <InventoryBranchProductIndex />, layout: 'default' },
+    { path: '/inventory/branch-services', element: <InventoryBranchServiceIndex />, layout: 'default' },
     // Procurement
     { path: '/inventory/suppliers', element: <InventorySupplierIndex />, layout: 'default' },
     { path: '/inventory/purchase-orders', element: <InventoryPurchaseOrderIndex />, layout: 'default' },
@@ -408,6 +435,8 @@ const routes = [
     { path: '/services/vehicles/models', element: <VehicleModelIndex />, layout: 'default' },
     { path: '/services/job-cards', element: <JobCardIndex />, layout: 'default' },
     { path: '/sales/orders', element: <SalesOrderIndex />, layout: 'default' },
+    { path: '/sales/create', element: <SalesCreate />, layout: 'default' },
+    { path: '/finance/payment-accounts', element: <PaymentAccountIndex />, layout: 'default' },
     {
         path: '*',
         element: <Error />,

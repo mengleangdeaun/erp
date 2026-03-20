@@ -33,7 +33,7 @@ class SalesOrderController extends Controller
             });
         }
 
-        return $query->latest()->get();
+        return $query->latest()->paginate($request->per_page ?? 15);
     }
 
     public function store(Request $request, DocumentNumberService $documentNumberService)
@@ -41,11 +41,14 @@ class SalesOrderController extends Controller
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'branch_id' => 'required|exists:branches,id',
-            'vehicle_id' => 'required|exists:customer_vehicles,id',
+            'vehicle_id' => 'nullable|exists:customer_vehicles,id',
+            'payment_account_id' => 'nullable|exists:payment_accounts,id',
+            'receipt' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'order_date' => 'required|date',
             'items' => 'required|array|min:1',
             'items.*.service_id' => 'nullable|exists:services,id',
             'items.*.product_id' => 'nullable|exists:inventory_products,id',
+            'items.*.job_part_id' => 'nullable|exists:job_parts_master,id',
             'items.*.qty' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.discount' => 'nullable|numeric|min:0',
@@ -53,31 +56,60 @@ class SalesOrderController extends Controller
             'tax_total' => 'nullable|numeric',
             'discount_total' => 'nullable|numeric',
             'grand_total' => 'required|numeric',
+            'deposits' => 'nullable|array',
+            'deposits.*.amount' => 'required|numeric|min:0',
+            'deposits.*.method' => 'required|string',
+            'deposits.*.date' => 'required|date',
+            'deposits.*.notes' => 'nullable|string',
             'notes' => 'nullable|string',
         ]);
 
         $order = null;
 
-        DB::transaction(function () use ($validated, $documentNumberService, &$order) {
+        DB::transaction(function () use ($request, $validated, $documentNumberService, &$order) {
             $orderNo = $documentNumberService->generate('sales_order');
+
+            $totalPaid = collect($validated['deposits'] ?? [])->sum('amount');
+            
+            $receiptPath = null;
+            if ($request->hasFile('receipt')) {
+                $receiptPath = $request->file('receipt')->store('receipts', 'public');
+            }
 
             $order = SalesOrder::create([
                 'order_no' => $orderNo,
                 'customer_id' => $validated['customer_id'],
                 'branch_id' => $validated['branch_id'],
-                'vehicle_id' => $validated['vehicle_id'],
+                'vehicle_id' => $validated['vehicle_id'] ?? null,
+                'payment_account_id' => $validated['payment_account_id'] ?? null,
+                'receipt_path' => $receiptPath ? '/storage/' . $receiptPath : null,
                 'order_date' => $validated['order_date'],
                 'subtotal' => $validated['subtotal'],
                 'tax_total' => $validated['tax_total'] ?? 0,
                 'discount_total' => $validated['discount_total'] ?? 0,
                 'grand_total' => $validated['grand_total'],
+                'paid_amount' => $totalPaid,
+                'balance_amount' => $validated['grand_total'] - $totalPaid,
                 'status' => 'CONFIRMED',
-                'payment_status' => 'UNPAID',
+                'payment_status' => $totalPaid >= $validated['grand_total'] ? 'PAID' : ($totalPaid > 0 ? 'PARTIAL' : 'UNPAID'),
                 'notes' => $validated['notes'] ?? null,
                 'created_by' => Auth::id() ?? 1,
             ]);
 
+            // Create deposits
+            foreach ($validated['deposits'] ?? [] as $dep) {
+                \App\Models\SalesOrderDeposit::create([
+                    'sales_order_id' => $order->id,
+                    'amount' => $dep['amount'],
+                    'payment_method' => $dep['method'],
+                    'deposit_date' => $dep['date'],
+                    'notes' => $dep['notes'] ?? null,
+                ]);
+            }
+
             $hasService = false;
+            $itemsWithJobParts = [];
+
             foreach ($validated['items'] as $itemData) {
                 $itemable_type = null;
                 $itemable_id = null;
@@ -96,20 +128,30 @@ class SalesOrderController extends Controller
                     $item_name = $product->name;
                 }
 
-                SalesOrderItem::create([
+                $orderItem = SalesOrderItem::create([
                     'sales_order_id' => $order->id,
                     'itemable_type' => $itemable_type,
                     'itemable_id' => $itemable_id,
+                    'job_part_id' => $itemData['job_part_id'] ?? null,
                     'item_name' => $item_name,
                     'quantity' => $itemData['qty'],
                     'unit_price' => $itemData['unit_price'],
                     'discount_amount' => $itemData['discount'] ?? 0,
                     'subtotal' => ($itemData['qty'] * $itemData['unit_price']) - ($itemData['discount'] ?? 0),
                 ]);
+
+                if (!empty($itemData['job_part_id']) && !empty($itemData['product_id'])) {
+                    $itemsWithJobParts[] = [
+                        'product_id' => $itemData['product_id'],
+                        'job_part_id' => $itemData['job_part_id'],
+                        'qty' => $itemData['qty'],
+                        'service_id' => $itemData['service_id'] ?? null
+                    ];
+                }
             }
 
-            // If any item is a service, create a Job Card
-            if ($hasService) {
+            // If any item is a service (or linked to a service part), create a Job Card
+            if ($hasService || !empty($itemsWithJobParts)) {
                 $jobNo = $documentNumberService->generate('job_card');
                 $jobCard = JobCard::create([
                     'job_no' => $jobNo,
@@ -120,11 +162,11 @@ class SalesOrderController extends Controller
                     'status' => 'PENDING',
                 ]);
 
+                // 1. Process explicit services added as main items
                 foreach ($validated['items'] as $itemData) {
-                    if (!empty($itemData['service_id'])) {
+                    if (!empty($itemData['service_id']) && empty($itemData['job_part_id'])) {
                         $service = Service::with(['parts', 'materials'])->find($itemData['service_id']);
                         
-                        // Create a specific Job Card Item for the service itself
                         $parentJobItem = JobCardItem::create([
                             'job_card_id' => $jobCard->id,
                             'service_id' => $service->id,
@@ -132,17 +174,20 @@ class SalesOrderController extends Controller
                             'status' => 'PENDING',
                         ]);
 
-                        // Map specific car parts to the job card
+                        // Add parts that DON'T have a specific product selected in this sale
                         foreach ($service->parts as $part) {
-                            JobCardItem::create([
-                                'job_card_id' => $jobCard->id,
-                                'service_id' => $service->id,
-                                'part_id' => $part->id,
-                                'status' => 'PENDING',
-                            ]);
+                            $isExplicitlyHandled = collect($itemsWithJobParts)->where('job_part_id', $part->id)->where('service_id', $service->id)->first();
+                            if (!$isExplicitlyHandled) {
+                                JobCardItem::create([
+                                    'job_card_id' => $jobCard->id,
+                                    'service_id' => $service->id,
+                                    'part_id' => $part->id,
+                                    'status' => 'PENDING',
+                                ]);
+                            }
                         }
 
-                        // Map expected materials to the job card, linked to the parent service item
+                        // Map standard materials
                         foreach ($service->materials as $mat) {
                             JobCardMaterialUsage::create([
                                 'job_card_id' => $jobCard->id,
@@ -150,10 +195,29 @@ class SalesOrderController extends Controller
                                 'product_id' => $mat->product_id,
                                 'spent_qty' => $mat->suggested_qty * $itemData['qty'],
                                 'actual_qty' => 0,
-                                'unit' => 'pcs', // Default unit as it's missing in service_materials
+                                'unit' => 'pcs',
                             ]);
                         }
                     }
+                }
+
+                // 2. Process products explicitly linked to parts
+                foreach ($itemsWithJobParts as $pLink) {
+                    $jobItem = JobCardItem::create([
+                        'job_card_id' => $jobCard->id,
+                        'service_id' => $pLink['service_id'],
+                        'part_id' => $pLink['job_part_id'],
+                        'status' => 'PENDING',
+                    ]);
+
+                    JobCardMaterialUsage::create([
+                        'job_card_id' => $jobCard->id,
+                        'job_card_item_id' => $jobItem->id,
+                        'product_id' => $pLink['product_id'],
+                        'spent_qty' => $pLink['qty'],
+                        'actual_qty' => 0,
+                        'unit' => 'pcs',
+                    ]);
                 }
             }
         });

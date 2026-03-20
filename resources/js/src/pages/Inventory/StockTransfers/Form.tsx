@@ -112,10 +112,13 @@ export default function StockTransferForm() {
         try {
             const [locRes, prodRes] = await Promise.all([
                 apiFetch('/api/inventory/locations'),
-                apiFetch('/api/inventory/products')
+                apiFetch('/api/inventory/products?all=true')
             ]);
-            setLocations(await locRes.json());
-            setProducts(await prodRes.json());
+            const locData = await locRes.json();
+            const prodData = await prodRes.json();
+
+            setLocations(Array.isArray(locData) ? locData : (locData.data || []));
+            setProducts(Array.isArray(prodData) ? prodData : (prodData.data || []));
         } catch {
             toast.error('Failed to load configuration data');
         } finally {

@@ -9,6 +9,30 @@ import Dropdown from '../Dropdown';
 
 const Header = () => {
     const location = useLocation();
+    const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem('user_info');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+
+        fetch('/api/user', {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data && !data.message) {
+                    setUser(data);
+                    localStorage.setItem('user_info', JSON.stringify(data));
+                }
+            })
+            .catch(err => console.error('Failed to fetch user', err));
+    }, []);
+
     useEffect(() => {
         const selector = document.querySelector('ul.horizontal-menu a[href="' + window.location.pathname + '"]');
         if (selector) {
@@ -530,19 +554,29 @@ const Header = () => {
                                 offset={[0, 8]}
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
                                 btnClassName="relative group block"
-                                button={<img className="w-9 h-9 rounded-full object-cover saturate-50 group-hover:saturate-100" src="/assets/images/user-profile.jpeg" alt="userProfile" />}
+                                button={<img className="w-9 h-9 rounded-full object-cover saturate-50 group-hover:saturate-100"  src={user?.avatar ? `/storage/${user.avatar}` : "/assets/images/user-profile.jpeg"}
+                                                alt="userProfile"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = "/assets/images/user-profile.jpeg";
+                                                }} />}
                             >
-                                <ul className="text-dark dark:text-white-dark !py-0 w-[230px] font-semibold dark:text-white-light/90">
-                                    <li>
+                                <ul className="text-dark dark:text-white-dark !py-0 w-[280px] font-semibold dark:text-white-light/90">
+                                     <li>
                                         <div className="flex items-center px-4 py-4">
-                                            <img className="rounded-md w-10 h-10 object-cover" src="/assets/images/user-profile.jpeg" alt="userProfile" />
+                                            <img
+                                                className="rounded-md w-10 h-10 object-cover"
+                                                src={user?.avatar ? `/storage/${user.avatar}` : "/assets/images/user-profile.jpeg"}
+                                                alt="userProfile"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = "/assets/images/user-profile.jpeg";
+                                                }}
+                                                />
                                             <div className="ltr:pl-4 rtl:pr-4 truncate">
-                                                <h4 className="text-base">
-                                                    John Doe
-                                                    <span className="text-xs bg-success-light rounded text-success px-1 ltr:ml-2 rtl:ml-2">Pro</span>
+                                                <h4 className="text-base text-primary">
+                                                    {user?.name || 'User'}
                                                 </h4>
-                                                <button type="button" className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white">
-                                                    johndoe@gmail.com
+                                                <button type="button" className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white text-xs">
+                                                    {user?.email || ''}
                                                 </button>
                                             </div>
                                         </div>
@@ -565,7 +599,7 @@ const Header = () => {
                                         <Link to="/users/preferences" className="dark:hover:text-white">
                                             <svg className="ltr:mr-2 rtl:ml-2 shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 
-<path d="M9.5 14C11.1569 14 12.5 15.3431 12.5 17C12.5 18.6568 11.1569 20 9.5 20C7.84315 20 6.5 18.6568 6.5 17C6.5 15.3431 7.84315 14 9.5 14Z" stroke="currentColor" stroke-width="1.5"></path><path d="M14.5 3.99998C12.8431 3.99998 11.5 5.34312 11.5 6.99998C11.5 8.65683 12.8431 9.99998 14.5 9.99998C16.1569 9.99998 17.5 8.65683 17.5 6.99998C17.5 5.34312 16.1569 3.99998 14.5 3.99998Z" stroke="currentColor" stroke-width="1.5"></path><path opacity="0.5" d="M13 17L22 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><path opacity="0.5" d="M11 7L2 6.9585" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><path opacity="0.5" d="M2 17L6 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><path opacity="0.5" d="M22 7L18 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                                <path d="M9.5 14C11.1569 14 12.5 15.3431 12.5 17C12.5 18.6568 11.1569 20 9.5 20C7.84315 20 6.5 18.6568 6.5 17C6.5 15.3431 7.84315 14 9.5 14Z" stroke="currentColor" stroke-width="1.5"></path><path d="M14.5 3.99998C12.8431 3.99998 11.5 5.34312 11.5 6.99998C11.5 8.65683 12.8431 9.99998 14.5 9.99998C16.1569 9.99998 17.5 8.65683 17.5 6.99998C17.5 5.34312 16.1569 3.99998 14.5 3.99998Z" stroke="currentColor" stroke-width="1.5"></path><path opacity="0.5" d="M13 17L22 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><path opacity="0.5" d="M11 7L2 6.9585" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><path opacity="0.5" d="M2 17L6 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path><path opacity="0.5" d="M22 7L18 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
 
 
                                             </svg>
@@ -592,7 +626,7 @@ const Header = () => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link to="/auth/boxed-lockscreen" className="dark:hover:text-white">
+                                        <Link to="/auth/lockscreen" className="dark:hover:text-white">
                                             <svg className="ltr:mr-2 rtl:ml-2 shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <path
                                                     d="M2 16C2 13.1716 2 11.7574 2.87868 10.8787C3.75736 10 5.17157 10 8 10H16C18.8284 10 20.2426 10 21.1213 10.8787C22 11.7574 22 13.1716 22 16C22 18.8284 22 20.2426 21.1213 21.1213C20.2426 22 18.8284 22 16 22H8C5.17157 22 3.75736 22 2.87868 21.1213C2 20.2426 2 18.8284 2 16Z"
@@ -616,7 +650,8 @@ const Header = () => {
                                         </Link>
                                     </li>
                                     <li className="border-t border-white-light dark:border-white-light/10">
-                                        <Link to="/auth/login" className="text-danger !py-3">
+                                        <Link to="/auth/login" className="text-danger !py-3 flex items-center justify-between">
+                                            <div className="flex items-center">
                                             <svg className="ltr:mr-2 rtl:ml-2 rotate-90 shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <path
                                                     opacity="0.5"
@@ -628,6 +663,14 @@ const Header = () => {
                                                 <path d="M12 15L12 2M12 2L15 5.5M12 2L9 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                             </svg>
                                             Sign Out
+                                            </div>
+                                            <div>
+                                                {user?.roles?.length > 0 && (
+                                                    <span className="text-[10px] bg-primary/10  border border-primary/20 rounded text-primary px-1.5 py-0.5 ltr:ml-2 rtl:ml-2 align-middle uppercase tracking-wider font-bold">
+                                                        {user.roles[0].name}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </Link>
                                     </li>
                                 </ul>

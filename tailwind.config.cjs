@@ -41,7 +41,7 @@ module.exports = {
 					'dark-light': 'rgba(33,150,243,.15)'
 				},
 				dark: {
-					DEFAULT: '#3b3f5c',
+					DEFAULT: '#10121bff',
 					light: '#eaeaec',
 					'dark-light': 'rgba(59,63,92,.15)'
 				},
@@ -89,6 +89,10 @@ module.exports = {
 				}
 			},
 			fontFamily: {
+				google_sans: [
+					'Google Sans',
+					'sans-serif'
+				],
 				nunito: [
 					'Nunito',
 					'sans-serif'

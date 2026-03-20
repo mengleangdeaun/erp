@@ -97,7 +97,7 @@ const ServiceDialog = ({ isOpen, setIsOpen, service, onSave }: ServiceDialogProp
         try {
             const [catsRes, prodsRes, partsRes] = await Promise.all([
                 fetch('/api/inventory/categories'),
-                fetch('/api/inventory/products'),
+                fetch('/api/inventory/products?all=true'),
                 fetch('/api/services/parts')
             ]);
             
@@ -105,9 +105,9 @@ const ServiceDialog = ({ isOpen, setIsOpen, service, onSave }: ServiceDialogProp
             const prods = await prodsRes.json();
             const parts = await partsRes.json();
 
-            setCategories(cats);
-            setProducts(prods);
-            setAvailableParts(parts);
+            setCategories(Array.isArray(cats) ? cats : []);
+            setProducts(Array.isArray(prods) ? prods : (prods.data || []));
+            setAvailableParts(Array.isArray(parts) ? parts : []);
         } catch (error) {
             toast.error('Failed to load form data');
         }
