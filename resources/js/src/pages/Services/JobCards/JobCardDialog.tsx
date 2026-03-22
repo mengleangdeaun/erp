@@ -158,7 +158,7 @@ const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps)
                         </div>
                         <div className="flex flex-col items-end gap-1 px-4 py-3 bg-gray-50 dark:bg-gray-900 rounded-3xl border dark:border-gray-800 shadow-sm">
                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Target Vehicle</span>
-                            <span className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tighter">{job?.vehicle?.plate_no}</span>
+                            <span className="text-base font-black text-gray-900 dark:text-white uppercase tracking-tighter">{job?.vehicle?.plate_number}</span>
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{job?.vehicle?.brand?.name} {job?.vehicle?.model?.name}</span>
                         </div>
                     </div>

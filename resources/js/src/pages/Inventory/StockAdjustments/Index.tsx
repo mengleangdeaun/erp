@@ -83,7 +83,7 @@ export default function StockAdjustmentsPage() {
     const [sortBy, setSortBy] = useState('date');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     // Delete modal state
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);

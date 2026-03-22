@@ -323,7 +323,17 @@ const LeaveBalanceIndex = () => {
                     setLeaveTypeFilter('');
                 }}
             >
-                <div className="w-full sm:w-[220px]">
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <DateRangePicker
+                        value={dateFilter}
+                        onChange={setDateFilter}
+                        placeholder="Filter by date range..."
+                    />
+                </div>
+
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Leave Type</span>
                     <SearchableSelect
                         options={leaveTypes.map((type: any) => ({
                             value: String(type.id),
@@ -334,13 +344,6 @@ const LeaveBalanceIndex = () => {
                         onChange={(val) => setLeaveTypeFilter(String(val))}
                         placeholder="All Leave Types"
                         searchPlaceholder="Search leave types..."
-                    />
-                </div>
-                <div className="w-full sm:w-[260px]">
-                    <DateRangePicker
-                        value={dateFilter}
-                        onChange={setDateFilter}
-                        placeholder="Filter by date range..."
                     />
                 </div>
             </FilterBar>

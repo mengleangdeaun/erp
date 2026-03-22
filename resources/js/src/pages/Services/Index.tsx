@@ -9,25 +9,46 @@ import Pagination from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
 import ActionButtons from '@/components/ui/ActionButtons';
 import { Badge } from '@/components/ui/badge';
+import TableSkeleton from '@/components/ui/TableSkeleton';
+import DeleteModal from '@/components/DeleteModal';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 const ServiceIndex: React.FC = () => {
     const { t } = useTranslation();
     const [services, setServices] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedService, setSelectedService] = useState<any>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     
+    // Delete Modal state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [serviceToDelete, setServiceToDelete] = useState<any>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    
     // Search and Pagination state
     const [search, setSearch] = useState('');
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    const fetchServices = async () => {
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const response = await fetch('/api/services/list');
-            const data = await response.json();
-            setServices(data);
+            const [servicesRes, categoriesRes] = await Promise.all([
+                fetch('/api/services/list'),
+                fetch('/api/inventory/categories')
+            ]);
+            const servicesData = await servicesRes.json();
+            const categoriesData = await categoriesRes.json();
+            setServices(servicesData || []);
+            setCategories(categoriesData || []);
         } catch (error) {
             toast.error('Failed to load service catalog');
         } finally {
@@ -36,7 +57,7 @@ const ServiceIndex: React.FC = () => {
     };
 
     useEffect(() => {
-        fetchServices();
+        fetchData();
     }, []);
 
     const handleEdit = (service: any) => {
@@ -44,11 +65,17 @@ const ServiceIndex: React.FC = () => {
         setDialogOpen(true);
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this service?')) return;
+    const handleDeleteClick = (service: any) => {
+        setServiceToDelete(service);
+        setDeleteDialogOpen(true);
+    };
 
+    const handleDeleteConfirm = async () => {
+        if (!serviceToDelete) return;
+
+        setIsDeleting(true);
         try {
-            const response = await fetch(`/api/services/list/${id}`, {
+            const response = await fetch(`/api/services/list/${serviceToDelete.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Accept': 'application/json',
@@ -58,25 +85,38 @@ const ServiceIndex: React.FC = () => {
 
             if (response.ok) {
                 toast.success('Service deleted successfully');
-                fetchServices();
+                setDeleteDialogOpen(false);
+                setServiceToDelete(null);
+                fetchData();
             } else {
                 const data = await response.json();
                 toast.error(data.message || 'Failed to delete service');
             }
         } catch (error) {
             toast.error('Failed to delete service');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
     // Derived data
     const filteredServices = useMemo(() => {
-        if (!search) return services;
-        return services.filter(s => 
-            s.name.toLowerCase().includes(search.toLowerCase()) || 
-            s.code.toLowerCase().includes(search.toLowerCase()) ||
-            (s.description || '').toLowerCase().includes(search.toLowerCase())
-        );
-    }, [services, search]);
+        let result = services;
+
+        if (selectedCategoryId && selectedCategoryId !== 'all') {
+            result = result.filter(s => s.category_id === Number(selectedCategoryId));
+        }
+
+        if (search) {
+            result = result.filter(s => 
+                (s.name || '').toLowerCase().includes(search.toLowerCase()) || 
+                (s.code || '').toLowerCase().includes(search.toLowerCase()) ||
+                (s.description || '').toLowerCase().includes(search.toLowerCase())
+            );
+        }
+
+        return result;
+    }, [services, search, selectedCategoryId]);
 
     const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
     const paginatedServices = filteredServices.slice(
@@ -94,17 +134,38 @@ const ServiceIndex: React.FC = () => {
                 setSearch={setSearch}
                 onAdd={() => { setSelectedService(null); setDialogOpen(true); }}
                 addLabel="New Service"
-                onRefresh={fetchServices}
+                onRefresh={fetchData}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-            />
+                onClearFilters={() => {
+                    setSearch('');
+                    setSelectedCategoryId(null);
+                }}
+                hasActiveFilters={!!selectedCategoryId && selectedCategoryId !== 'all'}
+            >
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Filter by Category</span>
+                    <Select
+                        value={selectedCategoryId || 'all'}
+                        onValueChange={setSelectedCategoryId}
+                    >
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm text-xs font-semibold">
+                            <SelectValue placeholder="All Categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {categories.map(cat => (
+                                <SelectItem key={cat.id} value={String(cat.id)}>
+                                    {cat.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </FilterBar>
 
             {loading ? (
-                <div className="space-y-4">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                        <div key={index} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 animate-pulse h-24"></div>
-                    ))}
-                </div>
+                <TableSkeleton columns={6} rows={10} />
             ) : filteredServices.length === 0 ? (
                 <EmptyState 
                     isSearch={!!search}
@@ -115,66 +176,69 @@ const ServiceIndex: React.FC = () => {
                     actionLabel="Create Service"
                 />
             ) : (
-                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-black rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm font-sans">
                     <div className="overflow-x-auto">
-                        <table className="w-full">
+                        <table className="table-hover w-full table">
                             <thead>
-                                <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                                    <th className="px-6 py-4 text-left text-xs font-bold uppercase text-gray-400 tracking-wider">Service Detail</th>
-                                    <th className="px-6 py-4 text-left text-xs font-bold uppercase text-gray-400 tracking-wider">Category</th>
-                                    <th className="px-6 py-4 text-right text-xs font-bold uppercase text-gray-400 tracking-wider">Base Price</th>
-                                    <th className="px-6 py-4 text-center text-xs font-bold uppercase text-gray-400 tracking-wider">Mapping</th>
-                                    <th className="px-6 py-4 text-center text-xs font-bold uppercase text-gray-400 tracking-wider">Status</th>
-                                    <th className="px-6 py-4 text-right text-xs font-bold uppercase text-gray-400 tracking-wider">Actions</th>
+                                <tr>
+                                    <th>{t('service_detail', 'Service Detail')}</th>
+                                    <th>{t('category', 'Category')}</th>
+                                    <th className="text-right">{t('base_price', 'Base Price')}</th>
+                                    <th className="text-center">{t('mapping', 'Mapping')}</th>
+                                    <th className="text-center">{t('status', 'Status')}</th>
+                                    <th className="text-right">{t('actions', 'Actions')}</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                            <tbody>
                                 {paginatedServices.map((service) => (
-                                    <tr key={service.id} className="hover:bg-gray-50/30 dark:hover:bg-gray-800/30 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                    <tr key={service.id} className="group">
+                                        <td>
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-primary/5 text-primary flex items-center justify-center font-bold">
+                                                <div className="w-8 h-8 rounded-lg bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors duration-200 font-bold text-xs">
                                                     {service.name.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{service.name}</div>
-                                                    <div className="text-xs text-gray-400">{service.code}</div>
+                                                    <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">{service.name}</div>
+                                                    <div className="text-[10px] text-gray-400 font-mono tracking-tight">{service.code}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td>
                                             {service.category ? (
-                                                <Badge variant="secondary" className="font-medium">
+                                                <Badge variant="outline" className="font-medium text-[10px] bg-gray-50 dark:bg-gray-800">
                                                     {service.category.name}
                                                 </Badge>
                                             ) : (
-                                                <span className="text-xs text-gray-400 italic">Uncategorized</span>
+                                                <span className="text-[10px] text-gray-300 italic">Uncategorized</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <div className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                                                ${parseFloat(service.base_price).toLocaleString()}
+                                        <td className="text-right">
+                                            <div className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                                                ${parseFloat(service.base_price || 0).toLocaleString()}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <div className="flex flex-col items-center gap-1">
-                                                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">
+                                        <td className="text-center">
+                                            <div className="flex flex-col items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-tighter leading-none">
                                                     {service.materials?.length || 0} Materials
                                                 </span>
-                                                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tighter">
+                                                <span className="text-[9px] text-gray-500 uppercase font-bold tracking-tighter leading-none">
                                                     {service.parts?.length || 0} Parts
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <Badge variant={service.is_active ? 'success' : 'destructive'} className="text-[10px] uppercase font-bold px-2 py-0">
+                                        <td className="text-center">
+                                            <Badge 
+                                                size='sm'
+                                                dot={true}
+                                                variant={service.is_active ? 'success' : 'destructive'}>
                                                 {service.is_active ? 'Active' : 'Hidden'}
                                             </Badge>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <td className="text-right">
                                             <ActionButtons 
                                                 onEdit={() => handleEdit(service)}
-                                                onDelete={() => handleDelete(service.id)}
+                                                onDelete={() => handleDeleteClick(service)}
                                                 skipDeleteConfirm
                                             />
                                         </td>
@@ -185,7 +249,7 @@ const ServiceIndex: React.FC = () => {
                     </div>
                     
                     {totalPages > 1 && (
-                        <div className="p-6 border-t border-gray-100 dark:border-gray-800">
+                        
                             <Pagination 
                                 currentPage={currentPage}
                                 totalPages={totalPages}
@@ -193,7 +257,7 @@ const ServiceIndex: React.FC = () => {
                                 itemsPerPage={itemsPerPage}
                                 onPageChange={setCurrentPage}
                             />
-                        </div>
+                    
                     )}
                 </div>
             )}
@@ -202,7 +266,16 @@ const ServiceIndex: React.FC = () => {
                 isOpen={dialogOpen} 
                 setIsOpen={setDialogOpen} 
                 service={selectedService} 
-                onSave={fetchServices} 
+                onSave={fetchData} 
+            />
+
+            <DeleteModal 
+                isOpen={deleteDialogOpen}
+                setIsOpen={setDeleteDialogOpen}
+                onConfirm={handleDeleteConfirm}
+                isLoading={isDeleting}
+                title="Delete Service"
+                message={`Are you sure you want to delete the service "${serviceToDelete?.name}"? This will also remove its associated mappings.`}
             />
         </div>
     );

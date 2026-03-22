@@ -20,13 +20,28 @@ class PurchaseReceiveController extends Controller
         $this->stockService = $stockService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $receives = InventoryPurchaseReceive::with([
+        $query = InventoryPurchaseReceive::with([
             'purchaseOrder.supplier',
             'location',
             'items.product',
-        ])->orderBy('created_at', 'desc')->get();
+        ]);
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('receive_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('receive_date', '<=', $request->end_date);
+        }
+        if ($request->filled('location_id') && $request->location_id !== 'all') {
+            $query->where('location_id', $request->location_id);
+        }
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        $receives = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json($receives);
     }

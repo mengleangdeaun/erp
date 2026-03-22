@@ -115,16 +115,16 @@ const CompanyFeedbackIndex = () => {
                 hasActiveFilters={!!type}
                 onClearFilters={() => setType('')}
             >
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 font-medium whitespace-nowrap">Type:</span>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Feedback Type</span>
                     <Select value={type} onValueChange={setType}>
-                        <SelectTrigger className="h-10 w-[140px] shadow-sm">
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
                             <SelectValue placeholder="All Types" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Types</SelectItem>
-                            <SelectItem value="positive">Positive</SelectItem>
-                            <SelectItem value="negative">Negative</SelectItem>
+                            <SelectItem value="all" className="font-medium">All Types</SelectItem>
+                            <SelectItem value="positive" className="font-medium">Positive</SelectItem>
+                            <SelectItem value="negative" className="font-medium">Negative</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

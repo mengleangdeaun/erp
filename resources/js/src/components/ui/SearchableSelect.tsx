@@ -64,13 +64,15 @@ export function SearchableSelect({
                         border
                         transition-all
                         duration-200
-                        hover:bg-gray-50
-                        dark:hover:bg-gray-900
+                        bg-white
+                        dark:bg-slate-900
+                        hover:bg-slate-50
+                        dark:hover:bg-slate-800
                         focus:outline-none
                         focus:ring-2
                         focus:ring-primary/20
-                        ${!selectedOption ? 'text-gray-500' : ''}
-                        ${open ? 'border-primary ring-2 ring-primary/20' : 'border-gray-200 dark:border-gray-700'}
+                        ${!selectedOption ? 'text-slate-400' : ''}
+                        ${open ? 'border-primary ring-2 ring-primary/20' : 'border-slate-200 dark:border-slate-800'}
                         ${className}
                     `}
                 >

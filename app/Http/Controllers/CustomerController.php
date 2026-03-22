@@ -40,7 +40,8 @@ class CustomerController extends Controller
         }
 
         if ($request->has('all') || $request->paginate === 'false') {
-            return $query->latest()->get();
+            return $query->select(['id', 'name', 'phone', 'customer_code', 'customer_no'])
+                         ->latest()->get();
         }
 
         return $query->latest()->paginate($request->per_page ?? 15);

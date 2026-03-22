@@ -22,8 +22,14 @@ class VehicleBrandController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:vehicle_brands,name',
+            'image' => 'nullable',
             'is_active' => 'boolean'
         ]);
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('brands', 'public');
+            $validated['image'] = asset('storage/' . $path);
+        }
 
         $brand = VehicleBrand::create($validated);
 
@@ -45,8 +51,14 @@ class VehicleBrandController extends Controller
     {
         $validated = $request->validate([
             'name' => 'string|max:255|unique:vehicle_brands,name,' . $vehicleBrand->id,
+            'image' => 'nullable',
             'is_active' => 'boolean'
         ]);
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('brands', 'public');
+            $validated['image'] = asset('storage/' . $path);
+        }
 
         $vehicleBrand->update($validated);
 

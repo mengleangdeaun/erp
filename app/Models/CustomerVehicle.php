@@ -18,6 +18,7 @@ class CustomerVehicle extends Model
         'plate_number',
         'vin_last_4',
         'color',
+        'year',
         'current_mileage',
         'notes'
     ];

@@ -81,15 +81,13 @@ export default function Login() {
 
                 {/* Logo */}
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                            <polyline points="9 22 9 12 15 12 15 22" />
-                        </svg>
+                    <div className="flex items-center justify-center w-32 overflow-hidden">
+                        <img 
+                            src="/assets/images/logo.png" 
+                            alt="Logo" 
+                            className="w-full h-full object-contain"
+                        />
                     </div>
-                    <span className="text-[13px] font-semibold tracking-widest uppercase text-slate-400 dark:text-slate-500">
-                        S-Cool ERP
-                    </span>
                 </div>
 
                 {/* Form */}
@@ -173,7 +171,10 @@ export default function Login() {
                             className="flex items-center justify-center gap-2 w-full h-11 mt-1 rounded-xl bg-primary hover:bg-primary/90 active:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold tracking-wide shadow-lg shadow-primary/30 transition-all duration-150"
                         >
                             {loading ? (
-                                <IconLoader2 className="w-4 h-4 animate-spin" />
+                                <>
+                                    Signing in...
+                                    <IconLoader2 className="w-4 h-4 animate-spin" />
+                                </>
                             ) : (
                                 <>
                                     Sign in

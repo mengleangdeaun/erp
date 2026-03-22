@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
 import { TimePicker } from '@/components/ui/time-picker';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { IconUser, IconDeviceFloppy, IconPhone, IconMail, IconMapPin, IconBrandTelegram, IconCalendar, IconNotes, IconLoader2, IconClock } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -161,210 +162,228 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-[700px] p-0 border-none shadow-2xl rounded-3xl overflow-hidden">
-                <DialogHeader className="p-6 bg-primary/5 dark:bg-primary/10 border-b border-primary/10">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-primary/20 text-primary shadow-sm">
-                            <IconUser className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <DialogTitle className="text-xl font-bold">
-                                {customer ? 'Edit Customer' : 'New Customer'}
-                            </DialogTitle>
-                            <DialogDescription>
-                                {customer ? `Update details for ${customer.customer_no}` : 'Enter personal and contact information.'}
-                            </DialogDescription>
-                        </div>
-                    </div>
-                </DialogHeader>
+<Dialog open={isOpen} onOpenChange={setIsOpen}>
+  <DialogContent className="sm:max-w-[700px] h-[90vh] flex flex-col p-0 border-none shadow-2xl rounded-3xl overflow-hidden">
+    {/* Header – fixed at top */}
+    <DialogHeader className="shrink-0 p-6 bg-primary/5 dark:bg-primary/10 border-b border-primary/10">
+      <div className="flex items-center gap-4">
+        <div className="p-3 rounded-2xl bg-primary/20 text-primary shadow-sm">
+          <IconUser className="w-6 h-6" />
+        </div>
+        <div>
+          <DialogTitle className="text-xl font-bold">
+            {customer ? 'Edit Customer' : 'New Customer'}
+          </DialogTitle>
+          <DialogDescription>
+            {customer ? `Update details for ${customer.customer_no}` : 'Enter personal and contact information.'}
+          </DialogDescription>
+        </div>
+      </div>
+    </DialogHeader>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Primary Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Basic Information</h3>
-                            
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Customer Code <span className="text-danger">*</span></Label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-xs">#</span>
-                                    <Input 
-                                        value={form.customer_code} 
-                                        onChange={e => setForm({ ...form, customer_code: e.target.value })}
-                                        placeholder="Auto Increment"
-                                        required
-                                        className="pl-10 h-11"
-                                    />
-                                </div>
-                            </div>
+    {/* Scrollable content area */}
+    <ScrollArea className="flex-1 min-h-0">
+      <form onSubmit={handleSubmit} className="p-6 !pt-0 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Primary Info */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Basic Information</h3>
 
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Full Name</Label>
-                                <div className="relative">
-                                    <IconUser size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <Input 
-                                        value={form.name} 
-                                        onChange={e => setForm({ ...form, name: e.target.value })}
-                                        placeholder="Sok Sabay"
-                                        className="pl-10 h-11"
-                                    />
-                                </div>
-                            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Customer Code <span className="text-danger">*</span></Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-xs">#</span>
+                <Input 
+                  value={form.customer_code} 
+                  onChange={e => setForm({ ...form, customer_code: e.target.value })}
+                  placeholder="Auto Increment"
+                  required
+                  className="pl-10 h-11"
+                />
+              </div>
+            </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Customer Type <span className="text-danger">*</span></Label>
-                                <Select value={form.customer_type_id} onValueChange={v => setForm({ ...form, customer_type_id: v })}>
-                                    <SelectTrigger className="h-11">
-                                        <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {customerTypes.map(type => (
-                                            <SelectItem key={type.id} value={String(type.id)}>{type.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Full Name</Label>
+              <div className="relative">
+                <IconUser size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Input 
+                  value={form.name} 
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                  placeholder="Sok Sabay"
+                  className="pl-10 h-11"
+                />
+              </div>
+            </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold mb-0 flex items-center gap-2">
-                                        <IconCalendar size={14} /> Join Date
-                                    </Label>
-                                    <DatePicker
-                                        className="h-11"
-                                        value={form.joined_at} 
-                                        onChange={date => setForm({ ...form, joined_at: date ? format(date, 'yyyy-MM-dd') : '' })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm font-semibold mb-0 flex items-center gap-2">
-                                        <IconClock size={14} /> Join Time
-                                    </Label>
-                                    <TimePicker
-                                        className="h-11"
-                                        value={form.joined_time}
-                                        onChange={time => setForm({ ...form, joined_time: time })}
-                                    />
-                                </div>
-                            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Customer Type <span className="text-danger">*</span></Label>
+              <Select value={form.customer_type_id} onValueChange={v => setForm({ ...form, customer_type_id: v })}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customerTypes.map(type => (
+                    <SelectItem key={type.id} value={String(type.id)}>{type.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Status</Label>
-                                <Select value={form.status} onValueChange={v => setForm({ ...form, status: v as any })}>
-                                    <SelectTrigger className="h-11">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="ACTIVE">Active</SelectItem>
-                                        <SelectItem value="INACTIVE">Inactive</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold mb-0 flex items-center gap-2">
+                  <IconCalendar size={14} /> Join Date
+                </Label>
+                <DatePicker
+                  className="h-11"
+                  value={form.joined_at} 
+                  onChange={date => setForm({ ...form, joined_at: date ? format(date, 'yyyy-MM-dd') : '' })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold mb-0 flex items-center gap-2">
+                  <IconClock size={14} /> Join Time
+                </Label>
+                <TimePicker
+                  className="h-11"
+                  value={form.joined_time}
+                  onChange={time => setForm({ ...form, joined_time: time })}
+                />
+              </div>
+            </div>
 
-                        {/* Contact & Social */}
-                        <div className="space-y-4">
-                            <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Contact Details</h3>
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Phone Number <span className="text-danger">*</span></Label>
-                                <div className="relative">
-                                    <IconPhone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <Input 
-                                        value={form.phone} 
-                                        onChange={e => setForm({ ...form, phone: e.target.value })}
-                                        placeholder="+855 12 345 678"
-                                        required
-                                        className="pl-10 h-11"
-                                    />
-                                </div>
-                            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Status</Label>
+              <Select value={form.status} onValueChange={v => setForm({ ...form, status: v as any })}>
+                <SelectTrigger className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Email Address</Label>
-                                <div className="relative">
-                                    <IconMail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <Input 
-                                        type="email"
-                                        value={form.email} 
-                                        onChange={e => setForm({ ...form, email: e.target.value })}
-                                        placeholder="[EMAIL_ADDRESS]"
-                                        className="pl-10 h-11"
-                                    />
-                                </div>
-                            </div>
+          {/* Contact & Social */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Contact Details</h3>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Phone Number <span className="text-danger">*</span></Label>
+              <div className="relative">
+                <IconPhone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Input 
+                  value={form.phone} 
+                  onChange={e => setForm({ ...form, phone: e.target.value })}
+                  placeholder="+855 12 345 678"
+                  required
+                  className="pl-10 h-11"
+                />
+              </div>
+            </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold text-primary flex items-center gap-2">
-                                    <IconBrandTelegram size={16} /> Telegram User ID
-                                </Label>
-                                <Input 
-                                    value={form.telegram_user_id} 
-                                    onChange={e => setForm({ ...form, telegram_user_id: e.target.value })}
-                                    placeholder="e.g. 123456789"
-                                    className="h-11"
-                                />
-                                <p className="text-[10px] text-gray-500">For loyalty notifications and automated alerts.</p>
-                            </div>
-                        </div>
-                    </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Email Address</Label>
+              <div className="relative">
+                <IconMail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Input 
+                  type="email"
+                  value={form.email} 
+                  onChange={e => setForm({ ...form, email: e.target.value })}
+                  placeholder="[EMAIL_ADDRESS]"
+                  className="pl-10 h-11"
+                />
+              </div>
+            </div>
 
-                    <div className="space-y-4">
-                        <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Additional Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Address</Label>
-                                <div className="relative">
-                                    <IconMapPin size={18} className="absolute left-3 top-3 text-gray-400" />
-                                    <Textarea 
-                                        value={form.address} 
-                                        onChange={e => setForm({ ...form, address: e.target.value })}
-                                        placeholder="Enter full address..."
-                                        className="pl-10 min-h-[100px]"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-sm font-semibold">Notes</Label>
-                                <div className="relative">
-                                    <IconNotes size={18} className="absolute left-3 top-3 text-gray-400" />
-                                    <Textarea 
-                                        value={form.notes} 
-                                        onChange={e => setForm({ ...form, notes: e.target.value })}
-                                        placeholder="Internal notes about this customer..."
-                                        className="pl-10 min-h-[100px]"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-primary flex items-center gap-2">
+                <IconBrandTelegram size={16} /> Telegram User ID
+              </Label>
+              <Input 
+                value={form.telegram_user_id} 
+                onChange={e => setForm({ ...form, telegram_user_id: e.target.value })}
+                placeholder="e.g. 123456789"
+                className="h-11"
+              />
+              <p className="text-[10px] text-gray-500">For loyalty notifications and automated alerts.</p>
+            </div>
+          </div>
+        </div>
 
-                    <DialogFooter className="pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <p className="text-[11px] text-gray-400 italic order-3 sm:order-1">* Required fields must be completed</p>
-                        <div className="flex gap-2 order-2">
-                            <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="h-11 px-6 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</Button>
-                            
-                            {!customer && (
-                                <Button 
-                                    type="button"
-                                    variant="outline"
-                                    disabled={saving}
-                                    onClick={(e) => handleSubmit(e as any, true)}
-                                    className="h-11 px-6 border-primary/20 text-primary hover:bg-primary/5 shadow-sm"
-                                >
-                                    Save & Create New
-                                </Button>
-                            )}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Additional Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Address</Label>
+              <div className="relative">
+                <IconMapPin size={18} className="absolute left-3 top-3 text-gray-400" />
+                <Textarea 
+                  value={form.address} 
+                  onChange={e => setForm({ ...form, address: e.target.value })}
+                  placeholder="Enter full address..."
+                  className="pl-10 min-h-[100px]"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Notes</Label>
+              <div className="relative">
+                <IconNotes size={18} className="absolute left-3 top-3 text-gray-400" />
+                <Textarea 
+                  value={form.notes} 
+                  onChange={e => setForm({ ...form, notes: e.target.value })}
+                  placeholder="Internal notes about this customer..."
+                  className="pl-10 min-h-[100px]"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
 
-                            <Button type="submit" disabled={saving} className="h-11 gap-2 px-8 shadow-lg shadow-primary/20">
-                                {saving ? <IconLoader2 className="animate-spin" size={18} /> : <IconDeviceFloppy size={18} />}
-                                {customer ? 'Update' : 'Create'} Customer
-                            </Button>
-                        </div>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+        {/* Hidden field to attach form ID if needed; we'll keep standard submit button in footer */}
+        <input type="submit" className="hidden" id="customer-form-submit" />
+      </form>
+    </ScrollArea>
+
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 p-6 pt-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <p className="text-[11px] text-gray-400 italic order-3 sm:order-1">* Required fields must be completed</p>
+      <div className="flex gap-2 order-2">
+        <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="h-11 px-6 hover:bg-gray-100 dark:hover:bg-gray-800">
+          Cancel
+        </Button>
+        
+        {!customer && (
+          <Button 
+            type="button"
+            variant="outline"
+            disabled={saving}
+            onClick={(e) => handleSubmit(e as any, true)}
+            className="h-11 px-6 border-primary/20 text-primary hover:bg-primary/5 shadow-sm"
+          >
+            Save & Create New
+          </Button>
+        )}
+
+        <Button 
+          type="button" 
+          onClick={() => {
+            const form = document.querySelector('form');
+            if (form) form.dispatchEvent(new Event('submit', { bubbles: true }));
+          }}
+          disabled={saving} 
+          className="h-11 gap-2 px-8 shadow-lg shadow-primary/20"
+        >
+          {saving ? <IconLoader2 className="animate-spin" size={18} /> : <IconDeviceFloppy size={18} />}
+          {customer ? 'Update' : 'Create'} Customer
+        </Button>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
     );
 };
 

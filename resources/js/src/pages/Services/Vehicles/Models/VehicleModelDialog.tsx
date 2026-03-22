@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { IconCar, IconDeviceFloppy } from '@tabler/icons-react';
+import { IconCar, IconDeviceFloppy, IconLoader2 } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 
@@ -150,9 +150,19 @@ const VehicleModelDialog = ({ isOpen, setIsOpen, model, onSave }: VehicleModelDi
 
                     <div className="flex justify-end gap-2 pt-2">
                         <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="h-10">Cancel</Button>
-                        <Button type="submit" disabled={saving} className="h-10 gap-2 px-6">
-                            {saving ? 'Saving...' : <><IconDeviceFloppy size={18} /> {model ? 'Update' : 'Create'} Model</>}
-                        </Button>
+    <Button type="submit" disabled={saving} className="h-10 gap-2 px-6">
+        {saving ? (
+            <>
+                <IconLoader2 size={18} className="animate-spin" />
+                Saving...
+            </>
+        ) : (
+            <>
+                <IconDeviceFloppy size={18} /> 
+                {model ? 'Update' : 'Create'} Model
+            </>
+        )}
+    </Button>
                     </div>
                 </form>
             </DialogContent>

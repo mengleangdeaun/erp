@@ -186,7 +186,17 @@ const AttendanceRecordIndex = () => {
                     setEmployeeFilter('');
                 }}
             >
-                <div className="w-full sm:w-[220px]">
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <DateRangePicker
+                        value={dateFilter}
+                        onChange={setDateFilter}
+                        placeholder="Filter by date range..."
+                    />
+                </div>
+
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Employee</span>
                     <SearchableSelect
                         options={employees.map((emp: any) => ({
                             value: String(emp.id),
@@ -197,13 +207,6 @@ const AttendanceRecordIndex = () => {
                         onChange={(val) => setEmployeeFilter(String(val))}
                         placeholder="All Employees"
                         searchPlaceholder="Search employees..."
-                    />
-                </div>
-                <div className="w-full sm:w-[260px]">
-                    <DateRangePicker
-                        value={dateFilter}
-                        onChange={setDateFilter}
-                        placeholder="Filter by date range..."
                     />
                 </div>
             </FilterBar>

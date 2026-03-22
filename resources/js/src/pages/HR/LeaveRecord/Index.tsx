@@ -311,8 +311,19 @@ export default function LeaveRecordIndex() {
                 }}
                 onRefresh={fetchRequests}
             >
+                {/* Date Filter */}
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <DateRangePicker
+                        value={dateFilter}
+                        onChange={setDateFilter}
+                        placeholder="Filter by date range..."
+                    />
+                </div>
+
                 {/* Employee Filter */}
-                <div className="w-full sm:w-[220px]">
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Employee</span>
                     <SearchableSelect
                         options={employees.map((emp: any) => ({
                             value: String(emp.id),
@@ -326,30 +337,22 @@ export default function LeaveRecordIndex() {
                     />
                 </div>
 
-                {/* Date Filter */}
-                <div className="w-full sm:w-[260px]">
-                    <DateRangePicker
-                        value={dateFilter}
-                        onChange={setDateFilter}
-                        placeholder="Filter by date range..."
-                    />
-                </div>
-
                 {/* Status Filter */}
-                <div className="w-full sm:w-[150px]">
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
                     <Select
                         value={statusFilter}
                         onValueChange={setStatusFilter}
                     >
-                        <SelectTrigger className="h-10 w-full bg-white dark:bg-black border-gray-200 dark:border-gray-700 shadow-sm rounded-md">
+                        <SelectTrigger className="h-10 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
                             <SelectValue placeholder="All Statuses" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL_STATUSES">All Statuses</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="approved">Approved</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                            <SelectItem value="ALL_STATUSES" className="font-medium">All Statuses</SelectItem>
+                            <SelectItem value="pending" className="font-medium">Pending</SelectItem>
+                            <SelectItem value="approved" className="font-medium">Approved</SelectItem>
+                            <SelectItem value="rejected" className="font-medium">Rejected</SelectItem>
+                            <SelectItem value="cancelled" className="font-medium">Cancelled</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

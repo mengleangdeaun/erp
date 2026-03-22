@@ -114,6 +114,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('storage/{provider}', [App\Http\Controllers\StorageSettingController::class, 'update']);
         Route::get('document-numbers', [App\Http\Controllers\Settings\DocumentSettingController::class, 'index']);
         Route::put('document-numbers/{id}', [App\Http\Controllers\Settings\DocumentSettingController::class, 'update']);
+        Route::get('system-logs', [App\Http\Controllers\Settings\SystemActivityLogController::class, 'index']);
+        Route::delete('system-logs', [App\Http\Controllers\Settings\SystemActivityLogController::class, 'destroy']);
     });
 
     Route::prefix('inventory')->group(function () {

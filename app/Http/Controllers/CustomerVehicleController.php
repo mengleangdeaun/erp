@@ -19,10 +19,11 @@ class CustomerVehicleController extends Controller
         if ($request->search) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
-                $q->where('plate_no', 'like', "%{$search}%")
+                $q->where('plate_number', 'like', "%{$search}%")
                   ->orWhere('vin_last_4', 'like', "%{$search}%")
                   ->orWhereHas('customer', function($cq) use ($search) {
-                      $cq->where('name', 'like', "%{$search}%");
+                      $cq->where('name', 'like', "%{$search}%")
+                        ->orWhere('customer_code', 'like', "%{$search}%");
                   });
             });
         }
@@ -36,7 +37,7 @@ class CustomerVehicleController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'brand_id' => 'required|exists:vehicle_brands,id',
             'model_id' => 'required|exists:vehicle_models,id',
-            'plate_no' => 'required|string|max:20',
+            'plate_number' => 'required|string|max:20',
             'vin_last_4' => 'nullable|string|max:4',
             'color' => 'nullable|string|max:50',
             'year' => 'nullable|integer',
@@ -48,7 +49,7 @@ class CustomerVehicleController extends Controller
 
     public function show($id)
     {
-        return CustomerVehicle::with(['customer', 'brand', 'model'])->findOrFail($id);
+        return CustomerVehicle::with(['customer', 'brand', 'model','plate_no'])->findOrFail($id);
     }
 
     public function update(Request $request, $id)
@@ -58,7 +59,7 @@ class CustomerVehicleController extends Controller
         $validated = $request->validate([
             'brand_id' => 'sometimes|exists:vehicle_brands,id',
             'model_id' => 'sometimes|exists:vehicle_models,id',
-            'plate_no' => 'sometimes|string|max:20',
+            'plate_number' => 'sometimes|string|max:20',
             'vin_last_4' => 'nullable|string|max:4',
             'color' => 'nullable|string|max:50',
             'year' => 'nullable|integer',

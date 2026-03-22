@@ -111,35 +111,33 @@ const CustomerIndex = () => {
                     setTypeFilter('all');
                 }}
             >
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Label className="text-[10px] font-bold uppercase text-gray-400 whitespace-nowrap">Status</Label>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-full sm:w-[130px] h-10 shadow-sm transition-all focus:ring-primary">
-                                <SelectValue placeholder="All Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="ACTIVE">Active</SelectItem>
-                                <SelectItem value="INACTIVE">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
+                            <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all" className="font-medium">All Status</SelectItem>
+                            <SelectItem value="ACTIVE" className="font-medium">Active</SelectItem>
+                            <SelectItem value="INACTIVE" className="font-medium">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Label className="text-[10px] font-bold uppercase text-gray-400 whitespace-nowrap">Type</Label>
-                        <Select value={typeFilter} onValueChange={setTypeFilter}>
-                            <SelectTrigger className="w-full sm:w-[150px] h-10 shadow-sm transition-all focus:ring-primary">
-                                <SelectValue placeholder="All Types" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Types</SelectItem>
-                                {customerTypes.map(t => (
-                                    <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Customer Type</span>
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
+                            <SelectValue placeholder="All Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all" className="font-medium">All Types</SelectItem>
+                            {customerTypes.map(t => (
+                                <SelectItem key={t.id} value={String(t.id)} className="font-medium">{t.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </FilterBar>
 

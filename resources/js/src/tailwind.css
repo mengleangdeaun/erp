@@ -711,76 +711,23 @@ pre.hljs {
         --chart-4: 280 65% 60%;
         --chart-5: 340 75% 55%;
     }
-        /* Add this to your tailwind.css or global CSS file */
-    .font-sans {
-        font-family: system-ui, -apple-system, sans-serif;
-    }
-
-    .font-inter {
-        font-family: 'Inter', system-ui, sans-serif;
-    }
-
-    .font-roboto {
-        font-family: 'Roboto', system-ui, sans-serif;
-    }
-
-    .font-opensans {
-        font-family: 'Open Sans', system-ui, sans-serif;
-    }
-
-    .font-dm-sans {
-        font-family: 'DM Sans', system-ui, sans-serif;
-    }
-
-    .font-montserrat {
-        font-family: 'Montserrat', system-ui, sans-serif;
-    }
-
-    .font-poppins {
-        font-family: 'Poppins', system-ui, sans-serif;
-    }
-
-    .font-serif {
-        font-family: Georgia, serif;
-    }
-
-    .font-times {
-        font-family: 'Times New Roman', serif;
-    }
-
-    .font-georgia {
-        font-family: 'Georgia', serif;
-    }
-
-    .font-playfair {
-        font-family: 'Playfair Display', serif;
-    }
-
-    .font-mono {
-        font-family: monospace;
-    }
-
-
-    .font-kantumruy {
-        font-family: 'Kantumruy Pro', sans-serif;
-    }
-
-    .font-ubuntu {
-        font-family: 'Ubuntu', sans-serif;
-    }
-
-    .font-dangrek {
-        font-family: 'Dangrek', sans-serif;
-        font-weight: 300;
-    }
-
-    .font-misans-khmer {
-        font-family: 'Misans', sans-serif;
-    }
-
-    .font-google-sans {
-        font-family: 'Google Sans', sans-serif;
-    }
+    .font-sans { font-family: system-ui, -apple-system, sans-serif; }
+    .font-inter { font-family: 'Inter', system-ui, sans-serif; }
+    .font-roboto { font-family: 'Roboto', system-ui, sans-serif; }
+    .font-opensans { font-family: 'Open Sans', system-ui, sans-serif; }
+    .font-dm-sans { font-family: 'DM Sans', system-ui, sans-serif; }
+    .font-montserrat { font-family: 'Montserrat', system-ui, sans-serif; }
+    .font-poppins { font-family: 'Poppins', system-ui, sans-serif; }
+    .font-serif { font-family: Georgia, serif; }
+    .font-times { font-family: 'Times New Roman', serif; }
+    .font-georgia { font-family: 'Georgia', serif; }
+    .font-playfair { font-family: 'Playfair Display', serif; }
+    .font-mono { font-family: monospace; }
+    .font-kantumruy { font-family: 'Kantumruy Pro', sans-serif; }
+    .font-ubuntu { font-family: 'Ubuntu', sans-serif; }
+    .font-dangrek { font-family: 'Dangrek', sans-serif; font-weight: 300; }
+    .font-misans-khmer { font-family: 'Misans', sans-serif; }
+    .font-google-sans { font-family: 'Google Sans', sans-serif; }
 }
 
 @layer base {

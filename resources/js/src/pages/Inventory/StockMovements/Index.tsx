@@ -95,7 +95,7 @@ const StockMovementsIndex = () => {
     const [sortBy, setSortBy] = useState('created_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     // Filter States
     const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -191,40 +191,41 @@ const StockMovementsIndex = () => {
                     setDateRange(undefined);
                 }}
             >
-                <div className="flex flex-col sm:flex-row items-end gap-3 w-full sm:w-auto">
-                    <div className="w-full sm:w-64">
-                        <DateRangePicker
-                            value={dateRange}
-                            onChange={setDateRange}
-                            placeholder="All Dates"
-                        />
-                    </div>
-                    
-                    <div className="w-full sm:w-48">
-                        <SearchableSelect
-                            options={[
-                                { value: 'all', label: 'All Locations' },
-                                ...locations.map(l => ({ value: l.id, label: l.name }))
-                            ]}
-                            value={locationId || 'all'}
-                            onChange={setLocationId}
-                            placeholder="All Locations"
-                        />
-                    </div>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <DateRangePicker
+                        value={dateRange}
+                        onChange={setDateRange}
+                        placeholder="All Dates"
+                    />
+                </div>
+                
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Location</span>
+                    <SearchableSelect
+                        options={[
+                            { value: 'all', label: 'All Locations' },
+                            ...locations.map(l => ({ value: l.id, label: l.name }))
+                        ]}
+                        value={locationId || 'all'}
+                        onChange={setLocationId}
+                        placeholder="All Locations"
+                    />
+                </div>
 
-                    <div className="w-full sm:w-48">
-                        <Select value={movementType || 'all'} onValueChange={setMovementType}>
-                            <SelectTrigger className="h-10">
-                                <SelectValue placeholder="All Types" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Types</SelectItem>
-                                {Object.entries(TYPE_CONFIG).map(([key, config]) => (
-                                    <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Movement Type</span>
+                    <Select value={movementType || 'all'} onValueChange={setMovementType}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <SelectValue placeholder="All Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all" className="font-medium">All Types</SelectItem>
+                            {Object.entries(TYPE_CONFIG).map(([key, config]) => (
+                                <SelectItem key={key} value={key} className="font-medium">{config.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </FilterBar>
 

@@ -1,7 +1,7 @@
 {
-    "name": "S-Cool CRM",
-    "short_name": "S-Cool",
-    "description": "Employee Attendance & CRM Portal",
+    "name": "SCCG ERP",
+    "short_name": "SCCG ERP",
+    "description": "SCCG ERP",
     "start_url": "/attendance/login",
     "scope": "/",
     "display": "fullscreen",
@@ -10,14 +10,14 @@
     "orientation": "portrait",
     "icons": [
         {
-            "src": "/favicon.png",
+            "src": "/favicon.svg",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/svg+xml"
         },
         {
-            "src": "/favicon.png",
+            "src": "/favicon.svg",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/svg+xml"
         }
     ]
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class InventoryPurchaseOrder extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\LogsSystemActivity;
 
     protected $fillable = [
         'supplier_id', 'po_number', 'order_date', 'expected_delivery_date', 'status', 'total_amount', 'note'

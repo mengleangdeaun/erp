@@ -10,6 +10,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import ActionButtons from '@/components/ui/ActionButtons';
 import { Badge } from '@/components/ui/badge';
 import DeleteModal from '@/components/DeleteModal';
+import TableSkeleton from '@/components/ui/TableSkeleton';
 
 const JobPartIndex: React.FC = () => {
     const { t } = useTranslation();
@@ -26,7 +27,7 @@ const JobPartIndex: React.FC = () => {
     // Search and Pagination state
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(12);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const fetchParts = async () => {
         setLoading(true);
@@ -101,7 +102,7 @@ const JobPartIndex: React.FC = () => {
     );
 
     return (
-        <div className="space-y-6">
+        <div>
             <FilterBar 
                 icon={<IconTools className="w-6 h-6 text-primary" />}
                 title={t('installation_parts', 'Installation Parts')}
@@ -113,14 +114,11 @@ const JobPartIndex: React.FC = () => {
                 onRefresh={fetchParts}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
+                onClearFilters={() => setSearch('')}
             />
 
             {loading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {Array.from({ length: 8 }).map((_, index) => (
-                        <div key={index} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-5 animate-pulse h-32"></div>
-                    ))}
-                </div>
+                <TableSkeleton columns={5} rows={10} />
             ) : filteredParts.length === 0 ? (
                 <EmptyState 
                     isSearch={!!search}
@@ -131,71 +129,82 @@ const JobPartIndex: React.FC = () => {
                     actionLabel="Add First Part"
                 />
             ) : (
-                <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {paginatedParts.map((part) => (
-                            <div 
-                                key={part.id} 
-                                className="group relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300"
-                            >
-                                <div className="p-5">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors duration-200">
-                                                <IconTools size={20} />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                                                        {part.name}
-                                                    </h3>
-                                                    {part.code && (
-                                                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded cursor-help" title="Part Code">
-                                                            {part.code}
-                                                        </span>
-                                                    )}
+                <div className="bg-white dark:bg-black rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                        <table className="table-hover w-full table">
+                            <thead>
+                                <tr>
+                                    <th className="w-12 text-center">#</th>
+                                    <th>{t('part_name', 'Part Name')}</th>
+                                    <th>{t('code', 'Code')}</th>
+                                    <th>{t('type', 'Type')}</th>
+                                    <th className="text-center">{t('status', 'Status')}</th>
+                                    <th className="text-right">{t('actions', 'Actions')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paginatedParts.map((part, index) => (
+                                    <tr key={part.id} className="group">
+                                        <td className="text-center text-gray-400 text-xs font-medium">
+                                            {(currentPage - 1) * itemsPerPage + index + 1}
+                                        </td>
+                                        <td>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors duration-200">
+                                                    <IconTools size={16} />
                                                 </div>
-                                                {part.type && (
-                                                    <Badge variant="outline" className="mt-1 font-medium text-[10px] uppercase tracking-wider">
-                                                        {part.type}
-                                                    </Badge>
-                                                )}
+                                                <span className="font-semibold text-gray-900 dark:text-gray-100">{part.name}</span>
                                             </div>
-                                        </div>
-                                        <ActionButtons 
-                                            onEdit={() => handleEdit(part)}
-                                            onDelete={() => handleDeleteClick(part)}
-                                            skipDeleteConfirm
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                        />
-                                    </div>
-                                    
-                                    <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
-                                        <span className="flex items-center gap-1">
-                                            <IconInfoCircle size={12} />
-                                            ID: {part.id}
-                                        </span>
-                                        <span className={part.is_active ? 'text-green-500' : 'text-red-400'}>
-                                            {part.is_active ? 'ACTIVE' : 'INACTIVE'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                                        </td>
+                                        <td>
+                                            {part.code ? (
+                                                <code className="text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-400 font-mono">
+                                                    {part.code}
+                                                </code>
+                                            ) : (
+                                                <span className="text-gray-300">---</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            {part.type ? (
+                                                <Badge variant="outline" className="font-medium text-[10px] uppercase tracking-wider">
+                                                    {part.type}
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-gray-300">---</span>
+                                            )}
+                                        </td>
+                                        <td className="text-center">
+                                            <Badge 
+                                                size='sm'
+                                                dot={true}
+                                                variant={part.is_active ? 'success' : 'destructive'}>
+                                                {part.is_active ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                        </td>
+                                        <td className="text-right">
+                                            <ActionButtons 
+                                                onEdit={() => handleEdit(part)}
+                                                onDelete={() => handleDeleteClick(part)}
+                                                skipDeleteConfirm
+                                            />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-
-                    {totalPages > 1 && (
-                        <div className="mt-8">
-                            <Pagination 
-                                currentPage={currentPage}
-                                totalPages={totalPages}
-                                totalItems={filteredParts.length}
-                                itemsPerPage={itemsPerPage}
-                                onPageChange={setCurrentPage}
-                            />
-                        </div>
-                    )}
-                </>
+                    
+                    
+                        <Pagination 
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={filteredParts.length}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setCurrentPage}
+                        />
+                    
+                </div>
             )}
 
             <JobPartDialog 

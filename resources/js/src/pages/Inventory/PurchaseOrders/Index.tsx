@@ -21,8 +21,10 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { DatePicker } from '../../../components/ui/date-picker';
 import { TimePicker } from '../../../components/ui/time-picker';
+import DateRangePicker from '../../../components/ui/date-range-picker';
 import { format } from 'date-fns';
 import { useFormatDate } from '@/hooks/useFormatDate';
+import { DateRange } from 'react-day-picker';
 
 interface Supplier { id: number; name: string; }
 interface Product { id: number; code: string; name: string; }
@@ -74,6 +76,8 @@ export default function PurchaseOrdersPage() {
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+    const [statusFilter, setStatusFilter] = useState<string>('all');
 
     // Modal state
     const [modalOpen, setModalOpen] = useState(false);
@@ -109,8 +113,14 @@ export default function PurchaseOrdersPage() {
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
+            const params = new URLSearchParams();
+            if (search) params.append('search', search);
+            if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+            if (dateRange?.from) params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
+            if (dateRange?.to) params.append('end_date', format(dateRange.to, 'yyyy-MM-dd'));
+
             const [ordersRes, suppliersRes, productsRes, locationsRes] = await Promise.all([
-                apiFetch('/api/inventory/purchase-orders'),
+                apiFetch(`/api/inventory/purchase-orders?${params.toString()}`),
                 apiFetch('/api/inventory/suppliers'),
                 apiFetch('/api/inventory/products?all=true'),
                 apiFetch('/api/inventory/locations'),
@@ -133,17 +143,17 @@ export default function PurchaseOrdersPage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [search, statusFilter, dateRange]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
     
 
-    // Reset page when search changes
+    // Reset page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [search]);
+    }, [search, statusFilter, dateRange]);
 
     const openCreate = () => {
         setEditId(null);
@@ -325,15 +335,7 @@ export default function PurchaseOrdersPage() {
     const filteredAndSortedOrders = useMemo(() => {
         let result = [...orders];
 
-        // Filter by search
-        if (search) {
-            const q = search.toLowerCase();
-            result = result.filter(
-                o =>
-                    o.po_number.toLowerCase().includes(q) ||
-                    (o.supplier?.name || '').toLowerCase().includes(q)
-            );
-        }
+        // Search and other filters are handled on the backend for this module
 
         // Sort
         result.sort((a, b) => {
@@ -370,7 +372,7 @@ export default function PurchaseOrdersPage() {
         });
 
         return result;
-    }, [orders, search, sortBy, sortDirection]);
+    }, [orders, sortBy, sortDirection]);
 
     const totalPages = Math.ceil(filteredAndSortedOrders.length / itemsPerPage);
     const paginatedOrders = filteredAndSortedOrders.slice(
@@ -380,6 +382,8 @@ export default function PurchaseOrdersPage() {
 
     const clearFilters = () => {
         setSearch('');
+        setDateRange(undefined);
+        setStatusFilter('all');
         setSortBy('po_number');
         setSortDirection('asc');
     };
@@ -397,9 +401,33 @@ export default function PurchaseOrdersPage() {
                 onAdd={openCreate}
                 addLabel="New PO"
                 onRefresh={fetchData}
-                hasActiveFilters={sortBy !== 'po_number' || sortDirection !== 'asc' || search !== ''}
+                hasActiveFilters={sortBy !== 'po_number' || sortDirection !== 'asc' || search !== '' || dateRange !== undefined || statusFilter !== 'all'}
                 onClearFilters={clearFilters}
-            />
+            >
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <DateRangePicker
+                        value={dateRange}
+                        onChange={setDateRange}
+                        placeholder="All Dates"
+                    />
+                </div>
+
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all" className="font-medium">All Status</SelectItem>
+                            {Object.keys(STATUS_CLASS).map(s => (
+                                <SelectItem key={s} value={s} className="font-medium">{s}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </FilterBar>
 
             {loading ? (
                 <TableSkeleton columns={7} rows={5} />

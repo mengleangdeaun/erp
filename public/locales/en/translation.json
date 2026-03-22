@@ -157,5 +157,7 @@
     "document_type_in_use_cannot_be_deleted": "Document type is in use and cannot be deleted",
     "crm": "CRM",
     "customers": "Customers",
-    "customer_types": "Customer Types"
+    "customer_types": "Customer Types",
+    "system_logs": "System Logs",
+    "setup_data": "Setup Data"
 }

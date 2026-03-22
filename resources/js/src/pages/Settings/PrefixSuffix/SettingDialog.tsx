@@ -7,7 +7,7 @@ import { Switch } from '../../../components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { IconDeviceFloppy, IconSettings } from '@tabler/icons-react';
+import { IconDeviceFloppy, IconSettings, IconLoader2 } from '@tabler/icons-react';
 
 interface SettingDialogProps {
     isOpen: boolean;
@@ -231,9 +231,19 @@ export default function SettingDialog({ isOpen, setIsOpen, setting, onSave }: Se
 
                     <div className="flex justify-end gap-2 pt-2">
                         <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="h-10">Cancel</Button>
-                        <Button type="submit" disabled={saving} className="h-10 gap-2 px-6">
-                            {saving ? 'Saving...' : <><IconDeviceFloppy size={18} /> Save Changes</>}
-                        </Button>
+    <Button type="submit" disabled={saving} className="h-10 gap-2 px-6">
+        {saving ? (
+            <>
+                <IconLoader2 size={18} className="animate-spin" />
+                Saving...
+            </>
+        ) : (
+            <>
+                <IconDeviceFloppy size={18} /> 
+                {setting ? 'Update' : 'Create'} Setting
+            </>
+        )}
+    </Button>
                     </div>
                 </form>
             </DialogContent>

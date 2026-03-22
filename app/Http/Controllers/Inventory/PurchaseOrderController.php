@@ -10,11 +10,24 @@ use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $orders = InventoryPurchaseOrder::with(['supplier', 'items.product'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = InventoryPurchaseOrder::with(['supplier', 'items.product']);
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('order_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('order_date', '<=', $request->end_date);
+        }
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('supplier_id') && $request->supplier_id !== 'all') {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json($orders);
     }

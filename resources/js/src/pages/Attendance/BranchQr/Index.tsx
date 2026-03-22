@@ -529,9 +529,9 @@ export default function BranchQrSetup() {
 
       {/* QR Code Dialog */}
       <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
-        <DialogContent className="sm:max-w-[600px] p-0 border-0 shadow-2xl rounded-2xl">
+        <DialogContent className="sm:max-w-[600px] h-[90vh] p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4 print:hidden">
+          <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4 print:hidden">
             <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
               <IconQrcode className="text-primary w-6 h-6" />
             </div>
@@ -545,7 +545,7 @@ export default function BranchQrSetup() {
             </div>
           </div>
 
-          <ScrollArea className="max-h-[80vh]">
+          <ScrollArea className="flex-1 min-h-0">
 {qrLoading ? (
   <div className="flex items-center justify-center py-16">
     <div className="flex flex-col items-center gap-4">

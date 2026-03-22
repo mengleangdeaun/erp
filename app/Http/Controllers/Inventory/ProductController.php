@@ -47,7 +47,7 @@ class ProductController extends Controller
         }
 
         if ($request->has('all') || $request->paginate === 'false') {
-            return response()->json($query->orderBy('name')->get());
+            return response()->json($query->select(['id', 'name', 'code', 'sku', 'price', 'category_id', 'img', 'is_active'])->orderBy('name')->get());
         }
 
         return response()->json($query->orderBy('name')->paginate($request->per_page ?? 24));

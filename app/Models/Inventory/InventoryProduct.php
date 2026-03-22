@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class InventoryProduct extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\LogsSystemActivity;
 
     protected $fillable = [
         'code', 'sku', 'barcode', 'category_id', 'base_uom_id', 'purchase_uom_id', 

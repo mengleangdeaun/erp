@@ -21,6 +21,8 @@ import SortableHeader from '../../../components/ui/SortableHeader';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { DatePicker } from '../../../components/ui/date-picker';
 import { TimePicker } from '../../../components/ui/time-picker';
+import DateRangePicker from '../../../components/ui/date-range-picker';
+import { DateRange } from 'react-day-picker';
 
 interface Location { id: number; name: string; }
 interface PO { id: number; po_number: string; supplier: { name: string }; status: string; }
@@ -77,6 +79,9 @@ export default function PurchaseReceivesPage() {
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+    const [locationId, setLocationId] = useState<string | number>('all');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
 
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedPoId, setSelectedPoId] = useState('');
@@ -94,8 +99,15 @@ export default function PurchaseReceivesPage() {
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
+            const params = new URLSearchParams();
+            if (search) params.append('search', search);
+            if (locationId && locationId !== 'all') params.append('location_id', String(locationId));
+            if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+            if (dateRange?.from) params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
+            if (dateRange?.to) params.append('end_date', format(dateRange.to, 'yyyy-MM-dd'));
+
             const [prRes, posRes, locRes] = await Promise.all([
-                apiFetch('/api/inventory/purchase-receives'),
+                apiFetch(`/api/inventory/purchase-receives?${params.toString()}`),
                 apiFetch('/api/inventory/purchase-orders'),
                 apiFetch('/api/inventory/locations'),
             ]);
@@ -114,7 +126,7 @@ export default function PurchaseReceivesPage() {
         } finally { 
             setLoading(false); 
         }
-    }, []);
+    }, [search, locationId, statusFilter, dateRange]);
 
     useEffect(() => { 
         fetchData(); 
@@ -122,7 +134,7 @@ export default function PurchaseReceivesPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [search]);
+    }, [search, locationId, statusFilter, dateRange]);
 
     const openCreate = () => {
         setSelectedPoId('');
@@ -200,17 +212,7 @@ export default function PurchaseReceivesPage() {
     const filteredAndSortedReceives = useMemo(() => {
         let result = [...receives];
 
-        // Filter by search
-        if (search) {
-            const q = search.toLowerCase();
-            result = result.filter(
-                r =>
-                    (r.purchase_order?.po_number || '').toLowerCase().includes(q) ||
-                    (r.purchase_order?.supplier?.name || '').toLowerCase().includes(q) ||
-                    (r.reference_number || '').toLowerCase().includes(q) ||
-                    (r.location?.name || '').toLowerCase().includes(q)
-            );
-        }
+        // Backend handles search and core filters
 
         // Sort
         result.sort((a, b) => {
@@ -238,7 +240,7 @@ export default function PurchaseReceivesPage() {
         });
 
         return result;
-    }, [receives, search, sortBy, sortDirection]);
+    }, [receives, sortBy, sortDirection]);
 
     const totalPages = Math.ceil(filteredAndSortedReceives.length / itemsPerPage);
     const paginatedReceives = filteredAndSortedReceives.slice(
@@ -248,6 +250,9 @@ export default function PurchaseReceivesPage() {
 
     const clearFilters = () => {
         setSearch('');
+        setDateRange(undefined);
+        setLocationId('all');
+        setStatusFilter('all');
         setSortBy('receive_date');
         setSortDirection('desc');
     };
@@ -265,9 +270,46 @@ export default function PurchaseReceivesPage() {
                 onAdd={openCreate}
                 addLabel="New Receive"
                 onRefresh={fetchData}
-                hasActiveFilters={sortBy !== 'receive_date' || sortDirection !== 'desc' || search !== ''}
+                hasActiveFilters={sortBy !== 'receive_date' || sortDirection !== 'desc' || search !== '' || dateRange !== undefined || locationId !== 'all' || statusFilter !== 'all'}
                 onClearFilters={clearFilters}
-            />
+            >
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <DateRangePicker
+                        value={dateRange}
+                        onChange={setDateRange}
+                        placeholder="All Dates"
+                    />
+                </div>
+
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Location</span>
+                    <SearchableSelect
+                        options={[
+                            { value: 'all', label: 'All Locations' },
+                            ...locations.map(l => ({ value: l.id, label: l.name }))
+                        ]}
+                        value={locationId}
+                        onChange={setLocationId}
+                        placeholder="All Locations"
+                    />
+                </div>
+
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all" className="font-medium">All Status</SelectItem>
+                            {Object.keys(STATUS_CLASS).map(s => (
+                                <SelectItem key={s} value={s} className="font-medium">{s}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            </FilterBar>
 
             {loading ? (
                 <TableSkeleton columns={7} rows={5} />

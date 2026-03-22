@@ -37,6 +37,7 @@ const AnnouncementIndex = lazy(() => import('../pages/HR/Announcement/Index'));
 const AnnouncementForm = lazy(() => import('../pages/HR/Announcement/Form'));
 const TelegramSettings = lazy(() => import('../pages/HR/Announcement/TelegramSettings'));
 const PrefixSuffixSettings = lazy(() => import('../pages/Settings/PrefixSuffix/Index'));
+const SystemLogsIndex = lazy(() => import('../pages/Settings/SystemLogs/Index'));
 
 const UserPreferences = lazy(() => import('../pages/Profile/UserPreferences'));
 
@@ -86,6 +87,7 @@ const InventoryBranchServiceIndex = lazy(() => import('../pages/Inventory/Branch
 // CRM Module
 const CRM_CustomerTypeIndex = lazy(() => import('../pages/Customers/Types/Index'));
 const CRM_CustomerIndex = lazy(() => import('../pages/Customers/Index'));
+const CRM_CustomerVehicleIndex = lazy(() => import('../pages/Customers/Vehicles/Index'));
 
 // Sale & Service Module
 const ServiceIndex = lazy(() => import('../pages/Services/Index'));
@@ -283,6 +285,11 @@ const routes = [
         element: <PrefixSuffixSettings />,
         layout: 'default',
     },
+    {
+        path: '/settings/system-logs',
+        element: <SystemLogsIndex />,
+        layout: 'default',
+    },
     // Employee App - Notifications
     {
         path: '/employee/notifications',
@@ -427,6 +434,7 @@ const routes = [
     // CRM
     { path: '/crm/customer-types', element: <CRM_CustomerTypeIndex />, layout: 'default' },
     { path: '/crm/customers', element: <CRM_CustomerIndex />, layout: 'default' },
+    { path: '/crm/customer-vehicles', element: <CRM_CustomerVehicleIndex />, layout: 'default' },
 
     // Sale & Service
     { path: '/services/list', element: <ServiceIndex />, layout: 'default' },

@@ -27,8 +27,9 @@ class ServiceController extends Controller
             });
         }
 
-        return $query->get();
-    }
+        return $query->select(['id', 'name', 'code', 'base_price', 'category_id', 'is_active'])
+                     ->get();
+}
 
     /**
      * Store a newly created resource in storage.

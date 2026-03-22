@@ -368,28 +368,28 @@ const EmployeeConfigIndex = () => {
                     setSearch('');
                 }}
             >
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                    <div className="w-full sm:w-[250px]">
-                        <SearchableSelect
-                            options={employeeOptions}
-                            value={selectedEmployeeId}
-                            onChange={(val) => setSelectedEmployeeId(val)}
-                            placeholder="Employee Filter"
-                            searchPlaceholder="Search employee..."
-                        />
-                    </div>
-                    <div className="w-full sm:w-[180px]">
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="h-10">
-                                <SelectValue placeholder="Status Filter" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Status</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Employee</span>
+                    <SearchableSelect
+                        options={employeeOptions}
+                        value={selectedEmployeeId}
+                        onChange={(val) => setSelectedEmployeeId(val)}
+                        placeholder="Employee Filter"
+                        searchPlaceholder="Search employee..."
+                    />
+                </div>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <SelectValue placeholder="Status Filter" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all" className="font-medium">All Status</SelectItem>
+                            <SelectItem value="active" className="font-medium">Active</SelectItem>
+                            <SelectItem value="inactive" className="font-medium">Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </FilterBar>
 
@@ -576,9 +576,9 @@ const EmployeeConfigIndex = () => {
 
             {/* QR Modal */}
 <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
-    <DialogContent className="sm:max-w-[600px] p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    <DialogContent className="sm:max-w-[600px] h-[90vh] p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4 print:hidden">
+        <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4 print:hidden">
             <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
                 <IconQrcode className="text-primary w-6 h-6" />
             </div>
@@ -592,7 +592,7 @@ const EmployeeConfigIndex = () => {
             </div>
         </div>
 
-        <ScrollArea className="max-h-[80vh]">
+        <ScrollArea className="flex-1 min-h-0">
             {loadingQr ? (
                 <div className="flex items-center justify-center py-16">
                     <div className="flex flex-col items-center gap-4">
@@ -722,7 +722,7 @@ const EmployeeConfigIndex = () => {
         </ScrollArea>
 
         {/* Footer Actions */}
-        <div className="flex justify-end px-6 py-4 border-t border-gray-100 dark:border-gray-800 print:hidden">
+        <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background print:hidden">
             <Button variant="ghost" onClick={() => setQrModalOpen(false)} className="h-9 px-4 rounded-lg">
                 Close
             </Button>

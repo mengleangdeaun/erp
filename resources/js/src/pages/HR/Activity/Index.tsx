@@ -185,44 +185,50 @@ export default function HrActivityIndex() {
                 setItemsPerPage={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
                 onRefresh={fetchActivities}
                 hasActiveFilters={hasActiveFilters}
+                onClearFilters={() => {
+                    setSearchInput('');
+                    setSearch('');
+                    setStatusFilter('all');
+                    setEmployeeFilter('all');
+                    setDateRange(undefined);
+                    setCurrentPage(1);
+                }}
             >
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                    {/* Status Select */}
-                    <div className="w-full sm:w-44">
-                        <Select
-                            value={statusFilter}
-                            onValueChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}
-                        >
-                            <SelectTrigger className="h-10">
-                                <SelectValue placeholder="All Statuses" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Statuses</SelectItem>
-                                <SelectItem value="submitted">Submitted</SelectItem>
-                                <SelectItem value="reviewed">Reviewed</SelectItem>
-                                <SelectItem value="flagged">Flagged</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <DateRangePicker
+                        value={dateRange}
+                        onChange={(range) => { setDateRange(range); setCurrentPage(1); }}
+                        placeholder="All Dates"
+                    />
+                </div>
 
-                    {/* Employee Searchable Select */}
-                    <div className="w-full sm:w-[180px]">
-                        <SearchableSelect
-                            options={employeeOptions}
-                            value={employeeFilter}
-                            onChange={(val) => { setEmployeeFilter(String(val)); setCurrentPage(1); }}
-                            placeholder="All Employees"
-                        />
-                    </div>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <Select
+                        value={statusFilter}
+                        onValueChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}
+                    >
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <SelectValue placeholder="All Statuses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all" className="font-medium">All Statuses</SelectItem>
+                            <SelectItem value="submitted" className="font-medium">Submitted</SelectItem>
+                            <SelectItem value="reviewed" className="font-medium">Reviewed</SelectItem>
+                            <SelectItem value="flagged" className="font-medium">Flagged</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
 
-                    {/* Date Filters */}
-                    <div className="w-full sm:w-[260px]">
-                        <DateRangePicker
-                            value={dateRange}
-                            onChange={(range) => { setDateRange(range); setCurrentPage(1); }}
-                            placeholder="All Dates"
-                        />
-                    </div>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Employee</span>
+                    <SearchableSelect
+                        options={employeeOptions}
+                        value={employeeFilter}
+                        onChange={(val) => { setEmployeeFilter(String(val)); setCurrentPage(1); }}
+                        placeholder="All Employees"
+                    />
                 </div>
             </FilterBar>
 

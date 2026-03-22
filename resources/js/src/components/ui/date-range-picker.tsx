@@ -233,15 +233,15 @@ export function DateRangePicker({
             <Button
               variant="outline"
               className={cn(
-                "w-full justify-start text-left font-normal",
-                "border-input hover:bg-gray-50 dark:hover:bg-gray-900 focus:outline-none",
+                "w-full justify-start text-left font-normal h-10 px-3 transition-all duration-200",
+                "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none focus:ring-primary/20",
                 !internalRange && "text-muted-foreground",
                 error && "border-destructive"
               )}
               disabled={disabled}
             >
               <IconCalendar className="mr-2 h-4 w-4 shrink-0" />
-              <span className="truncate">{formatRangeDisplay()}</span>
+              <span className="truncate text-xs">{formatRangeDisplay()}</span>
             </Button>
           </PopoverTrigger>
           <PopoverContent

@@ -70,7 +70,7 @@ const SalesOrderIndex: React.FC = () => {
         return orders.filter(o => 
             o.order_no.toLowerCase().includes(q) ||
             (o.customer?.name || '').toLowerCase().includes(q) ||
-            (o.vehicle?.plate_no || '').toLowerCase().includes(q)
+            (o.vehicle?.plate_number || '').toLowerCase().includes(q)
         );
     }, [orders, search]);
 
@@ -152,7 +152,7 @@ const SalesOrderIndex: React.FC = () => {
                                                     <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{order.customer?.name}</span>
                                                     <span className="text-[10px] text-gray-400 flex items-center gap-1 font-medium">
                                                         <IconCar size={10} />
-                                                        {order.vehicle?.plate_no} ({order.vehicle?.brand?.name} {order.vehicle?.model?.name})
+                                                        {order.vehicle?.plate_number} ({order.vehicle?.brand?.name} {order.vehicle?.model?.name})
                                                     </span>
                                                 </div>
                                             </div>

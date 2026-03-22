@@ -45,7 +45,7 @@ const JobCardIndex: React.FC = () => {
         return jobs.filter(j => 
             j.job_no.toLowerCase().includes(q) ||
             (j.customer?.name || '').toLowerCase().includes(q) ||
-            (j.vehicle?.plate_no || '').toLowerCase().includes(q)
+            (j.vehicle?.plate_number || '').toLowerCase().includes(q)
         );
     }, [jobs, search]);
 
@@ -110,7 +110,7 @@ const JobCardIndex: React.FC = () => {
 
                             <div className="space-y-1">
                                 <h3 className="text-2xl font-black text-gray-900 dark:text-white leading-none tracking-tight">
-                                    {job.vehicle?.plate_no}
+                                    {job.vehicle?.plate_number}
                                 </h3>
                                 <p className="text-xs font-bold text-secondary uppercase tracking-widest opacity-80">
                                     {job.vehicle?.brand?.name} {job.vehicle?.model?.name}

@@ -219,48 +219,47 @@ const AnnouncementIndex = () => {
                 hasActiveFilters={hasActiveFilters}
                 onClearFilters={() => { setStatusFilter(''); setTypeFilter(''); setDateRange(undefined); }}
             >
+                {/* Date Range */}
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <DateRangePicker
+                        value={dateRange}
+                        onChange={(range) => { setDateRange(range); setCurrentPage(1); }}
+                        placeholder="Published date..."
+                    />
+                </div>
+
                 {/* Status Filter */}
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 font-medium whitespace-nowrap">Status:</span>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
                     <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val === 'ALL' ? '' : val); setCurrentPage(1); }}>
-                        <SelectTrigger className="h-10 w-[140px] shadow-sm">
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
                             <SelectValue placeholder="All Statuses" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL">All Statuses</SelectItem>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="published">Published</SelectItem>
-                            <SelectItem value="expired">Expired</SelectItem>
+                            <SelectItem value="ALL" className="font-medium">All Statuses</SelectItem>
+                            <SelectItem value="draft" className="font-medium">Draft</SelectItem>
+                            <SelectItem value="published" className="font-medium">Published</SelectItem>
+                            <SelectItem value="expired" className="font-medium">Expired</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
                 {/* Type Filter */}
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 font-medium whitespace-nowrap">Type:</span>
+                <div className="space-y-1.5 flex flex-col w-full">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Type</span>
                     <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val === 'ALL' ? '' : val); setCurrentPage(1); }}>
-                        <SelectTrigger className="h-10 w-[130px] shadow-sm">
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
                             <SelectValue placeholder="All Types" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL">All Types</SelectItem>
-                            <SelectItem value="info">Info</SelectItem>
-                            <SelectItem value="success">Success</SelectItem>
-                            <SelectItem value="warning">Warning</SelectItem>
-                            <SelectItem value="danger">Danger</SelectItem>
+                            <SelectItem value="ALL" className="font-medium">All Types</SelectItem>
+                            <SelectItem value="info" className="font-medium">Info</SelectItem>
+                            <SelectItem value="success" className="font-medium">Success</SelectItem>
+                            <SelectItem value="warning" className="font-medium">Warning</SelectItem>
+                            <SelectItem value="danger" className="font-medium">Danger</SelectItem>
                         </SelectContent>
                     </Select>
-                </div>
-
-                {/* Date Range */}
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 font-medium whitespace-nowrap">Date:</span>
-                    <DateRangePicker
-                        value={dateRange}
-                        onChange={(range) => { setDateRange(range); setCurrentPage(1); }}
-                        placeholder="Published date..."
-                        className="w-[220px]"
-                    />
                 </div>
             </FilterBar>
 
