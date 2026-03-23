@@ -11,91 +11,53 @@ import SortableHeader from '../../../components/ui/SortableHeader';
 import { IconBuildingStore, IconTools, IconPackage, IconCheck, IconX, IconDatabase } from '@tabler/icons-react';
 import { Checkbox } from '../../../components/ui/checkbox';
 import { Badge } from '../../../components/ui/badge';
+import { useInventoryServices, useBranches, useBranchServices, useSyncBranchServices } from '@/hooks/useInventoryData';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 
 const BranchServiceIndex = () => {
-    const [branches, setBranches] = useState<any[]>([]);
-    const [services, setServices] = useState<any[]>([]);
+    const queryClient = useQueryClient();
+    const { data: branches = [], isLoading: loadingBranches } = useBranches();
+    const { data: services = [], isLoading: loadingServices } = useInventoryServices();
     const [selectedBranchId, setSelectedBranchId] = useState<string | number | null>(null);
+    const { data: assignedData = [], isLoading: loadingAssignments } = useBranchServices(selectedBranchId);
+    const syncMutation = useSyncBranchServices();
+
     const [assignedServiceIds, setAssignedServiceIds] = useState<Set<number>>(new Set());
     
-    const [loading, setLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
+    const rawLoading = loadingBranches || loadingServices || loadingAssignments;
+    const loading = useDelayedLoading(rawLoading, 500);
+    const isSaving = syncMutation.isPending;
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('name');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-    };
-
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const [branchRes, servRes] = await Promise.all([
-                fetch('/api/hr/branches', { headers: { 'Accept': 'application/json' }, credentials: 'include' }),
-                fetch('/api/services/list', { headers: { 'Accept': 'application/json' }, credentials: 'include' })
-            ]);
-
-            if (branchRes.status === 401) { window.location.href = 'auth/login'; return; }
-
-            const [b, s] = await Promise.all([branchRes.json(), servRes.json()]);
-            setBranches(Array.isArray(b) ? b : []);
-            setServices(Array.isArray(s) ? s : (s.data || []));
-            
-            if (Array.isArray(b) && b.length > 0 && !selectedBranchId) {
-                setSelectedBranchId(b[0].id);
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to fetch data');
-        } finally {
-            setLoading(false);
+    // Set initial branch
+    useEffect(() => {
+        if (branches.length > 0 && !selectedBranchId) {
+            setSelectedBranchId(branches[0].id);
         }
-    };
+    }, [branches, selectedBranchId]);
 
-    const fetchBranchAssignments = async (branchId: string | number) => {
-        setLoading(true); // Show skeleton when switching branches
-        try {
-            const res = await fetch(`/api/hr/branches/${branchId}/services`, {
-                headers: { 'Accept': 'application/json' },
-                credentials: 'include'
-            });
-            const data = await res.json();
-            const assignedIds = new Set(data.filter((s: any) => s.is_assigned).map((s: any) => s.id));
+    // Sync assignedServiceIds state when assignedData changes
+    useEffect(() => {
+        if (assignedData) {
+            const assignedIds = new Set<number>(assignedData.filter((s: any) => s.is_assigned).map((s: any) => s.id));
             setAssignedServiceIds(assignedIds);
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to fetch branch assignments');
-        } finally {
-            setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    useEffect(() => {
-        if (selectedBranchId) {
-            fetchBranchAssignments(selectedBranchId);
-        } else {
-            setAssignedServiceIds(new Set());
-        }
-    }, [selectedBranchId]);
+    }, [assignedData]);
 
     const branchOptions = useMemo(() => 
-        branches.map(b => ({ value: b.id, label: b.name, description: b.code })),
+        branches.map((b: any) => ({ value: b.id, label: b.name, description: b.code })),
     [branches]);
 
     const filteredAndSortedServices = useMemo(() => {
         let result = [...services];
         if (search) {
             const q = search.toLowerCase();
-            result = result.filter(s => 
+            result = result.filter((s: any) => 
                 s.name.toLowerCase().includes(q) || 
                 s.code?.toLowerCase().includes(q)
             );
@@ -114,29 +76,13 @@ const BranchServiceIndex = () => {
 
     const handleSave = async () => {
         if (!selectedBranchId) return;
-        setIsSaving(true);
         try {
-            const response = await fetch(`/api/hr/branches/${selectedBranchId}/services/sync`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ services: Array.from(assignedServiceIds) }),
+            await syncMutation.mutateAsync({ 
+                branchId: selectedBranchId, 
+                services: Array.from(assignedServiceIds) 
             });
-
-            if (response.ok) {
-                toast.success('Branch services updated successfully');
-            } else {
-                toast.error('Failed to update branch services');
-            }
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsSaving(false);
         }
     };
 
@@ -152,7 +98,7 @@ const BranchServiceIndex = () => {
 
     const handleSelectAll = (checked: boolean) => {
         const newSet = new Set(assignedServiceIds);
-        filteredAndSortedServices.forEach(service => {
+        filteredAndSortedServices.forEach((service: any) => {
             if (checked) {
                 newSet.add(service.id);
             } else {
@@ -162,9 +108,17 @@ const BranchServiceIndex = () => {
         setAssignedServiceIds(newSet);
     };
 
+    const handleRefresh = () => {
+        queryClient.invalidateQueries({ queryKey: ['hr-branches'] });
+        queryClient.invalidateQueries({ queryKey: ['inventory-services'] });
+        if (selectedBranchId) {
+            queryClient.invalidateQueries({ queryKey: ['branch-services', selectedBranchId] });
+        }
+    };
+
     const isAllSelected = useMemo(() => {
         if (filteredAndSortedServices.length === 0) return false;
-        return filteredAndSortedServices.every(s => assignedServiceIds.has(s.id));
+        return filteredAndSortedServices.every((s: any) => assignedServiceIds.has(s.id));
     }, [filteredAndSortedServices, assignedServiceIds]);
 
     const paginatedServices = filteredAndSortedServices.slice(
@@ -183,7 +137,7 @@ const BranchServiceIndex = () => {
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-                onRefresh={fetchData}
+                onRefresh={handleRefresh}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -201,7 +155,7 @@ const BranchServiceIndex = () => {
                             value={selectedBranchId}
                             onChange={(val) => setSelectedBranchId(val)}
                             placeholder="Select Branch..."
-                            loading={loading}
+                            loading={loadingBranches}
                         />
                         
                         {selectedBranchId && (
@@ -213,7 +167,7 @@ const BranchServiceIndex = () => {
                                 <Button 
                                     className="w-full" 
                                     onClick={handleSave} 
-                                    disabled={isSaving || loading}
+                                    disabled={isSaving || loadingAssignments}
                                 >
                                     {isSaving ? 'Updating...' : 'Update Availability'}
                                 </Button>
@@ -246,7 +200,7 @@ const BranchServiceIndex = () => {
                                 </thead>
                                 <tbody>
                                     {paginatedServices.length > 0 ? (
-                                        paginatedServices.map((service) => (
+                                        paginatedServices.map((service: any) => (
                                             <tr key={service.id} className="group transition-colors duration-150 cursor-pointer" onClick={() => handleToggleService(service.id)}>
                                                 <td className="text-center">
                                                     <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-900 flex items-center justify-center mx-auto text-gray-400 group-hover:text-primary transition-colors">
@@ -289,7 +243,6 @@ const BranchServiceIndex = () => {
                                 </tbody>
                             </table>
                             
-                            <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
                                 <Pagination
                                     currentPage={currentPage}
                                     totalPages={totalPages}
@@ -297,7 +250,6 @@ const BranchServiceIndex = () => {
                                     itemsPerPage={itemsPerPage}
                                     onPageChange={setCurrentPage}
                                 />
-                            </div>
                         </div>
                     )}
                 </div>

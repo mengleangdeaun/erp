@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { ScrollArea } from '../../../components/ui/scroll-area';
@@ -14,13 +14,16 @@ import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { IconTags } from '@tabler/icons-react';
+import { useInventoryTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useInventoryData';
 
 const TagIndex = () => {
-    const [tags, setTags] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: tags = [], isLoading: loading, refetch: refetchTags } = useInventoryTags();
+    const createTagMutation = useCreateTag();
+    const updateTagMutation = useUpdateTag();
+    const deleteTagMutation = useDeleteTag();
+
     const [modalOpen, setModalOpen] = useState(false);
     const [editingTag, setEditingTag] = useState<any>(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     // Filter & Sort & Pagination state
     const [search, setSearch] = useState('');
@@ -31,7 +34,9 @@ const TagIndex = () => {
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+
+    const isSaving = createTagMutation.isPending || updateTagMutation.isPending;
+    const isDeleting = deleteTagMutation.isPending;
 
     const initialFormState = {
         name: '',
@@ -40,45 +45,6 @@ const TagIndex = () => {
     };
 
     const [formData, setFormData] = useState(initialFormState);
-
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-    };
-
-    const fetchTags = () => {
-        setLoading(true);
-        fetch('/api/inventory/tags', {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => {
-                if (res.status === 401) {
-                    window.location.href = 'auth/login';
-                    return null;
-                }
-                return res.json();
-            })
-            .then(data => {
-                if (!data) return;
-                setTags(Array.isArray(data) ? data : []);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setTags([]);
-                setLoading(false);
-            });
-    };
-
-    useEffect(() => {
-        fetchTags();
-    }, []);
 
     const handleCreate = () => {
         setEditingTag(null);
@@ -103,32 +69,12 @@ const TagIndex = () => {
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
-
         try {
-            const response = await fetch(`/api/inventory/tags/${itemToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-            });
-
-            if (response.ok) {
-                toast.success('Tag deleted successfully');
-                fetchTags();
-            } else {
-                toast.error('Failed to delete tag');
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsDeleting(false);
+            await deleteTagMutation.mutateAsync(itemToDelete);
             setDeleteModalOpen(false);
             setItemToDelete(null);
+        } catch (error) {
+            console.error(error);
         }
     };
 
@@ -143,41 +89,17 @@ const TagIndex = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
-
-        const url = editingTag ? `/api/inventory/tags/${editingTag.id}` : '/api/inventory/tags';
-        const method = editingTag ? 'PUT' : 'POST';
+        const payload = { ...formData, is_active: formData.is_active === '1' };
 
         try {
-            await fetch('/sanctum/csrf-cookie');
-
-            const payload = { ...formData, is_active: formData.is_active === '1' };
-
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-                body: JSON.stringify(payload),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                toast.success(`Tag ${editingTag ? 'updated' : 'created'} successfully`);
-                setModalOpen(false);
-                fetchTags();
+            if (editingTag) {
+                await updateTagMutation.mutateAsync({ id: editingTag.id, payload });
             } else {
-                toast.error(data.message || `Failed to ${editingTag ? 'update' : 'create'} tag`);
+                await createTagMutation.mutateAsync(payload);
             }
+            setModalOpen(false);
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsSaving(false);
         }
     };
 
@@ -226,7 +148,7 @@ const TagIndex = () => {
                 setItemsPerPage={setItemsPerPage}
                 onAdd={handleCreate}
                 addLabel="Add Tag"
-                onRefresh={fetchTags}
+                onRefresh={refetchTags}
                 hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'}
                 onClearFilters={() => {
                     setSortBy('name');

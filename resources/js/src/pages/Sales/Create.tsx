@@ -414,7 +414,7 @@ const SalesCreate = () => {
                     <div className="h-6 w-[1px] bg-gray-100 dark:bg-gray-800 shrink-0" />
 
                     <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
-                        <SelectTrigger className="w-[140px] h-8 border-0 bg-transparent shadow-none font-bold text-[11px] ring-0 focus:ring-0">
+                        <SelectTrigger className="w-[140px] h-9 font-bold text-[11px]">
                             <IconFilter size={12} className="mr-1.5 text-gray-400" />
                             <SelectValue placeholder="Category" />
                         </SelectTrigger>
@@ -447,14 +447,23 @@ const SalesCreate = () => {
                         loading={isLoadingBranches}
                     />
                     <div className="h-9 w-[1px] bg-gray-100 dark:bg-gray-800" />
-                    <Button 
-                        disabled={saving || form.items.length === 0} 
-                        onClick={() => setShowCheckoutDialog(true)}
-                        className="bg-primary hover:bg-primary/90 text-white font-bold px-6 h-9 shadow-md shadow-primary/20 active:scale-95 transition-all text-[11px]"
-                    >
-                        <IconShoppingCart className="mr-1.5" size={14} />
-                        Checkout ({form.items.length})
-                    </Button>
+<div className="relative inline-flex">
+  <Button 
+    disabled={saving || form.items.length === 0} 
+    onClick={() => setShowCheckoutDialog(true)}
+    className="bg-primary hover:bg-primary/90 text-white font-bold px-6 h-9 shadow-md shadow-primary/20 active:scale-95 transition-all text-[11px]"
+  >
+    <IconShoppingCart className="mr-1.5" size={14} />
+    Checkout
+  </Button>
+  
+  {form.items.length > 0 && (
+    <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-white ring-2 ring-background">
+      {form.items.length}
+    </span>
+  )}
+</div>
+
                 </div>
             </div>
 

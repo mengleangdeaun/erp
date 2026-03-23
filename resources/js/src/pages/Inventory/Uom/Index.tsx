@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { ScrollArea } from '../../../components/ui/scroll-area';
@@ -14,13 +14,16 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { Input } from '../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { IconScale } from '@tabler/icons-react';
+import { useInventoryUoms, useCreateUom, useUpdateUom, useDeleteUom } from '@/hooks/useInventoryData';
 
 const UomIndex = () => {
-    const [uoms, setUoms] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: uoms = [], isLoading: loading, refetch: refetchUoms } = useInventoryUoms();
+    const createUomMutation = useCreateUom();
+    const updateUomMutation = useUpdateUom();
+    const deleteUomMutation = useDeleteUom();
+
     const [modalOpen, setModalOpen] = useState(false);
     const [editingUom, setEditingUom] = useState<any>(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('name');
@@ -30,7 +33,9 @@ const UomIndex = () => {
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+
+    const isSaving = createUomMutation.isPending || updateUomMutation.isPending;
+    const isDeleting = deleteUomMutation.isPending;
 
     const initialFormState = {
         code: '',
@@ -39,38 +44,6 @@ const UomIndex = () => {
     };
 
     const [formData, setFormData] = useState(initialFormState);
-
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-    };
-
-    const fetchUoms = () => {
-        setLoading(true);
-        fetch('/api/inventory/uoms', {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => res.status === 401 ? window.location.href = 'auth/login' : res.json())
-            .then(data => {
-                setUoms(Array.isArray(data) ? data : []);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setUoms([]);
-                setLoading(false);
-            });
-    };
-
-    useEffect(() => {
-        fetchUoms();
-    }, []);
 
     const handleCreate = () => {
         setEditingUom(null);
@@ -95,32 +68,12 @@ const UomIndex = () => {
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
-
         try {
-            const response = await fetch(`/api/inventory/uoms/${itemToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-            });
-
-            if (response.ok) {
-                toast.success('UOM deleted successfully');
-                fetchUoms();
-            } else {
-                toast.error('Failed to delete UOM');
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsDeleting(false);
+            await deleteUomMutation.mutateAsync(itemToDelete);
             setDeleteModalOpen(false);
             setItemToDelete(null);
+        } catch (error) {
+            console.error(error);
         }
     };
 
@@ -135,37 +88,17 @@ const UomIndex = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
-
-        const url = editingUom ? `/api/inventory/uoms/${editingUom.id}` : '/api/inventory/uoms';
-        const method = editingUom ? 'PUT' : 'POST';
+        const payload = { ...formData, is_active: formData.is_active === '1' };
 
         try {
-            await fetch('/sanctum/csrf-cookie');
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ ...formData, is_active: formData.is_active === '1' }),
-            });
-
-            if (response.ok) {
-                toast.success(`UOM ${editingUom ? 'updated' : 'created'} successfully`);
-                setModalOpen(false);
-                fetchUoms();
+            if (editingUom) {
+                await updateUomMutation.mutateAsync({ id: editingUom.id, payload });
             } else {
-                const data = await response.json();
-                toast.error(data.message || 'Failed to save UOM');
+                await createUomMutation.mutateAsync(payload);
             }
+            setModalOpen(false);
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsSaving(false);
         }
     };
 
@@ -192,7 +125,7 @@ const UomIndex = () => {
 
     return (
         <div>
-            <FilterBar icon={<IconScale className="w-6 h-6 text-primary" />} title="Units of Measure" description="Tracking methodologies for quantities" search={search} setSearch={setSearch} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} onAdd={handleCreate} addLabel="Add UOM" onRefresh={fetchUoms} hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('name'); setSortDirection('asc'); }} />
+            <FilterBar icon={<IconScale className="w-6 h-6 text-primary" />} title="Units of Measure" description="Tracking methodologies for quantities" search={search} setSearch={setSearch} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} onAdd={handleCreate} addLabel="Add UOM" onRefresh={refetchUoms} hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('name'); setSortDirection('asc'); }} />
 
 {loading ? (
   <TableSkeleton columns={3} rows={5} />

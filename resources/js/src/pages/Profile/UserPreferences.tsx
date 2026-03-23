@@ -184,7 +184,7 @@ export default function UserPreferences() {
         font_family: themeConfig.fontFamily || 'Google Sans',
         date_format: themeConfig.dateFormat || 'DD MMM YYYY',
         time_format: themeConfig.timeFormat || '12h',
-        accent_color: isCustom ? 'custom' : (localStorage.getItem('accentColor') || 'blue'),
+        accent_color: isCustom ? 'custom' : (localStorage.getItem('accentColor') || 'red'),
     });
 
     // Apply accent color CSS variables

@@ -12,17 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../compo
 import QRCode from 'react-qr-code';
 import { IconUser } from '@tabler/icons-react';
 import { Badge } from '../../../components/ui/badge';
-
-const getCookie = (name: string) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift();
-};
+import { useHREmployees, useHREmployeeQr, useHRDeleteEmployee } from '@/hooks/useHRData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 const EmployeeIndex = () => {
-    const [employees, setEmployees] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     // Filter & Sort & Pagination state
     const [search, setSearch] = useState('');
@@ -33,40 +29,19 @@ const EmployeeIndex = () => {
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     // QR Modal State
     const [qrModalOpen, setQrModalOpen] = useState(false);
-    const [loadingQr, setLoadingQr] = useState(false);
     const [qrData, setQrData] = useState<any>(null);
 
-    const fetchEmployees = () => {
-        setLoading(true);
-        fetch('/api/hr/employees', {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => {
-                if (res.status === 401) { window.location.href = '/auth/login'; return null; }
-                return res.json();
-            })
-            .then(data => {
-                if (!data) return;
-                setEmployees(Array.isArray(data) ? data : []);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setEmployees([]);
-                setLoading(false);
-            });
-    };
+    // TanStack Query
+    const { data: rawEmployees = [], isLoading: rawLoading } = useHREmployees();
+    const loading = useDelayedLoading(rawLoading, 500);
+    
+    const qrMutation = useHREmployeeQr();
+    const deleteMutation = useHRDeleteEmployee();
 
-    useEffect(() => { fetchEmployees(); }, []);
+    const employees = Array.isArray(rawEmployees) ? rawEmployees : (rawEmployees.data || []);
 
     const confirmDelete = (id: number) => {
         setItemToDelete(id);
@@ -75,52 +50,30 @@ const EmployeeIndex = () => {
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
-        try {
-            const response = await fetch(`/api/hr/employees/${itemToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-            });
-            if (response.ok) {
+        deleteMutation.mutate(itemToDelete, {
+            onSuccess: () => {
                 toast.success('Employee deleted successfully');
-                fetchEmployees();
-            } else {
+                setDeleteModalOpen(false);
+                setItemToDelete(null);
+            },
+            onError: () => {
                 toast.error('Failed to delete employee');
             }
-        } catch (error) {
-            console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsDeleting(false);
-            setDeleteModalOpen(false);
-            setItemToDelete(null);
-        }
+        });
     };
 
     const handleGenerateQr = async (employeeId: number) => {
         setQrModalOpen(true);
-        setLoadingQr(true);
         setQrData(null);
-        try {
-            const res = await fetch(`/api/attendance/employee-qr/${employeeId}`, {
-                headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-                credentials: 'include',
-            });
-            const data = await res.json();
-            if (res.ok) setQrData(data);
-            else toast.error(data.message || 'Error generating QR');
-        } catch (e) {
-            toast.error('Network Error');
-        } finally {
-            setLoadingQr(false);
-        }
+        qrMutation.mutate(employeeId, {
+            onSuccess: (data) => {
+                setQrData(data);
+            },
+            onError: (err: any) => {
+                toast.error(err.response?.data?.message || 'Error generating QR');
+            }
+        });
     };
-
 
     // Derived state for table
     const filteredAndSortedEmployees = useMemo(() => {
@@ -182,7 +135,6 @@ const EmployeeIndex = () => {
 
     return (
         <div>
-
             <FilterBar
                 icon={<IconUser className="w-6 h-6 text-primary" />}
                 title="Employees"
@@ -193,7 +145,7 @@ const EmployeeIndex = () => {
                 setItemsPerPage={setItemsPerPage}
                 onAdd={() => navigate('/hr/employees/create')}
                 addLabel="Add Employee"
-                onRefresh={fetchEmployees}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['hr-employees'] })}
                 hasActiveFilters={sortBy !== 'full_name' || sortDirection !== 'asc'}
                 onClearFilters={() => {
                     setSortBy('full_name');
@@ -203,7 +155,7 @@ const EmployeeIndex = () => {
     <div className="rounded-lg border overflow-hidden">
         <div className="overflow-x-auto">
                             {loading ? (
-                <TableSkeleton columns={8} rows={5} />
+                <TableSkeleton columns={8} rows={itemsPerPage} />
             ) : employees.length === 0 ? (
                 <EmptyState
                     title="No Employees Found"
@@ -276,8 +228,7 @@ const EmployeeIndex = () => {
                             ))}
                         </tbody>
                     </table>
-
-             
+ 
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
@@ -295,7 +246,7 @@ const EmployeeIndex = () => {
                 isOpen={deleteModalOpen}
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
-                isLoading={isDeleting}
+                isLoading={deleteMutation.isPending}
                 title="Delete Employee"
                 message="Are you sure you want to delete this employee? This action cannot be undone."
             />
@@ -306,8 +257,8 @@ const EmployeeIndex = () => {
                         <DialogTitle>Employee Login QR Code</DialogTitle>
                     </DialogHeader>
                     <div className="flex flex-col items-center justify-center p-6 space-y-6">
-                        {loadingQr && <div className="animate-pulse">Generating Secure Login Token...</div>}
-                        {qrData && !loadingQr && (
+                        {qrMutation.isPending && <div className="animate-pulse">Generating Secure Login Token...</div>}
+                        {qrData && !qrMutation.isPending && (
                             <>
                                 <div className="text-center">
                                     <h3 className="text-lg font-bold">{qrData.employee}</h3>
@@ -329,3 +280,4 @@ const EmployeeIndex = () => {
 };
 
 export default EmployeeIndex;
+dex;

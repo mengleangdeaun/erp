@@ -22,13 +22,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Popover, PopoverContent, PopoverTrigger } from '../../../components/ui/popover';
 import StatsDialog from './StatsDialog';
 import { useFormatDate } from '@/hooks/useFormatDate';
+import { useHRAnnouncements, useHRUpdateAnnouncementStatus, useHRDeleteAnnouncement } from '@/hooks/useHRData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 const AnnouncementIndex = () => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { formatDate, formatTime } = useFormatDate();
 
-    const [announcements, setAnnouncements] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [search, setSearch] = useState('');
@@ -40,32 +42,16 @@ const AnnouncementIndex = () => {
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [isUpdatingStatus, setIsUpdatingStatus] = useState<number | null>(null);
     const [statsModalOpen, setStatsModalOpen] = useState(false);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
 
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-    };
+    // TanStack Query
+    const { data: rawAnnouncements = [], isLoading: rawLoading } = useHRAnnouncements();
+    const loading = useDelayedLoading(rawLoading, 500);
+    const announcements = rawAnnouncements;
 
-    const fetchData = () => {
-        setLoading(true);
-        fetch('/api/hr/announcements', {
-            headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => {
-                setAnnouncements(Array.isArray(data) ? data : []);
-            })
-            .catch(() => toast.error('Failed to load announcements'))
-            .finally(() => setLoading(false));
-    };
-
-    useEffect(() => { fetchData(); }, []);
+    const updateStatusMutation = useHRUpdateAnnouncementStatus();
+    const deleteMutation = useHRDeleteAnnouncement();
 
     const handleSort = (col: string) => {
         setSortBy(prev => {
@@ -120,54 +106,27 @@ const AnnouncementIndex = () => {
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
-        try {
-            await fetch('/sanctum/csrf-cookie');
-            const res = await fetch(`/api/hr/announcements/${itemToDelete}`, {
-                method: 'DELETE',
-                headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-                credentials: 'include',
-            });
-            if (res.ok || res.status === 204) {
+        deleteMutation.mutate(itemToDelete, {
+            onSuccess: () => {
                 toast.success('Announcement deleted');
-                fetchData();
-            } else {
+                setDeleteModalOpen(false);
+                setItemToDelete(null);
+            },
+            onError: () => {
                 toast.error('Failed to delete');
             }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setIsDeleting(false);
-            setDeleteModalOpen(false);
-            setItemToDelete(null);
-        }
+        });
     };
 
     const handleToggleStatus = async (id: number, currentStatus: boolean) => {
-        setIsUpdatingStatus(id);
-        try {
-            await fetch('/sanctum/csrf-cookie');
-            const res = await fetch(`/api/hr/announcements/${id}`, {
-                method: 'PUT',
-                headers: { 
-                    'Accept': 'application/json', 
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' 
-                },
-                body: JSON.stringify({ is_published: !currentStatus }),
-                credentials: 'include',
-            });
-            if (res.ok) {
+        updateStatusMutation.mutate({ id, is_published: !currentStatus }, {
+            onSuccess: () => {
                 toast.success(`Announcement ${!currentStatus ? 'published' : 'hidden'}`);
-                fetchData();
-            } else {
+            },
+            onError: () => {
                 toast.error('Failed to update status');
             }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setIsUpdatingStatus(null);
-        }
+        });
     };
 
     const hasActiveFilters = !!(statusFilter || typeFilter || dateRange?.from);
@@ -213,7 +172,7 @@ const AnnouncementIndex = () => {
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
-                onRefresh={fetchData}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['hr-announcements'] })}
                 onAdd={() => navigate('/hr/announcements/create')}
                 addLabel="New Announcement"
                 hasActiveFilters={hasActiveFilters}
@@ -266,7 +225,7 @@ const AnnouncementIndex = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
                     {loading ? (
-                        <TableSkeleton columns={7} rows={5} />
+                        <TableSkeleton columns={7} rows={itemsPerPage} />
                     ) : paginated.length === 0 ? (
                         <EmptyState
                             isSearch={!!search || hasActiveFilters}
@@ -288,7 +247,7 @@ const AnnouncementIndex = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {paginated.map(a => (
+                                {paginated.map((a: any) => (
                                     <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
@@ -329,10 +288,10 @@ const AnnouncementIndex = () => {
                                                 <Popover>
                                                     <PopoverTrigger asChild>
                                                         <button 
-                                                            className={`p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-all opacity-0 group-hover/status:opacity-100 ${isUpdatingStatus === a.id ? 'opacity-100' : ''}`}
-                                                            disabled={isUpdatingStatus !== null}
+                                                            className={`p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-all opacity-0 group-hover/status:opacity-100 ${updateStatusMutation.isPending && updateStatusMutation.variables?.id === a.id ? 'opacity-100' : ''}`}
+                                                            disabled={updateStatusMutation.isPending}
                                                         >
-                                                            {isUpdatingStatus === a.id ? (
+                                                            {updateStatusMutation.isPending && updateStatusMutation.variables?.id === a.id ? (
                                                                 <IconLoader2 size={14} className="animate-spin text-primary" />
                                                             ) : (
                                                                 <IconDotsVertical size={14} />
@@ -426,7 +385,7 @@ const AnnouncementIndex = () => {
                 isOpen={deleteModalOpen}
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
-                isLoading={isDeleting}
+                isLoading={deleteMutation.isPending}
                 title="Delete Announcement"
                 message="Are you sure you want to delete this announcement? This action cannot be undone."
             />

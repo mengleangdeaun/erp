@@ -20,6 +20,9 @@ import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useHRActivities, useHRFilterEmployees, useHRUpdateActivityStatus, useHRDeleteActivity } from '@/hooks/useHRData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
     submitted: { label: 'Submitted', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: <IconClock size={12} /> },
@@ -28,21 +31,16 @@ const STATUS_CONFIG: Record<string, { label: string; className: string; icon: Re
 };
 
 export default function HrActivityIndex() {
-    const [loading, setLoading] = useState(true);
-    const [activities, setActivities] = useState<any[]>([]);
-    const [employees, setEmployees] = useState<any[]>([]);
-    const [pagination, setPagination] = useState<any>(null);
+    const queryClient = useQueryClient();
 
     // UI State
     const [selected, setSelected] = useState<any | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
-    const [savingStatus, setSavingStatus] = useState(false);
     const [adminNote, setAdminNote] = useState('');
     const [newStatus, setNewStatus] = useState('');
 
     // Deletion
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
     // Filters & Sorting
@@ -65,49 +63,30 @@ export default function HrActivityIndex() {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    const fetchActivities = async () => {
-        setLoading(true);
-        const params = new URLSearchParams({
-            page: String(currentPage),
-            per_page: String(itemsPerPage),
+    // TanStack Query
+    const queryParams = useMemo(() => {
+        const params: any = {
+            page: currentPage,
+            per_page: itemsPerPage,
             sort_by: sortBy,
             sort_dir: sortDirection
-        });
+        };
+        if (search) params.search = search;
+        if (statusFilter !== 'all') params.status = statusFilter;
+        if (employeeFilter !== 'all') params.employee_id = employeeFilter;
+        if (dateRange?.from) params.date_from = format(dateRange.from, 'yyyy-MM-dd');
+        if (dateRange?.to) params.date_to = format(dateRange.to, 'yyyy-MM-dd');
+        return params;
+    }, [currentPage, itemsPerPage, sortBy, sortDirection, search, statusFilter, employeeFilter, dateRange]);
 
-        if (search) params.append('search', search);
-        if (statusFilter !== 'all') params.append('status', statusFilter);
-        if (employeeFilter !== 'all') params.append('employee_id', employeeFilter);
+    const { data: pagination, isLoading: rawLoading } = useHRActivities(queryParams);
+    const loading = useDelayedLoading(rawLoading, 500);
+    const activities = pagination?.data ?? [];
 
-        if (dateRange?.from) params.append('date_from', format(dateRange.from, 'yyyy-MM-dd'));
-        if (dateRange?.to) params.append('date_to', format(dateRange.to, 'yyyy-MM-dd'));
-
-        try {
-            const res = await fetch(`/api/hr/activities?${params}`, {
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setActivities(data.data ?? []);
-                setPagination(data);
-            }
-        } catch { toast.error('Network error'); }
-        finally { setLoading(false); }
-    };
-
-    const fetchEmployees = async () => {
-        try {
-            const res = await fetch('/api/hr/employees?compact=true', {
-                headers: { 'Accept': 'application/json' }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setEmployees(data);
-            }
-        } catch (err) { console.error('Error fetching employees:', err); }
-    };
-
-    useEffect(() => { fetchActivities(); }, [currentPage, itemsPerPage, sortBy, sortDirection, search, statusFilter, employeeFilter, dateRange]);
-    useEffect(() => { fetchEmployees(); }, []);
+    const { data: employees = [] } = useHRFilterEmployees(true);
+    
+    const updateStatusMutation = useHRUpdateActivityStatus();
+    const deleteMutation = useHRDeleteActivity();
 
     const handleSort = (column: string) => {
         if (sortBy === column) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -124,23 +103,15 @@ export default function HrActivityIndex() {
 
     const saveStatus = async () => {
         if (!selected) return;
-        setSavingStatus(true);
-        try {
-            const res = await fetch(`/api/hr/activities/${selected.id}/status`, {
-                method: 'PUT',
-                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                body: JSON.stringify({ status: newStatus, admin_note: adminNote }),
-            });
-            if (res.ok) {
+        updateStatusMutation.mutate({ id: selected.id, status: newStatus, admin_note: adminNote }, {
+            onSuccess: () => {
                 toast.success('Activity updated');
                 setDetailOpen(false);
-                fetchActivities();
-            } else {
-                const d = await res.json();
-                toast.error(d.message ?? 'Failed to update');
+            },
+            onError: (err: any) => {
+                toast.error(err.response?.data?.message || 'Failed to update');
             }
-        } catch { toast.error('Network error'); }
-        finally { setSavingStatus(false); }
+        });
     };
 
     const confirmDelete = (id: number) => {
@@ -150,25 +121,21 @@ export default function HrActivityIndex() {
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
-        try {
-            const res = await fetch(`/api/hr/activities/${itemToDelete}`, {
-                method: 'DELETE',
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            });
-            if (res.ok) {
+        deleteMutation.mutate(itemToDelete, {
+            onSuccess: () => {
                 toast.success('Activity deleted');
-                fetchActivities();
-            } else {
+                setDeleteModalOpen(false);
+                setItemToDelete(null);
+            },
+            onError: () => {
                 toast.error('Failed to delete');
             }
-        } catch { toast.error('An error occurred'); }
-        finally { setIsDeleting(false); setDeleteModalOpen(false); setItemToDelete(null); }
+        });
     };
 
     const employeeOptions = useMemo(() => [
         { value: 'all', label: 'All Employees' },
-        ...employees.map(e => ({ value: String(e.id), label: `${e.full_name} (${e.employee_id})` }))
+        ...employees.map((e: any) => ({ value: String(e.id), label: `${e.full_name} (${e.employee_id})` }))
     ], [employees]);
 
     const hasActiveFilters = search !== '' || statusFilter !== 'all' || employeeFilter !== 'all' || dateRange !== undefined;
@@ -183,7 +150,7 @@ export default function HrActivityIndex() {
                 setSearch={setSearchInput}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
-                onRefresh={fetchActivities}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['hr-activities'] })}
                 hasActiveFilters={hasActiveFilters}
                 onClearFilters={() => {
                     setSearchInput('');
@@ -235,7 +202,7 @@ export default function HrActivityIndex() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
                     {loading ? (
-                        <TableSkeleton columns={6} rows={5} />
+                        <TableSkeleton columns={6} rows={itemsPerPage} />
                     ) : activities.length === 0 ? (
                         <EmptyState
                             isSearch={hasActiveFilters}
@@ -260,7 +227,7 @@ export default function HrActivityIndex() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 font-medium">
-                                {activities.map(act => {
+                                {activities.map((act: any) => {
                                     const status = STATUS_CONFIG[act.status] ?? STATUS_CONFIG.submitted;
                                     return (
                                         <tr key={act.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
@@ -431,7 +398,7 @@ export default function HrActivityIndex() {
                                         <IconCalendarEvent size={12} /> Date & Time
                                     </div>
                                     <p className="text-sm font-bold text-gray-800 dark:text-gray-200">
-                                        {new Date(selected?.submitted_at).toLocaleString([], {
+                                        {selected?.submitted_at && new Date(selected.submitted_at).toLocaleString([], {
                                             dateStyle: 'medium',
                                             timeStyle: 'short',
                                         })}
@@ -521,9 +488,9 @@ export default function HrActivityIndex() {
                             variant="default"
                             className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
                             onClick={saveStatus}
-                            disabled={savingStatus}
+                            disabled={updateStatusMutation.isPending}
                         >
-                            {savingStatus ? 'Saving...' : 'Confirm Review'}
+                            {updateStatusMutation.isPending ? 'Saving...' : 'Confirm Review'}
                         </Button>
                     </div>
                 </DialogContent>
@@ -534,7 +501,7 @@ export default function HrActivityIndex() {
                 isOpen={deleteModalOpen}
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
-                isLoading={isDeleting}
+                isLoading={deleteMutation.isPending}
                 title="Delete Activity Log"
                 message="Are you sure you want to delete this activity record and its photo content? This cannot be undone."
             />

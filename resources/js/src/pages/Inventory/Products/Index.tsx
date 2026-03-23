@@ -18,17 +18,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui
 import { Label } from '../../../components/ui/label';
 import { CustomQuillEditor } from '../../../components/ui/custom-quill-editor';
 import { IconBoxSeam, IconPhoto, IconLink, IconUpload, IconX, IconPhotoOff } from '@tabler/icons-react';
+import { 
+    useInventoryProducts, useInventoryCategories, useInventoryUoms, useInventoryTags,
+    useCreateProduct, useUpdateProduct, useDeleteProduct
+} from '@/hooks/useInventoryData';
 
 const ProductIndex = () => {
-    const [products, setProducts] = useState<any[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
-    const [uoms, setUoms] = useState<any[]>([]);
-    const [tags, setTags] = useState<any[]>([]);
+    // TanStack Query Hooks
+    const { data: products = [], isLoading: loadingProducts, refetch: refetchProducts } = useInventoryProducts();
+    const { data: categories = [], isLoading: loadingCategories } = useInventoryCategories();
+    const { data: uoms = [], isLoading: loadingUoms } = useInventoryUoms();
+    const { data: tags = [], isLoading: loadingTags } = useInventoryTags();
+
+    const createProductMutation = useCreateProduct();
+    const updateProductMutation = useUpdateProduct();
+    const deleteProductMutation = useDeleteProduct();
+
+    const loading = loadingProducts || loadingCategories || loadingUoms || loadingTags;
     
-    const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<any>(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('name');
@@ -38,7 +47,6 @@ const ProductIndex = () => {
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     const initialFormState = {
         code: '', sku: '', barcode: '', name: '', brand: '',
@@ -62,38 +70,8 @@ const ProductIndex = () => {
     const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
-    const getCookie = useCallback((name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-    }, []);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [prodRes, catRes, uomRes, tagRes] = await Promise.all([
-                fetch('/api/inventory/products?all=true', { headers: { 'Accept': 'application/json' }, credentials: 'include' }),
-                fetch('/api/inventory/categories', { headers: { 'Accept': 'application/json' }, credentials: 'include' }),
-                fetch('/api/inventory/uoms', { headers: { 'Accept': 'application/json' }, credentials: 'include' }),
-                fetch('/api/inventory/tags', { headers: { 'Accept': 'application/json' }, credentials: 'include' })
-            ]);
-
-            if (prodRes.status === 401) { window.location.href = 'auth/login'; return; }
-
-            const [p, c, u, t] = await Promise.all([prodRes.json(), catRes.json(), uomRes.json(), tagRes.json()]);
-
-            setProducts(Array.isArray(p) ? p : (p.data || []));
-            setCategories(Array.isArray(c) ? c : []);
-            setUoms(Array.isArray(u) ? u : []);
-            setTags(Array.isArray(t) ? t : []);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
+    const isSaving = createProductMutation.isPending || updateProductMutation.isPending;
+    const isDeleting = deleteProductMutation.isPending;
 
     // Cleanup object URLs on unmount or when imagePreview changes
     useEffect(() => {
@@ -140,12 +118,14 @@ const ProductIndex = () => {
 
     const executeDelete = useCallback(async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
         try {
-            const response = await fetch(`/api/inventory/products/${itemToDelete}`, { method: 'DELETE', headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' }, credentials: 'include' });
-            if (response.ok) { toast.success('Product deleted successfully'); fetchData(); } else { toast.error('Failed to delete Product'); }
-        } catch (error) { console.error(error); toast.error('An error occurred'); } finally { setIsDeleting(false); setDeleteModalOpen(false); setItemToDelete(null); }
-    }, [itemToDelete, getCookie, fetchData]);
+            await deleteProductMutation.mutateAsync(itemToDelete);
+            setDeleteModalOpen(false);
+            setItemToDelete(null);
+        } catch (error) {
+            console.error(error);
+        }
+    }, [itemToDelete, deleteProductMutation]);
 
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -177,74 +157,52 @@ const ProductIndex = () => {
 
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
         
-        const url = editingProduct ? `/api/inventory/products/${editingProduct.id}` : '/api/inventory/products';
-        const method = 'POST';
+        const data = new FormData();
         
-        try {
-            await fetch('/sanctum/csrf-cookie');
-            
-            const data = new FormData();
-            if (editingProduct) data.append('_method', 'PUT');
-            
-            // Append all form fields
-            data.append('code', formData.code);
-            data.append('name', formData.name);
-            data.append('sku', formData.sku);
-            data.append('barcode', formData.barcode);
-            data.append('brand', formData.brand);
-            data.append('category_id', formData.category_id === 'none' ? '' : formData.category_id);
-            data.append('base_uom_id', formData.base_uom_id === 'none' ? '' : formData.base_uom_id);
-            data.append('purchase_uom_id', formData.purchase_uom_id === 'none' ? '' : formData.purchase_uom_id);
-            data.append('uom_multiplier', String(formData.uom_multiplier));
-            data.append('length', formData.length);
-            data.append('width', formData.width);
-            data.append('cost', String(formData.cost));
-            data.append('price', String(formData.price));
-            data.append('reorder_level', String(formData.reorder_level));
-            data.append('is_active', formData.is_active === '1' ? '1' : '0');
-            data.append('description', formData.description || '');
-            
-            // Append tags
-            formData.tags.forEach((tagId, index) => {
-                data.append(`tags[${index}]`, tagId);
-            });
+        // Append all form fields
+        data.append('code', formData.code);
+        data.append('name', formData.name);
+        data.append('sku', formData.sku);
+        data.append('barcode', formData.barcode);
+        data.append('brand', formData.brand);
+        data.append('category_id', formData.category_id === 'none' ? '' : formData.category_id);
+        data.append('base_uom_id', formData.base_uom_id === 'none' ? '' : formData.base_uom_id);
+        data.append('purchase_uom_id', formData.purchase_uom_id === 'none' ? '' : formData.purchase_uom_id);
+        data.append('uom_multiplier', String(formData.uom_multiplier));
+        data.append('length', formData.length);
+        data.append('width', formData.width);
+        data.append('cost', String(formData.cost));
+        data.append('price', String(formData.price));
+        data.append('reorder_level', String(formData.reorder_level));
+        data.append('is_active', formData.is_active === '1' ? '1' : '0');
+        data.append('description', formData.description || '');
+        
+        // Append tags
+        formData.tags.forEach((tagId, index) => {
+            data.append(`tags[${index}]`, tagId);
+        });
 
-            // Handle Image
-            if (imageFile) {
-                data.append('img', imageFile);
-            } else if (formData.img && formData.image_mode === 'url') {
-                data.append('img', formData.img);
-            } else if (!imagePreview && !formData.img) {
-                data.append('img', ''); // Explicitly clear image if removed
-            }
-
-            const response = await fetch(url, {
-                method, 
-                headers: { 
-                    'Accept': 'application/json', 
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' 
-                }, 
-                credentials: 'include',
-                body: data,
-            });
-
-            if (response.ok) { 
-                toast.success(`Product ${editingProduct ? 'updated' : 'created'}`); 
-                setModalOpen(false); 
-                fetchData(); 
-            } else {
-                const errorData = await response.json(); 
-                toast.error(errorData.message || 'Failed to save product specification');
-            }
-        } catch (error) { 
-            console.error(error); 
-            toast.error('An error occurred'); 
-        } finally { 
-            setIsSaving(false); 
+        // Handle Image
+        if (imageFile) {
+            data.append('img', imageFile);
+        } else if (formData.img && formData.image_mode === 'url') {
+            data.append('img', formData.img);
+        } else if (!imagePreview && !formData.img) {
+            data.append('img', ''); // Explicitly clear image if removed
         }
-    }, [editingProduct, formData, imageFile, imagePreview, getCookie, fetchData]);
+
+        try {
+            if (editingProduct) {
+                await updateProductMutation.mutateAsync({ id: editingProduct.id, formData: data });
+            } else {
+                await createProductMutation.mutateAsync(data);
+            }
+            setModalOpen(false);
+        } catch (error) {
+            console.error(error);
+        }
+    }, [editingProduct, formData, imageFile, imagePreview, createProductMutation, updateProductMutation]);
 
     const filteredAndSorted = useMemo(() => {
         let result = [...products];
@@ -262,7 +220,8 @@ const ProductIndex = () => {
 
     return (
         <div>
-            <FilterBar icon={<IconBoxSeam className="w-6 h-6 text-primary" />} title="Products Catalog" description="Master material and product registry" search={search} setSearch={setSearch} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} onAdd={handleCreate} addLabel="Add Product" onRefresh={fetchData} hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('name'); setSortDirection('asc'); }} />
+            <FilterBar icon={<IconBoxSeam className="w-6 h-6 text-primary" />} title="Products Catalog" description="Master material and product registry" search={search} setSearch={setSearch} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} onAdd={handleCreate} addLabel="Add Product" onRefresh={refetchProducts} hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('name'); setSortDirection('asc'); }} />
+
             {loading ? (
                 <TableSkeleton columns={7} rows={5} />
             ) : products.length === 0 ? (

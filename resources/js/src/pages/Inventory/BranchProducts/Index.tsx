@@ -11,89 +11,61 @@ import SortableHeader from '../../../components/ui/SortableHeader';
 import { IconBuildingStore, IconPackage, IconCheck, IconX, IconDatabase } from '@tabler/icons-react';
 import { Checkbox } from '../../../components/ui/checkbox';
 import { Badge } from '../../../components/ui/badge';
+import { useInventoryProducts, useBranches, useBranchProducts, useSyncBranchProducts } from '@/hooks/useInventoryData';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 
 const BranchProductIndex = () => {
-    const [branches, setBranches] = useState<any[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
+    const { data: branches = [], isLoading: loadingBranches } = useBranches();
+    const { data: products = [], isLoading: loadingProducts } = useInventoryProducts();
     const [selectedBranchId, setSelectedBranchId] = useState<string | number | null>(null);
+    const { data: assignedData = [], isLoading: loadingAssignments } = useBranchProducts(selectedBranchId);
+    const syncMutation = useSyncBranchProducts();
+    const queryClient = useQueryClient();
+
     const [assignedProductIds, setAssignedProductIds] = useState<Set<number>>(new Set());
     
-    const [loading, setLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
+    const rawLoading = loadingBranches || loadingProducts || loadingAssignments;
+    const loading = useDelayedLoading(rawLoading, 500);
+    const isSaving = syncMutation.isPending;
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('name');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-    };
-
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const [branchRes, prodRes] = await Promise.all([
-                fetch('/api/hr/branches', { headers: { 'Accept': 'application/json' }, credentials: 'include' }),
-                fetch('/api/inventory/products?all=true', { headers: { 'Accept': 'application/json' }, credentials: 'include' })
-            ]);
-
-            if (branchRes.status === 401) { window.location.href = 'auth/login'; return; }
-
-            const [b, p] = await Promise.all([branchRes.json(), prodRes.json()]);
-            setBranches(Array.isArray(b) ? b : []);
-            setProducts(Array.isArray(p) ? p : (p.data || []));
-            
-            // Default to first branch if available
-            if (Array.isArray(b) && b.length > 0) {
-                setSelectedBranchId(b[0].id);
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to fetch data');
-        } finally {
-            setLoading(false);
+    // Set initial branch
+    useEffect(() => {
+        if (branches.length > 0 && !selectedBranchId) {
+            setSelectedBranchId(branches[0].id);
         }
-    };
+    }, [branches, selectedBranchId]);
 
-    const fetchBranchAssignments = async (branchId: string | number) => {
-        try {
-            const res = await fetch(`/api/hr/branches/${branchId}/products`, {
-                headers: { 'Accept': 'application/json' },
-                credentials: 'include'
-            });
-            const data = await res.json();
-            const assignedIds = new Set(data.filter((p: any) => p.is_assigned).map((p: any) => p.id));
+    // Sync assignedProductIds state when assignedData changes
+    useEffect(() => {
+        if (assignedData) {
+            const assignedIds = new Set<number>(assignedData.filter((p: any) => p.is_assigned).map((p: any) => p.id));
             setAssignedProductIds(assignedIds);
-        } catch (error) {
-            console.error(error);
-            toast.error('Failed to fetch branch assignments');
+        }
+    }, [assignedData]);
+
+    const handleRefresh = () => {
+        queryClient.invalidateQueries({ queryKey: ['hr-branches'] });
+        queryClient.invalidateQueries({ queryKey: ['inventory-products'] });
+        if (selectedBranchId) {
+            queryClient.invalidateQueries({ queryKey: ['branch-products', selectedBranchId] });
         }
     };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    useEffect(() => {
-        if (selectedBranchId) {
-            fetchBranchAssignments(selectedBranchId);
-        } else {
-            setAssignedProductIds(new Set());
-        }
-    }, [selectedBranchId]);
 
     const branchOptions = useMemo(() => 
-        branches.map(b => ({ value: b.id, label: b.name, description: b.code })),
+        branches.map((b: any) => ({ value: b.id, label: b.name, description: b.code })),
     [branches]);
 
     const filteredAndSortedProducts = useMemo(() => {
         let result = [...products];
         if (search) {
             const q = search.toLowerCase();
-            result = result.filter(p => 
+            result = result.filter((p: any) => 
                 p.name.toLowerCase().includes(q) || 
                 p.sku?.toLowerCase().includes(q) || 
                 p.code?.toLowerCase().includes(q)
@@ -113,29 +85,13 @@ const BranchProductIndex = () => {
 
     const handleSave = async () => {
         if (!selectedBranchId) return;
-        setIsSaving(true);
         try {
-            const response = await fetch(`/api/hr/branches/${selectedBranchId}/products/sync`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ products: Array.from(assignedProductIds) }),
+            await syncMutation.mutateAsync({ 
+                branchId: selectedBranchId, 
+                products: Array.from(assignedProductIds) 
             });
-
-            if (response.ok) {
-                toast.success('Branch products updated successfully');
-            } else {
-                toast.error('Failed to update branch products');
-            }
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsSaving(false);
         }
     };
 
@@ -182,7 +138,7 @@ const BranchProductIndex = () => {
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-                onRefresh={fetchData}
+                onRefresh={handleRefresh}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -293,7 +249,6 @@ const BranchProductIndex = () => {
                                 </tbody>
                             </table>
                             
-                            <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
                                 <Pagination
                                     currentPage={currentPage}
                                     totalPages={totalPages}
@@ -301,7 +256,6 @@ const BranchProductIndex = () => {
                                     itemsPerPage={itemsPerPage}
                                     onPageChange={setCurrentPage}
                                 />
-                            </div>
                         </div>
                     )}
                 </div>

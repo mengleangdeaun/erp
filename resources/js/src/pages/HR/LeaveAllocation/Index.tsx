@@ -18,17 +18,21 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { IconUserCheck, IconX, IconUsers } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { IconCalendar } from '@tabler/icons-react';
+import { 
+    useHRLeaveAllocations, 
+    useHRFilterEmployees, 
+    useHRLeavePolicies, 
+    useHRDepartments, 
+    useHRBranches, 
+    useHRCreateLeaveAllocation, 
+    useHRUpdateLeaveAllocation, 
+    useHRDeleteLeaveAllocation 
+} from '@/hooks/useHRData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 const LeaveAllocationIndex = () => {
-    const [allocations, setAllocations] = useState<any[]>([]);
-    const [employees, setEmployees] = useState<any[]>([]);
-    const [policies, setPolicies] = useState<any[]>([]);
-    const [departments, setDepartments] = useState<any[]>([]);
-    const [branches, setBranches] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [modalOpen, setModalOpen] = useState(false);
-    const [editingAllocation, setEditingAllocation] = useState<any>(null);
-    const [isSaving, setIsSaving] = useState(false);
+    const queryClient = useQueryClient();
 
     // Filter & Sort & Pagination state
     const [search, setSearch] = useState('');
@@ -37,9 +41,11 @@ const LeaveAllocationIndex = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editingAllocation, setEditingAllocation] = useState<any>(null);
+
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     const initialFormState = {
         employee_ids: [] as string[],
@@ -52,88 +58,19 @@ const LeaveAllocationIndex = () => {
 
     const [formData, setFormData] = useState(initialFormState);
 
-    // Helper to get cookie
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-    };
+    // TanStack Query
+    const { data: rawAllocations = [], isLoading: rawLoading } = useHRLeaveAllocations();
+    const loading = useDelayedLoading(rawLoading, 500);
+    const allocations = rawAllocations;
 
-    const fetchAllocations = () => {
-        setLoading(true);
-        fetch('/api/hr/leave-allocations', {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => {
-                if (res.status === 401) {
-                    window.location.href = 'auth/login';
-                    return null;
-                }
-                return res.json();
-            })
-            .then(data => {
-                if (!data) return;
-                if (Array.isArray(data)) {
-                    setAllocations(data);
-                } else {
-                    setAllocations([]);
-                }
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setAllocations([]);
-                setLoading(false);
-            });
-    };
+    const { data: employees = [] } = useHRFilterEmployees();
+    const { data: policies = [] } = useHRLeavePolicies();
+    const { data: departments = [] } = useHRDepartments();
+    const { data: branches = [] } = useHRBranches();
 
-    const fetchDropdownData = () => {
-        // Employees
-        fetch('/api/hr/employees', {
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => setEmployees(Array.isArray(data) ? data : (data.data || [])))
-            .catch(err => console.error(err));
-
-        // Policies
-        fetch('/api/hr/leave-policies', {
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => setPolicies(Array.isArray(data) ? data : []))
-            .catch(err => console.error(err));
-
-        // Departments
-        fetch('/api/hr/departments', {
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => setDepartments(Array.isArray(data) ? data : (data.data || [])))
-            .catch(err => console.error(err));
-
-        // Branches
-        fetch('/api/hr/branches', {
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => setBranches(Array.isArray(data) ? data : (data.data || [])))
-            .catch(err => console.error(err));
-    };
-
-    useEffect(() => {
-        fetchAllocations();
-        fetchDropdownData();
-    }, []);
+    const createMutation = useHRCreateLeaveAllocation();
+    const updateMutation = useHRUpdateLeaveAllocation();
+    const deleteMutation = useHRDeleteLeaveAllocation();
 
     const handleCreate = () => {
         setEditingAllocation(null);
@@ -161,33 +98,17 @@ const LeaveAllocationIndex = () => {
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
 
-        try {
-            const response = await fetch(`/api/hr/leave-allocations/${itemToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-            });
-
-            if (response.ok) {
+        deleteMutation.mutate(itemToDelete, {
+            onSuccess: () => {
                 toast.success('Leave Allocation deleted successfully');
-                fetchAllocations();
-            } else {
+                setDeleteModalOpen(false);
+                setItemToDelete(null);
+            },
+            onError: () => {
                 toast.error('Failed to delete leave allocation');
             }
-        } catch (error) {
-            console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsDeleting(false);
-            setDeleteModalOpen(false);
-            setItemToDelete(null);
-        }
+        });
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -244,12 +165,10 @@ const LeaveAllocationIndex = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
 
-        const url = editingAllocation ? `/api/hr/leave-allocations/${editingAllocation.id}` : '/api/hr/leave-allocations';
-        const method = editingAllocation ? 'PUT' : 'POST';
-
-        // Clean up empty expiration date to send as null
+        const mutation = editingAllocation ? updateMutation : createMutation;
+        
+        // Clean up empty expiration date and approved_by to send as null
         const payload: any = { ...formData };
         if (!payload.expiration_date) delete payload.expiration_date;
         if (!payload.approved_by) delete payload.approved_by;
@@ -257,44 +176,18 @@ const LeaveAllocationIndex = () => {
         // If editing, map it back to singular payload if API expects update on exactly 1 ID.
         if (editingAllocation) {
             payload.employee_id = payload.employee_ids[0];
+            payload.id = editingAllocation.id;
         }
 
-        try {
-            await fetch('/sanctum/csrf-cookie');
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-                body: JSON.stringify(payload),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
+        mutation.mutate(payload, {
+            onSuccess: (data: any) => {
                 toast.success(data.message || `Leave Allocation ${editingAllocation ? 'updated' : 'created'} successfully`);
                 setModalOpen(false);
-                fetchAllocations();
-            } else {
-                if (response.status === 401) {
-                    window.location.href = '/login';
-                }
-                toast.error(data.message || 'Failed to save allocation');
-                if (data.errors) {
-                    Object.values(data.errors).forEach((errArray: any) => {
-                        toast.error(errArray[0]);
-                    });
-                }
+            },
+            onError: (err: any) => {
+                toast.error(err.response?.data?.message || 'Failed to save allocation');
             }
-        } catch (error) {
-            console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsSaving(false);
-        }
+        });
     };
 
     // Derived state for table
@@ -347,6 +240,9 @@ const LeaveAllocationIndex = () => {
         setCurrentPage(1);
     }, [search]);
 
+    const isSaving = createMutation.isPending || updateMutation.isPending;
+    const isDeleting = deleteMutation.isPending;
+
     return (
         <div>
             <FilterBar
@@ -359,7 +255,7 @@ const LeaveAllocationIndex = () => {
                 setItemsPerPage={setItemsPerPage}
                 onAdd={handleCreate}
                 addLabel="Assign Leave Policy"
-                onRefresh={fetchAllocations}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['hr-leave-allocations'] })}
                 hasActiveFilters={sortBy !== 'employee' || sortDirection !== 'asc'}
                 onClearFilters={() => {
                     setSortBy('employee');
@@ -368,7 +264,7 @@ const LeaveAllocationIndex = () => {
             />
 
             {loading ? (
-                <TableSkeleton columns={6} rows={5} />
+                <TableSkeleton columns={6} rows={itemsPerPage} />
             ) : allocations.length === 0 ? (
                 <EmptyState
                     title="No Allocations Found"

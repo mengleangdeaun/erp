@@ -45,7 +45,7 @@ const CustomQuillEditor = React.forwardRef<ReactQuill, CustomQuillEditorProps>(
     const [isMounted, setIsMounted] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [charCount, setCharCount] = useState(0);
-    const quillRef = useRef<ReactQuill>(null);
+    const quillRef = useRef<ReactQuill | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     
     // Calculate character count
@@ -297,7 +297,7 @@ const CustomQuillEditor = React.forwardRef<ReactQuill, CustomQuillEditorProps>(
             }}
           >
             <div className="flex items-center justify-center h-full p-4 text-muted-foreground text-sm">
-              <div className="animate-pulse">Loading editor...</div>
+              <div className="animate-pulse" style={{ animationDuration: '3s' }}>Loading editor...</div>
             </div>
           </div>
         </div>

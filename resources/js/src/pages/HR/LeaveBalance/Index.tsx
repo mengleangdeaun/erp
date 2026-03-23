@@ -19,12 +19,18 @@ import { DateRange } from 'react-day-picker';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { IconScale } from '@tabler/icons-react';
 import dayjs from 'dayjs';
+import { 
+    useHRLeaveBalances, 
+    useHRFilterEmployees, 
+    useHRLeaveTypes, 
+    useHRCreateLeaveBalance, 
+    useHRUpdateLeaveBalance 
+} from '@/hooks/useHRData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 const LeaveBalanceIndex = () => {
-    const [balances, setBalances] = useState<any[]>([]);
-    const [employees, setEmployees] = useState<any[]>([]);
-    const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
 
     // Filter & Sort & Pagination state
     const [search, setSearch] = useState('');
@@ -38,10 +44,9 @@ const LeaveBalanceIndex = () => {
     });
     const [leaveTypeFilter, setLeaveTypeFilter] = useState('');
 
-    // Manual Adjust Modal (future automation placeholder)
+    // Manual Adjust Modal
     const [modalOpen, setModalOpen] = useState(false);
     const [editingBalance, setEditingBalance] = useState<any>(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     const initialFormState = {
         employee_id: '',
@@ -54,97 +59,24 @@ const LeaveBalanceIndex = () => {
 
     const [formData, setFormData] = useState(initialFormState);
 
-    // Helper to get cookie
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-    };
-
-    const fetchBalances = () => {
-        setLoading(true);
-        let url = '/api/hr/leave-balances';
-        if (dateFilter?.from && dateFilter?.to) {
-            url += `?start_date=${dayjs(dateFilter.from).format('YYYY-MM-DD')}&end_date=${dayjs(dateFilter.to).format('YYYY-MM-DD')}`;
-        }
-        if (leaveTypeFilter) {
-            url += (url.includes('?') ? '&' : '?') + `leave_type_id=${leaveTypeFilter}`;
-        }
-
-        fetch(url, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => {
-                if (res.status === 401) {
-                    window.location.href = 'auth/login';
-                    return null;
-                }
-                return res.json();
-            })
-            .then(data => {
-                if (!data) return;
-                if (Array.isArray(data)) {
-                    setBalances(data);
-                } else if (data.data && Array.isArray(data.data)) {
-                    setBalances(data.data);
-                } else {
-                    setBalances([]);
-                }
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setBalances([]);
-                setLoading(false);
-            });
-    };
-
-    const fetchEmployees = () => {
-        fetch('/api/hr/employees', {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setEmployees(data);
-                else if (data.data && Array.isArray(data.data)) setEmployees(data.data);
-            })
-            .catch(err => console.error(err));
-    };
-
-    const fetchLeaveTypes = () => {
-        fetch('/api/hr/leave-types', {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setLeaveTypes(data);
-            })
-            .catch(err => console.error(err));
-    };
-
-    useEffect(() => {
-        fetchBalances();
+    // TanStack Query
+    const queryParams = useMemo(() => {
+        const params: any = {};
+        if (dateFilter?.from) params.start_date = dayjs(dateFilter.from).format('YYYY-MM-DD');
+        if (dateFilter?.to) params.end_date = dayjs(dateFilter.to).format('YYYY-MM-DD');
+        if (leaveTypeFilter) params.leave_type_id = leaveTypeFilter;
+        return params;
     }, [dateFilter, leaveTypeFilter]);
 
-    useEffect(() => {
-        fetchEmployees();
-        fetchLeaveTypes();
-    }, []);
+    const { data: rawBalances = [], isLoading: rawLoading } = useHRLeaveBalances(queryParams);
+    const loading = useDelayedLoading(rawLoading, 500);
+    const balances = rawBalances;
+
+    const { data: employees = [] } = useHRFilterEmployees();
+    const { data: leaveTypes = [] } = useHRLeaveTypes();
+    
+    const createMutation = useHRCreateLeaveBalance();
+    const updateMutation = useHRUpdateLeaveBalance();
 
     const handleCreate = () => {
         setEditingBalance(null);
@@ -186,54 +118,24 @@ const LeaveBalanceIndex = () => {
         setFormData(prev => ({
             ...prev,
             [name]: value,
-            // If leave item type or employee changes in create mode, maybe we need extra logic,
-            // but for now just updating basic form data.
         }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
+        
+        const mutation = editingBalance ? updateMutation : createMutation;
+        const payload = editingBalance ? { id: editingBalance.id, ...formData } : formData;
 
-        const url = editingBalance ? `/api/hr/leave-balances/${editingBalance.id}` : '/api/hr/leave-balances';
-        const method = editingBalance ? 'PUT' : 'POST';
-
-        try {
-            await fetch('/sanctum/csrf-cookie');
-            const response = await fetch(url, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-                body: JSON.stringify(formData),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
+        mutation.mutate(payload, {
+            onSuccess: () => {
                 toast.success(`Leave Balance ${editingBalance ? 'updated' : 'created'} successfully`);
                 setModalOpen(false);
-                fetchBalances();
-            } else {
-                if (response.status === 401) {
-                    window.location.href = '/login';
-                }
-                toast.error(data.message || 'Failed to save balance');
-                if (data.errors) {
-                    Object.values(data.errors).forEach((errArray: any) => {
-                        toast.error(errArray[0]);
-                    });
-                }
+            },
+            onError: (err: any) => {
+                toast.error(err.response?.data?.message || 'Failed to save balance');
             }
-        } catch (error) {
-            console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsSaving(false);
-        }
+        });
     };
 
     // Derived state for table
@@ -297,9 +199,10 @@ const LeaveBalanceIndex = () => {
         );
     }
 
+    const isSaving = createMutation.isPending || updateMutation.isPending;
+
     return (
         <div>
-
             <FilterBar
                 icon={<IconBatteryVertical3 className=" h-6 w-6 text-primary" />}
                 title="Leave Balances"
@@ -310,7 +213,7 @@ const LeaveBalanceIndex = () => {
                 setItemsPerPage={setItemsPerPage}
                 onAdd={handleCreate}
                 addLabel="Manual Adjust Balance"
-                onRefresh={fetchBalances}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['hr-leave-balances'] })}
                 hasActiveFilters={!!search || !!dateFilter?.from || !!leaveTypeFilter}
                 onClearFilters={() => {
                     setSearch('');
@@ -349,7 +252,7 @@ const LeaveBalanceIndex = () => {
             </FilterBar>
 
             {loading ? (
-                <TableSkeleton columns={6} rows={5} />
+                <TableSkeleton columns={6} rows={itemsPerPage} />
             ) : balances.length === 0 ? (
                 <EmptyState
                     title="No Balances Found"

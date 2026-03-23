@@ -140,6 +140,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                     }))}
                                     value={form.vehicle_id}
                                     onChange={(val) => setForm({ ...form, vehicle_id: val as number })}
+                                    loading={loadingVehicles}
                                     placeholder={form.customer_id ? (loadingVehicles ? "Syncing..." : "Select Vehicle...") : "Customer Required"}
                                     disabled={!form.customer_id || loadingVehicles}
                                     className="h-10 bg-white dark:bg-zinc-900 shadow-sm border-zinc-200 dark:border-zinc-800 font-bold text-sm"

@@ -272,6 +272,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                         ${isLoading ? 'animate-pulse' : ''}
                         ${buttonClassName}
                     `}
+                    style={{ animationDuration: isLoading ? '3s' : undefined }}
                     onClick={handleClick}
                     disabled={disabled || isLoading || !onClick}
                 >

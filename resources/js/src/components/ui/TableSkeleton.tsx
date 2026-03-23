@@ -10,7 +10,7 @@ const TableSkeleton: React.FC<TableSkeletonProps> = ({ columns, rows = 5, rowsOn
     const renderRows = () => (
         <>
             {Array.from({ length: rows }).map((_, rIndex) => (
-                <tr key={rIndex} className="animate-pulse border-b border-gray-100 dark:border-gray-800 last:border-0">
+                <tr key={rIndex} className="animate-pulse border-b border-gray-100 dark:border-gray-800 last:border-0" style={{ animationDuration: '3s' }}>
                     {Array.from({ length: columns }).map((_, cIndex) => (
                         <td key={cIndex} className="py-4">
                             <div
@@ -37,7 +37,7 @@ const TableSkeleton: React.FC<TableSkeletonProps> = ({ columns, rows = 5, rowsOn
                     <tr>
                         {Array.from({ length: columns }).map((_, i) => (
                             <th key={i} className="py-3 px-4">
-                                <div className="h-3 bg-gray-200 dark:bg-gray-700/50 rounded-full w-2/3"></div>
+                                <div className="h-3 bg-gray-200 dark:bg-gray-700/50 rounded-full w-2/3 animate-pulse" style={{ animationDuration: '3s' }}></div>
                             </th>
                         ))}
                     </tr>

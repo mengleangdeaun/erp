@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
-import { toast } from 'sonner';
+import { useState, useMemo, useEffect } from 'react';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -11,12 +10,14 @@ import { DateRange } from 'react-day-picker';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import dayjs from 'dayjs';
 import { IconClockRecord } from '@tabler/icons-react';
+import { useAttendanceRecords, useHRFilterEmployees } from '@/hooks/useHRData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const AttendanceRecordIndex = () => {
-    const [records, setRecords] = useState<any[]>([]);
-    const [employees, setEmployees] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
+    const queryClient = useQueryClient();
+    
     // Filter & Sort & Pagination state
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('date');
@@ -29,88 +30,29 @@ const AttendanceRecordIndex = () => {
     });
     const [employeeFilter, setEmployeeFilter] = useState('');
 
-    // Helper to get cookie
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
+    // Hooks
+    const apiFilters = useMemo(() => ({
+        start_date: dateFilter?.from ? dayjs(dateFilter.from).format('YYYY-MM-DD') : undefined,
+        end_date: dateFilter?.to ? dayjs(dateFilter.to).format('YYYY-MM-DD') : undefined,
+        employee_id: employeeFilter || undefined
+    }), [dateFilter, employeeFilter]);
+
+    const { data: records = [], isLoading: loadingRecords, refetch } = useAttendanceRecords(apiFilters);
+    const { data: employees = [], isLoading: loadingEmployees } = useHRFilterEmployees();
+
+    const rawLoading = loadingRecords || loadingEmployees;
+    const loading = useDelayedLoading(rawLoading, 500);
+
+    const handleRefresh = () => {
+        queryClient.invalidateQueries({ queryKey: ['attendance-records'] });
+        queryClient.invalidateQueries({ queryKey: ['hr-employees-filter'] });
     };
-
-    const fetchRecords = () => {
-        setLoading(true);
-        let url = '/api/attendance/records';
-        if (dateFilter?.from && dateFilter?.to) {
-            url += `?start_date=${dayjs(dateFilter.from).format('YYYY-MM-DD')}&end_date=${dayjs(dateFilter.to).format('YYYY-MM-DD')}`;
-        }
-        if (employeeFilter) {
-            url += (url.includes('?') ? '&' : '?') + `employee_id=${employeeFilter}`;
-        }
-
-        fetch(url, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => {
-                if (res.status === 401) {
-                    window.location.href = 'auth/login';
-                    return null;
-                }
-                return res.json();
-            })
-            .then(data => {
-                if (!data) return;
-                if (Array.isArray(data)) {
-                    setRecords(data);
-                } else if (data.data && Array.isArray(data.data)) {
-                    setRecords(data.data);
-                } else {
-                    setRecords([]);
-                }
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setRecords([]);
-                setLoading(false);
-            });
-    };
-
-    const fetchEmployees = () => {
-        fetch('/api/hr/employees', {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setEmployees(data);
-                else if (data.data && Array.isArray(data.data)) setEmployees(data.data);
-            })
-            .catch(err => console.error(err));
-    };
-
-    useEffect(() => {
-        fetchRecords();
-    }, [dateFilter, employeeFilter]);
-
-    useEffect(() => {
-        fetchEmployees();
-    }, []);
 
     const handleEdit = (record: any) => {
-        // Implement Edit specific for Attendance records
         toast.info('Edit functionality not yet implemented.');
     };
 
     const handleDelete = async (record: any) => {
-        // Implement Delete
         toast.info('Delete functionality not yet implemented.');
     };
 
@@ -121,7 +63,7 @@ const AttendanceRecordIndex = () => {
         // Search
         if (search) {
             const q = search.toLowerCase();
-            result = result.filter(r =>
+            result = result.filter((r: any) =>
                 r.employee?.full_name?.toLowerCase().includes(q) ||
                 r.employee?.employee_id?.toLowerCase().includes(q) ||
                 r.status?.toLowerCase().includes(q)
@@ -161,7 +103,15 @@ const AttendanceRecordIndex = () => {
     // Reset page if search changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [search]);
+    }, [search, dateFilter, employeeFilter]);
+
+    const employeeOptions = useMemo(() => 
+        employees.map((emp: any) => ({
+            value: String(emp.id),
+            label: emp.full_name,
+            description: emp.employee_id
+        }))
+    , [employees]);
 
     return (
         <div>
@@ -173,7 +123,7 @@ const AttendanceRecordIndex = () => {
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-                onRefresh={fetchRecords}
+                onRefresh={handleRefresh}
                 hasActiveFilters={!!search || !!dateFilter?.from || !!employeeFilter}
                 onClearFilters={() => {
                     setSearch('');
@@ -198,15 +148,12 @@ const AttendanceRecordIndex = () => {
                 <div className="space-y-1.5 flex flex-col w-full">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Employee</span>
                     <SearchableSelect
-                        options={employees.map((emp: any) => ({
-                            value: String(emp.id),
-                            label: emp.full_name,
-                            description: emp.employee_id
-                        }))}
+                        options={employeeOptions}
                         value={employeeFilter}
                         onChange={(val) => setEmployeeFilter(String(val))}
                         placeholder="All Employees"
                         searchPlaceholder="Search employees..."
+                        loading={loadingEmployees}
                     />
                 </div>
             </FilterBar>
@@ -229,7 +176,7 @@ const AttendanceRecordIndex = () => {
                     }}
                 />
             ) : (
-                <div className="table-responsive bg-white dark:bg-black rounded-lg shadow-sm border border-gray-100 dark:border-gray-800">
+                <div className="bg-white dark:bg-black rounded-lg shadow-sm border border-gray-100 dark:border-gray-800">
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
@@ -239,7 +186,7 @@ const AttendanceRecordIndex = () => {
                                 <SortableHeader label="Check Out" value="check_out" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <SortableHeader label="Total Hours" value="total_hours" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-right">Action</th>
+                                <th className="text-right pr-4">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -255,7 +202,7 @@ const AttendanceRecordIndex = () => {
                                                 </div>
                                             )}
                                             <div>
-                                                <div className="font-semibold text-gray-800 dark:text-gray-200">{record.employee?.full_name}</div>
+                                                <div className="font-semibold text-gray-800 dark:text-gray-100">{record.employee?.full_name}</div>
                                                 <div className="text-xs text-gray-500">{record.employee?.employee_id}</div>
                                             </div>
                                         </div>
@@ -274,7 +221,7 @@ const AttendanceRecordIndex = () => {
                                         </span>
                                     </td>
                                     <td>{record.total_hours || '-'} hrs</td>
-                                    <td>
+                                    <td className="text-right pr-2">
                                         <ActionButtons
                                             variant='rounded'
                                             onEdit={() => handleEdit(record)}
@@ -286,15 +233,13 @@ const AttendanceRecordIndex = () => {
                         </tbody>
                     </table>
 
-                    <div className="border-t border-gray-100 dark:border-gray-800">
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            totalItems={filteredAndSortedRecords.length}
-                            itemsPerPage={itemsPerPage}
-                            onPageChange={setCurrentPage}
-                        />
-                    </div>
+                     <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={filteredAndSortedRecords.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={setCurrentPage}
+                    />
                 </div>
             )}
         </div>

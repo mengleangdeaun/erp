@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import { ScrollArea } from '../../../components/ui/scroll-area';
@@ -15,13 +15,16 @@ import { Textarea } from '../../../components/ui/textarea';
 import { Badge } from '../../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { IconCategory } from '@tabler/icons-react';
+import { useInventoryCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/useInventoryData';
 
 const CategoryIndex = () => {
-    const [categories, setCategories] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: categories = [], isLoading: loading, refetch: refetchCategories } = useInventoryCategories();
+    const createCategoryMutation = useCreateCategory();
+    const updateCategoryMutation = useUpdateCategory();
+    const deleteCategoryMutation = useDeleteCategory();
+
     const [modalOpen, setModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<any>(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('name');
@@ -31,29 +34,12 @@ const CategoryIndex = () => {
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
+
+    const isSaving = createCategoryMutation.isPending || updateCategoryMutation.isPending;
+    const isDeleting = deleteCategoryMutation.isPending;
 
     const initialFormState = { code: '', name: '', description: '', parent_id: 'none', is_active: '1' };
     const [formData, setFormData] = useState(initialFormState);
-
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-    };
-
-    const fetchCategories = () => {
-        setLoading(true);
-        fetch('/api/inventory/categories', {
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-            credentials: 'include',
-        })
-            .then(res => res.status === 401 ? window.location.href = 'auth/login' : res.json())
-            .then(data => { setCategories(Array.isArray(data) ? data : []); setLoading(false); })
-            .catch(err => { console.error(err); setCategories([]); setLoading(false); });
-    };
-
-    useEffect(() => { fetchCategories(); }, []);
 
     const handleCreate = () => { setEditingCategory(null); setFormData(initialFormState); setModalOpen(true); };
 
@@ -67,11 +53,13 @@ const CategoryIndex = () => {
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
         try {
-            const response = await fetch(`/api/inventory/categories/${itemToDelete}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' }, credentials: 'include' });
-            if (response.ok) { toast.success('Category deleted successfully'); fetchCategories(); } else { toast.error('Failed to delete Category'); }
-        } catch (error) { console.error(error); toast.error('An error occurred'); } finally { setIsDeleting(false); setDeleteModalOpen(false); setItemToDelete(null); }
+            await deleteCategoryMutation.mutateAsync(itemToDelete);
+            setDeleteModalOpen(false);
+            setItemToDelete(null);
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -79,21 +67,18 @@ const CategoryIndex = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
-        const url = editingCategory ? `/api/inventory/categories/${editingCategory.id}` : '/api/inventory/categories';
-        const method = editingCategory ? 'PUT' : 'POST';
+        const payload = { ...formData, is_active: formData.is_active === '1', parent_id: formData.parent_id === 'none' ? null : parseInt(formData.parent_id) };
+        
         try {
-            await fetch('/sanctum/csrf-cookie');
-            let payload = { ...formData, is_active: formData.is_active === '1', parent_id: formData.parent_id === 'none' ? null : parseInt(formData.parent_id) };
-            
-            const response = await fetch(url, {
-                method, headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' }, credentials: 'include',
-                body: JSON.stringify(payload),
-            });
-            if (response.ok) { toast.success(`Category ${editingCategory ? 'updated' : 'created'}`); setModalOpen(false); fetchCategories(); } else {
-                const data = await response.json(); toast.error(data.message || 'Failed to save configuration');
+            if (editingCategory) {
+                await updateCategoryMutation.mutateAsync({ id: editingCategory.id, payload });
+            } else {
+                await createCategoryMutation.mutateAsync(payload);
             }
-        } catch (error) { console.error(error); toast.error('An error occurred'); } finally { setIsSaving(false); }
+            setModalOpen(false);
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     const filteredAndSorted = useMemo(() => {
@@ -112,7 +97,19 @@ const CategoryIndex = () => {
 
     return (
         <div>
-            <FilterBar icon={<IconCategory className="w-6 h-6 text-primary" />} title="Product Categories" description="Manage hierarchical trees and standard segments" search={search} setSearch={setSearch} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} onAdd={handleCreate} addLabel="Add Category" onRefresh={fetchCategories} hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('name'); setSortDirection('asc'); }} />
+            <FilterBar icon={<IconCategory 
+            className="w-6 h-6 text-primary" />} 
+            title="Product Categories" 
+            description="Manage hierarchical trees and standard segments" 
+            search={search} 
+            setSearch={setSearch} 
+            itemsPerPage={itemsPerPage} 
+            setItemsPerPage={setItemsPerPage} 
+            onAdd={handleCreate} 
+            addLabel="Add Category" 
+            onRefresh={refetchCategories} 
+            hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'} 
+            onClearFilters={() => { setSortBy('name'); setSortDirection('asc'); }} />
 
             {loading ? (
   <TableSkeleton columns={4} rows={5} />
@@ -186,7 +183,7 @@ const CategoryIndex = () => {
                                         <SelectTrigger><SelectValue placeholder="No Parent Node (Root Area)" /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">-- Root Node --</SelectItem>
-                                            {categories.filter(c => c.id !== editingCategory?.id).map((c: any) => (
+                                            {categories.filter((c: any) => c.id !== editingCategory?.id).map((c: any) => (
                                                 <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
                                             ))}
                                         </SelectContent>

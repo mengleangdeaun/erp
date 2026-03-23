@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
-import { IconSearch, IconX, IconCheck, IconTrash, IconClock, IconClockRecord } from '@tabler/icons-react';
+import { IconClock, IconClockRecord } from '@tabler/icons-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog';
 import Pagination from '../../../components/ui/Pagination';
 import dayjs from 'dayjs';
@@ -22,12 +22,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../../../components/ui/textarea';
 import { Button } from '../../../components/ui/button';
 import DeleteModal from '../../../components/DeleteModal';
+import { useLeaveRecords, useApproveLeave, useRejectLeave, useDeleteLeaveRecord, useHRFilterEmployees } from '@/hooks/useHRData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function LeaveRecordIndex() {
-    const [requests, setRequests] = useState<any[]>([]);
-    const [employees, setEmployees] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
+    const queryClient = useQueryClient();
+    
     // Filtering & Pagination
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL_STATUSES');
@@ -47,71 +48,33 @@ export default function LeaveRecordIndex() {
         }
     };
 
-    // Modals & Actions
-    const [isProcessing, setIsProcessing] = useState(false);
+    // Hooks
+    const { data: requests = [], isLoading: loadingRecords } = useLeaveRecords();
+    const { data: employees = [], isLoading: loadingEmployees } = useHRFilterEmployees();
+    
+    const approveMutation = useApproveLeave();
+    const rejectMutation = useRejectLeave();
+    const deleteMutation = useDeleteLeaveRecord();
 
-    // Reject
+    const isProcessing = approveMutation.isPending || rejectMutation.isPending || deleteMutation.isPending;
+    const rawLoading = loadingRecords || loadingEmployees;
+    const loading = useDelayedLoading(rawLoading, 500);
+
+    // Modals
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
     const [activeRequest, setActiveRequest] = useState<any>(null);
     const [rejectionReason, setRejectionReason] = useState('');
 
-    // Delete
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
-    // Approve
     const [approveModalOpen, setApproveModalOpen] = useState(false);
     const [itemToApprove, setItemToApprove] = useState<number | null>(null);
 
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
+    const handleRefresh = () => {
+        queryClient.invalidateQueries({ queryKey: ['hr-leave-records'] });
+        queryClient.invalidateQueries({ queryKey: ['hr-employees-filter'] });
     };
-
-    const fetchRequests = () => {
-        setLoading(true);
-        fetch('/api/hr/leave-requests', {
-            headers: {
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => {
-                if (res.status === 401) window.location.href = '/auth/login';
-                return res.json();
-            })
-            .then(data => {
-                setRequests(Array.isArray(data) ? data : []);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                toast.error('Failed to load leave records');
-                setLoading(false);
-            });
-    };
-
-    const fetchEmployees = () => {
-        fetch('/api/hr/employees', {
-            headers: {
-                'Accept': 'application/json',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => {
-                setEmployees(Array.isArray(data) ? data : (data.data || []));
-            })
-            .catch(err => console.error('Error fetching employees:', err));
-    };
-
-    useEffect(() => {
-        fetchRequests();
-        fetchEmployees();
-    }, []);
 
     const handleApprove = (id: number) => {
         setItemToApprove(id);
@@ -120,34 +83,16 @@ export default function LeaveRecordIndex() {
 
     const executeApprove = async () => {
         if (!itemToApprove) return;
-
-        setIsProcessing(true);
-        try {
-            await fetch('/sanctum/csrf-cookie');
-            const res = await fetch(`/api/hr/leave-requests/${itemToApprove}/approve`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include'
-            });
-
-            const data = await res.json();
-            if (res.ok) {
+        approveMutation.mutate(itemToApprove, {
+            onSuccess: () => {
                 toast.success('Leave approved successfully!');
-                fetchRequests();
-            } else {
-                toast.error(data.message || 'Error approving request');
+                setApproveModalOpen(false);
+                setItemToApprove(null);
+            },
+            onError: (err: any) => {
+                toast.error(err.response?.data?.message || 'Error approving request');
             }
-        } catch (e) {
-            toast.error('An error occurred');
-        } finally {
-            setIsProcessing(false);
-            setApproveModalOpen(false);
-            setItemToApprove(null);
-        }
+        });
     };
 
     const openRejectModal = (request: any) => {
@@ -159,67 +104,33 @@ export default function LeaveRecordIndex() {
     const handleReject = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!activeRequest) return;
-
-        setIsProcessing(true);
-        try {
-            await fetch('/sanctum/csrf-cookie');
-            const res = await fetch(`/api/hr/leave-requests/${activeRequest.id}/reject`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ rejection_reason: rejectionReason })
-            });
-
-            const data = await res.json();
-            if (res.ok) {
+        rejectMutation.mutate({ id: activeRequest.id, reason: rejectionReason }, {
+            onSuccess: () => {
                 toast.success('Leave request rejected');
                 setRejectModalOpen(false);
-                fetchRequests();
-            } else {
-                if (data.errors?.rejection_reason) {
+            },
+            onError: (err: any) => {
+                const data = err.response?.data;
+                if (data?.errors?.rejection_reason) {
                     toast.error(data.errors.rejection_reason[0]);
                 } else {
-                    toast.error(data.message || 'Error rejecting request');
+                    toast.error(data?.message || 'Error rejecting request');
                 }
             }
-        } catch (e) {
-            toast.error('An error occurred');
-        } finally {
-            setIsProcessing(false);
-        }
+        });
     };
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsProcessing(true);
-        try {
-            await fetch('/sanctum/csrf-cookie');
-            const res = await fetch(`/api/hr/leave-requests/${itemToDelete}`, {
-                method: 'DELETE',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                credentials: 'include',
-            });
-
-            if (res.ok || res.status === 204) {
+        deleteMutation.mutate(itemToDelete, {
+            onSuccess: () => {
                 toast.success('Record deleted successfully');
-                fetchRequests();
-            } else {
-                const data = await res.json();
-                toast.error(data.message || 'Failed to delete record');
+                setDeleteModalOpen(false);
+            },
+            onError: (err: any) => {
+                toast.error(err.response?.data?.message || 'Failed to delete record');
             }
-        } catch (e) {
-            toast.error('An error occurred');
-        } finally {
-            setIsProcessing(false);
-            setDeleteModalOpen(false);
-        }
+        });
     };
 
     // Derived standard table state
@@ -242,7 +153,6 @@ export default function LeaveRecordIndex() {
                 const leaveStart = dayjs(r.start_date).startOf('day');
                 const leaveEnd = dayjs(r.end_date).endOf('day');
 
-                // Check for overlap: (StartA <= EndB) and (EndA >= StartB)
                 return leaveStart.isSameOrBefore(endRange) && leaveEnd.isSameOrAfter(startRange);
             });
         }
@@ -274,14 +184,18 @@ export default function LeaveRecordIndex() {
         });
 
         return result;
-    }, [requests, search, statusFilter, employeeFilter, dateFilter]);
+    }, [requests, search, statusFilter, employeeFilter, dateFilter, sortBy, sortDirection]);
 
-    const paginatedItems = filteredRequests.slice(
+    const paginatedItems = useMemo(() => filteredRequests.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
-    );
+    ), [filteredRequests, currentPage, itemsPerPage]);
     
-    const hasActiveFilters = !!(statusFilter || employeeFilter || dateFilter?.from);
+    const hasActiveFilters = !!(statusFilter !== 'ALL_STATUSES' || employeeFilter || dateFilter?.from || search);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, statusFilter, employeeFilter, dateFilter]);
 
     const getStatusStyle = (status: string) => {
         switch (status) {
@@ -292,6 +206,14 @@ export default function LeaveRecordIndex() {
             default: return 'bg-dark/10 text-dark border border-dark/20';
         }
     };
+
+    const employeeOptions = useMemo(() => 
+        employees.map((emp: any) => ({
+            value: String(emp.id),
+            label: emp.full_name,
+            description: emp.employee_id
+        }))
+    , [employees]);
 
     return (
         <div>
@@ -305,13 +227,13 @@ export default function LeaveRecordIndex() {
                 setItemsPerPage={setItemsPerPage}
                 hasActiveFilters={hasActiveFilters}
                 onClearFilters={() => {
+                    setSearch('');
                     setStatusFilter('ALL_STATUSES');
                     setEmployeeFilter('');
                     setDateFilter(undefined);
                 }}
-                onRefresh={fetchRequests}
+                onRefresh={handleRefresh}
             >
-                {/* Date Filter */}
                 <div className="space-y-1.5 flex flex-col w-full">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
                     <DateRangePicker
@@ -321,33 +243,28 @@ export default function LeaveRecordIndex() {
                     />
                 </div>
 
-                {/* Employee Filter */}
                 <div className="space-y-1.5 flex flex-col w-full">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Employee</span>
                     <SearchableSelect
-                        options={employees.map((emp: any) => ({
-                            value: String(emp.id),
-                            label: emp.full_name,
-                            description: emp.employee_id
-                        }))}
+                        options={employeeOptions}
                         value={employeeFilter}
                         onChange={(val) => setEmployeeFilter(String(val))}
                         placeholder="All Employees"
                         searchPlaceholder="Search employees..."
+                        loading={loadingEmployees}
                     />
                 </div>
 
-                {/* Status Filter */}
                 <div className="space-y-1.5 flex flex-col w-full">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
                     <Select
                         value={statusFilter}
                         onValueChange={setStatusFilter}
                     >
-                        <SelectTrigger className="h-10 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
+                        <SelectTrigger className="h-10 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary text-gray-800 dark:text-gray-200">
                             <SelectValue placeholder="All Statuses" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white dark:bg-black border-slate-200 dark:border-slate-800">
                             <SelectItem value="ALL_STATUSES" className="font-medium">All Statuses</SelectItem>
                             <SelectItem value="pending" className="font-medium">Pending</SelectItem>
                             <SelectItem value="approved" className="font-medium">Approved</SelectItem>
@@ -357,32 +274,33 @@ export default function LeaveRecordIndex() {
                     </Select>
                 </div>
             </FilterBar>
-                    {loading ? (
-                        <TableSkeleton columns={7} rows={5} />
-                    ) : paginatedItems.length === 0 ? (
-                        <EmptyState
-                            isSearch={!!search || hasActiveFilters}
-                            searchTerm={search}
-                            onClearFilter={() => { setSearch(''); setStatusFilter(''); setDateFilter(undefined); setEmployeeFilter(''); }}
-                        />
-                    ) : (
-            <div className="rounded-lg border overflow-hidden mb-5">
-                <div className="table-responsive">
-                    <table className="w-full text-sm">
-                        <thead className=" border-b border-gray-100 dark:border-gray-800 text-gray-500 uppercase font-bold text-[11px] tracking-wider">
-                            <tr>
-                                <SortableHeader label="Date Requested" value="created_at" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3" />
-                                <SortableHeader label="Employee" value="employee" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3" />
-                                <SortableHeader label="Leave Type" value="leave_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3" />
-                                <th className="px-4 py-3 text-left">Duration Detail</th>
-                                <th className="px-4 py-3 text-left">Reason</th>
-                                <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3 text-center" />
-                                <th className="px-4 py-3 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {paginatedItems.map((req) => (
-                                    <tr key={req.id} className="hover:bg-gray-50/30 dark:hover:bg-black/10 transition-colors group">
+
+            {loading ? (
+                <TableSkeleton columns={7} rows={5} />
+            ) : filteredRequests.length === 0 ? (
+                <EmptyState
+                    isSearch={hasActiveFilters}
+                    searchTerm={search}
+                    onClearFilter={() => { setSearch(''); setStatusFilter('ALL_STATUSES'); setDateFilter(undefined); setEmployeeFilter(''); }}
+                />
+            ) : (
+                <div className="rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden mb-5 bg-white dark:bg-black shadow-sm">
+                    <div className="table-responsive">
+                        <table className="w-full text-sm">
+                            <thead className="border-b border-gray-100 dark:border-gray-800 text-gray-500 uppercase font-bold text-[11px] tracking-wider">
+                                <tr>
+                                    <SortableHeader label="Requested" value="created_at" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3 whitespace-nowrap" />
+                                    <SortableHeader label="Employee" value="employee" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3" />
+                                    <SortableHeader label="Leave Type" value="leave_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3" />
+                                    <th className="px-4 py-3 text-left whitespace-nowrap">Duration Detail</th>
+                                    <th className="px-4 py-3 text-left">Reason</th>
+                                    <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3 text-center" />
+                                    <th className="px-4 py-3 text-right pr-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                {paginatedItems.map((req) => (
+                                    <tr key={req.id} className="hover:bg-gray-50/30 dark:hover:bg-white/5 transition-colors group">
                                         <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
                                             {dayjs(req.created_at).format('MMM D, YYYY')}
                                         </td>
@@ -392,7 +310,7 @@ export default function LeaveRecordIndex() {
                                                     {req.employee?.full_name?.charAt(0) || 'U'}
                                                 </div>
                                                 <div className="min-w-[120px]">
-                                                    <p className="font-bold text-gray-900 dark:text-white truncate">
+                                                    <p className="font-bold text-gray-900 dark:text-gray-100 truncate">
                                                         {req.employee?.full_name || 'Unknown'}
                                                     </p>
                                                     <p className="text-[11px] text-gray-400 uppercase tracking-tighter truncate">{req.employee?.employee_id || 'N/A'}</p>
@@ -407,7 +325,7 @@ export default function LeaveRecordIndex() {
                                                 {req.duration_type.replace('_', ' ')}
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-4 py-3 whitespace-nowrap">
                                             <div className="font-medium text-gray-800 dark:text-gray-200">
                                                 {req.start_date !== req.end_date ? (
                                                     <>{dayjs(req.start_date).format('MMM D')} - {dayjs(req.end_date).format('MMM D, YYYY')}</>
@@ -436,12 +354,12 @@ export default function LeaveRecordIndex() {
                                             )}
                                         </td>
                                         <td className="px-4 py-3 text-center">
-                                            <span className={`${getStatusStyle(req.status)} text-[11px] px-2.5 py-1 rounded-full uppercase tracking-widest font-bold`}>
+                                            <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full uppercase tracking-widest font-bold text-[11px] ${getStatusStyle(req.status)}`}>
                                                 {req.status}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex gap-2 items-center justify-center">
+                                        <td className="px-4 py-3 text-right pr-4">
+                                            <div className="flex gap-2 items-center justify-end">
                                                 <ActionButtons
                                                     variant="rounded"
                                                     showApproveReject={req.status === 'pending'}
@@ -456,30 +374,27 @@ export default function LeaveRecordIndex() {
                                         </td>
                                     </tr>
                                 ))}
-                        </tbody>
-                    </table>
-                    
-                </div>
-
-                {!loading && filteredRequests.length > 0 && (
+                            </tbody>
+                        </table>
+                    </div>
 
                     <Pagination
                         currentPage={currentPage}
                         totalItems={filteredRequests.length}
                         itemsPerPage={itemsPerPage}
-                        totalPages={Math.ceil(filteredRequests.length / itemsPerPage)}
+                        totalPages={totalPages}
                         onPageChange={setCurrentPage}
                     />
-                )}
-            </div>
-)}
+                </div>
+            )}
+
             {/* Reject Modal */}
             <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="sm:max-w-[500px] bg-white dark:bg-black border-slate-200 dark:border-slate-800">
                     <DialogHeader>
-                        <DialogTitle>Reject Leave Request</DialogTitle>
-                        <DialogDescription>
-                            Please provide a reason for rejecting this leave request for {activeRequest?.employee?.full_name}. This note will be visible to the employee.
+                        <DialogTitle className="text-gray-900 dark:text-gray-100">Reject Leave Request</DialogTitle>
+                        <DialogDescription className="text-gray-500 dark:text-gray-400">
+                            Please provide a reason for rejecting this leave request for <span className="font-bold">{activeRequest?.employee?.full_name}</span>. This note will be visible to the employee.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleReject} className="space-y-4 mt-4">
@@ -488,7 +403,7 @@ export default function LeaveRecordIndex() {
                             <Textarea
                                 value={rejectionReason}
                                 onChange={(e) => setRejectionReason(e.target.value)}
-                                className="w-full rounded-lg resize-none h-32"
+                                className="w-full rounded-lg resize-none h-32 bg-white dark:bg-black border-gray-200 dark:border-gray-800"
                                 placeholder="E.g., Too many staff on leave on these dates..."
                                 required
                             />
@@ -498,6 +413,7 @@ export default function LeaveRecordIndex() {
                                 type="button"
                                 onClick={() => setRejectModalOpen(false)}
                                 variant="outline"
+                                className="border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300"
                             >
                                 Cancel
                             </Button>
@@ -505,6 +421,7 @@ export default function LeaveRecordIndex() {
                                 type="submit"
                                 disabled={isProcessing || !rejectionReason.trim()}
                                 variant="destructive"
+                                className="bg-rose-600 hover:bg-rose-700 text-white"
                             >
                                 {isProcessing ? 'Processing... ' : 'Confirm Rejection'}
                             </Button>
@@ -513,16 +430,14 @@ export default function LeaveRecordIndex() {
                 </DialogContent>
             </Dialog>
 
-
             <DeleteModal
                 isOpen={deleteModalOpen}
                 setIsOpen={setDeleteModalOpen}
                 title="Delete Leave Record"
                 message="Are you sure you want to delete this leave record? This action cannot be undone."
                 onConfirm={executeDelete}
-                isLoading={isProcessing}
+                isLoading={deleteMutation.isPending}
             />
-
 
             <ConfirmationModal
                 isOpen={approveModalOpen}
@@ -532,7 +447,7 @@ export default function LeaveRecordIndex() {
                 confirmText="Approve"
                 confirmVariant="success"
                 onConfirm={executeApprove}
-                loading={isProcessing}
+                loading={approveMutation.isPending}
             />
         </div>
     );
