@@ -25,6 +25,21 @@ import DateRangePicker from '../../../components/ui/date-range-picker';
 import { format } from 'date-fns';
 import { useFormatDate } from '@/hooks/useFormatDate';
 import { DateRange } from 'react-day-picker';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { 
+    usePurchaseOrders, 
+    useInventorySuppliers, 
+    useInventoryProducts, 
+    useInventoryLocations,
+    useCreatePurchaseOrder,
+    useUpdatePurchaseOrder,
+    useDeletePurchaseOrder,
+    useCreatePurchaseReceive,
+    usePurchaseOrderPendingItems
+} from '@/hooks/useInventoryData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Supplier { id: number; name: string; }
 interface Product { id: number; code: string; name: string; }
@@ -62,14 +77,11 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
         credentials: 'include',
     });
 
-export default function PurchaseOrdersPage() {
+const PurchaseOrdersPage = () => {
+    const dispatch = useDispatch();
+    const queryClient = useQueryClient();
     const { formatDate } = useFormatDate();
-    const [orders, setOrders] = useState<PO[]>([]);
-    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [locations, setLocations] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
+    
     // Filter, sort, pagination state
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('po_number');
@@ -90,19 +102,15 @@ export default function PurchaseOrdersPage() {
         note: '',
     });
     const [items, setItems] = useState<POItem[]>([{ ...emptyItem }]);
-    const [submitting, setSubmitting] = useState(false);
 
     // Delete modal state
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     // Good Receive modal state
     const [receiveModalOpen, setReceiveModalOpen] = useState(false);
     const [receivingPo, setReceivingPo] = useState<PO | null>(null);
     const [pendingItems, setPendingItems] = useState<any[]>([]);
-    const [loadingPending, setLoadingPending] = useState(false);
-    const [receiving, setReceiving] = useState(false);
     const [receiveFormData, setReceiveFormData] = useState({
         location_id: '',
         receive_date: new Date().toISOString().slice(0, 10),
@@ -110,44 +118,48 @@ export default function PurchaseOrdersPage() {
         receiving_note: '',
     });
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams();
-            if (search) params.append('search', search);
-            if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
-            if (dateRange?.from) params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
-            if (dateRange?.to) params.append('end_date', format(dateRange.to, 'yyyy-MM-dd'));
-
-            const [ordersRes, suppliersRes, productsRes, locationsRes] = await Promise.all([
-                apiFetch(`/api/inventory/purchase-orders?${params.toString()}`),
-                apiFetch('/api/inventory/suppliers'),
-                apiFetch('/api/inventory/products?all=true'),
-                apiFetch('/api/inventory/locations'),
-            ]);
-            if (ordersRes.status === 401) {
-                window.location.href = '/auth/login';
-                return;
-            }
-            const orderData = await ordersRes.json();
-            const supplierData = await suppliersRes.json();
-            const productData = await productsRes.json();
-            const locationData = await locationsRes.json();
-
-            setOrders(Array.isArray(orderData) ? orderData : (orderData.data || []));
-            setSuppliers(Array.isArray(supplierData) ? supplierData : (supplierData.data || []));
-            setProducts(Array.isArray(productData) ? productData : (productData.data || []));
-            setLocations(Array.isArray(locationData) ? locationData : (locationData.data || []));
-        } catch {
-            toast.error('Failed to load data');
-        } finally {
-            setLoading(false);
-        }
+    // Query filters
+    const queryParams = useMemo(() => {
+        const p: any = {};
+        if (search) p.search = search;
+        if (statusFilter && statusFilter !== 'all') p.status = statusFilter;
+        if (dateRange?.from) p.start_date = format(dateRange.from, 'yyyy-MM-dd');
+        if (dateRange?.to) p.end_date = format(dateRange.to, 'yyyy-MM-dd');
+        return p;
     }, [search, statusFilter, dateRange]);
 
+    // Queries
+    const { data: poResponse, isLoading: poLoading } = usePurchaseOrders(queryParams);
+    const { data: suppliers = [] } = useInventorySuppliers();
+    const { data: products = [] } = useInventoryProducts();
+    const { data: locations = [] } = useInventoryLocations();
+    const { data: pendingItemsData, isLoading: loadingPending } = usePurchaseOrderPendingItems(receivingPo?.id || null);
+
+    const orders = Array.isArray(poResponse) ? poResponse : (poResponse?.data || []);
+    const totalItems = Array.isArray(poResponse) ? poResponse.length : (poResponse?.total || 0);
+
+    // Loading State
+    const loading = useDelayedLoading(poLoading);
+
+    // Mutations
+    const createMutation = useCreatePurchaseOrder();
+    const updateMutation = useUpdatePurchaseOrder();
+    const deleteMutation = useDeletePurchaseOrder();
+    const receiveMutation = useCreatePurchaseReceive();
+
+    const submitting = createMutation.isPending || updateMutation.isPending;
+    const isDeleting = deleteMutation.isPending;
+    const receiving = receiveMutation.isPending;
+
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        dispatch(setPageTitle('Purchase Orders'));
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (pendingItemsData) {
+            setPendingItems(pendingItemsData.map((i: any) => ({ ...i, qty_received: i.remaining_qty })));
+        }
+    }, [pendingItemsData]);
     
 
     // Reset page when filters change
@@ -185,7 +197,7 @@ export default function PurchaseOrdersPage() {
         setModalOpen(true);
     };
 
-    const openReceive = async (po: PO) => {
+    const openReceive = (po: PO) => {
         setReceivingPo(po);
         setReceiveFormData({
             location_id: '',
@@ -194,20 +206,6 @@ export default function PurchaseOrdersPage() {
             receiving_note: '',
         });
         setReceiveModalOpen(true);
-        setLoadingPending(true);
-        try {
-            const res = await apiFetch(`/api/inventory/purchase-orders/${po.id}/pending-items`);
-            if (res.ok) {
-                const items = await res.json();
-                setPendingItems(items.map((i: any) => ({ ...i, qty_received: i.remaining_qty })));
-            } else {
-                toast.error('Failed to load pending items');
-            }
-        } catch {
-            toast.error('Failed to load pending items');
-        } finally {
-            setLoadingPending(false);
-        }
     };
 
     const confirmDelete = (id: number) => {
@@ -217,23 +215,12 @@ export default function PurchaseOrdersPage() {
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
-        await fetch('/sanctum/csrf-cookie');
         try {
-            const res = await apiFetch(`/api/inventory/purchase-orders/${itemToDelete}`, { method: 'DELETE' });
-            if (res.ok) {
-                toast.success('PO deleted');
-                fetchData();
-            } else {
-                const err = await res.json();
-                toast.error(err.message || 'Only Draft POs can be deleted');
-            }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setIsDeleting(false);
+            await deleteMutation.mutateAsync(itemToDelete);
             setDeleteModalOpen(false);
             setItemToDelete(null);
+        } catch (error) {
+            // Error toast handled by mutation
         }
     };
 
@@ -256,8 +243,6 @@ export default function PurchaseOrdersPage() {
             toast.error('All line items need a product selected');
             return;
         }
-        setSubmitting(true);
-        await fetch('/sanctum/csrf-cookie');
 
         const payload = {
             ...formData,
@@ -269,21 +254,14 @@ export default function PurchaseOrdersPage() {
         };
 
         try {
-            const url = editId ? `/api/inventory/purchase-orders/${editId}` : '/api/inventory/purchase-orders';
-            const method = editId ? 'PUT' : 'POST';
-            const res = await apiFetch(url, { method, body: JSON.stringify(payload) });
-            if (res.ok) {
-                toast.success(editId ? 'Purchase Order updated' : 'Purchase Order created');
-                setModalOpen(false);
-                fetchData();
+            if (editId) {
+                await updateMutation.mutateAsync({ id: editId, payload });
             } else {
-                const err = await res.json();
-                toast.error(err.message || 'Failed to save PO');
+                await createMutation.mutateAsync(payload);
             }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setSubmitting(false);
+            setModalOpen(false);
+        } catch (error) {
+            // Handled by mutation
         }
     };
 
@@ -300,8 +278,6 @@ export default function PurchaseOrdersPage() {
             return;
         }
 
-        setReceiving(true);
-        await fetch('/sanctum/csrf-cookie');
         const payload = {
             purchase_order_id: receivingPo?.id,
             location_id: parseInt(receiveFormData.location_id),
@@ -314,20 +290,12 @@ export default function PurchaseOrdersPage() {
                 qty_received: parseFloat(i.qty_received)
             }))
         };
+        
         try {
-            const res = await apiFetch('/api/inventory/purchase-receives', { method: 'POST', body: JSON.stringify(payload) });
-            if (res.ok) {
-                toast.success('Items received successfully');
-                setReceiveModalOpen(false);
-                fetchData();
-            } else {
-                const err = await res.json();
-                toast.error(err.message || 'Failed to receive items');
-            }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setReceiving(false);
+            await receiveMutation.mutateAsync(payload);
+            setReceiveModalOpen(false);
+        } catch (error) {
+            // Handled by mutation
         }
     };
 
@@ -400,7 +368,7 @@ export default function PurchaseOrdersPage() {
                 setItemsPerPage={setItemsPerPage}
                 onAdd={openCreate}
                 addLabel="New PO"
-                onRefresh={fetchData}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })}
                 hasActiveFilters={sortBy !== 'po_number' || sortDirection !== 'asc' || search !== '' || dateRange !== undefined || statusFilter !== 'all'}
                 onClearFilters={clearFilters}
             >
@@ -531,7 +499,7 @@ export default function PurchaseOrdersPage() {
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
-                            totalItems={filteredAndSortedOrders.length}
+                            totalItems={totalItems}
                             itemsPerPage={itemsPerPage}
                             onPageChange={setCurrentPage}
                         />
@@ -886,4 +854,6 @@ export default function PurchaseOrdersPage() {
             </Dialog>
         </div>
     );
-}
+};
+
+export default PurchaseOrdersPage;

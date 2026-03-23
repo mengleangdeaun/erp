@@ -20,6 +20,8 @@ import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 interface Supplier {
     id: number;
@@ -49,7 +51,8 @@ const getCookie = (name: string) => {
     if (parts.length === 2) return parts.pop()?.split(';').shift();
 };
 
-export default function SuppliersPage() {
+const SuppliersPage = () => {
+    const dispatch = useDispatch();
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -67,6 +70,10 @@ export default function SuppliersPage() {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Suppliers'));
+    }, [dispatch]);
 
     const fetchSuppliers = async () => {
         setLoading(true);
@@ -500,4 +507,5 @@ export default function SuppliersPage() {
             />
         </div>
     );
-}
+};
+export default SuppliersPage;

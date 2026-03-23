@@ -1,9 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '../../store/themeConfigSlice';
-import api from '../../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, Toaster } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+    useMediaFolders,
+    useMediaFiles,
+    useMediaStorageInfo,
+    useMediaStorageSettings,
+    useCreateMediaFolder,
+    useUpdateMediaFolder,
+    useDeleteMediaFolder,
+    useUploadMediaFile,
+    useUpdateMediaFile,
+    useDeleteMediaFile,
+    useToggleMediaFavorite,
+    useUpdateStorageSettings,
+    MediaFolder,
+    MediaFile,
+    StorageInfo
+} from '@/hooks/useMediaData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import {
     IconFolder, IconFolderPlus, IconUpload, IconFile, IconFileTypePdf, IconFileTypeCsv,
     IconFileTypeXls, IconFileTypeTxt, IconTable, IconFileTypeDocx, IconLetterCase, IconFileTypePpt,
@@ -48,39 +66,6 @@ import { Card } from '@/components/ui/card';
 import DeleteModal from '../../components/DeleteModal';
 import MediaLibrarySkeleton from '../../components/Skeletons/MediaLibrarySkeleton';
 
-/* ────────────────────────────────────────
-   TYPES
-──────────────────────────────────────── */
-interface MediaFolder {
-    id: number;
-    name: string;
-    color: string;
-    parent_id: number | null;
-    children_recursive: MediaFolder[];
-}
-interface MediaFile {
-    id: number;
-    name: string;
-    extension: string;
-    file_type: 'photo' | 'video' | 'audio' | 'document' | 'other';
-    size_bytes: number;
-    size_human: string;
-    mime_type: string;
-    url: string;
-    folder_id: number | null;
-    created_at: string;
-    is_favorite: boolean;
-    disk: string;
-    user?: { id: number; name: string; avatar?: string };
-}
-interface StorageInfo {
-    used_bytes: number;
-    used_human: string;
-    limit_mb: number;
-    limit_bytes: number;
-    used_pct: number;
-    unlimited: boolean;
-}
 
 /* ────────────────────────────────────────
    FILE TYPE ICON
@@ -103,11 +88,11 @@ const FileIcon = ({ type, ext, size = 24 }: { type: string; ext: string; size?: 
 };
 
 const TYPE_BADGE: Record<string, string> = {
-    photo: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-    video: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    audio: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
-    document: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    other: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+    photo: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+    video: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
+    audio: 'bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-950 dark:text-pink-300 dark:border-pink-800',
+    document: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800',
+    other: 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-950 dark:text-gray-300 dark:border-gray-800',
 };
 
 /* ────────────────────────────────────────
@@ -229,81 +214,73 @@ const FolderNode = ({
 ──────────────────────────────────────── */
 const MediaLibrary = () => {
     const dispatch = useDispatch();
+    const queryClient = useQueryClient();
 
-    /* ── State ── */
-    const [folders, setFolders] = useState<MediaFolder[]>([]);
-    const [files, setFiles] = useState<MediaFile[]>([]);
-    const [storage, setStorage] = useState<StorageInfo | null>(null);
+    /* ── UI State ── */
     const [activeFolderId, setActiveFolderId] = useState<number | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [typeFilter, setTypeFilter] = useState('all');
     const [search, setSearch] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
-
-    const [deleteTarget, setDeleteTarget] = useState<{ type: 'folder' | 'file'; id: number; name: string } | null>(null);
-    const [deleteLoading, setDeleteLoading] = useState(false);
-
-    // Filter
-    const [favoriteFilter, setFavoriteFilter] = useState(false);
-
-    // Modals
-    const [showUploadModal, setShowUploadModal] = useState(false);
-
-    // Pagination
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(12);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalRows, setTotalRows] = useState(0);
+    const [favoriteFilter, setFavoriteFilter] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
 
+    // Modals & Dialogs
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [showFolderCreateModal, setShowFolderCreateModal] = useState(false);
+    const [showStorageSettings, setShowStorageSettings] = useState(false);
+
+    // Form/Target States
+    const [deleteTarget, setDeleteTarget] = useState<{ type: 'folder' | 'file'; id: number; name: string } | null>(null);
     const [renameTarget, setRenameTarget] = useState<{ type: 'folder' | 'file'; id: number; name: string; color?: string } | null>(null);
     const [renameInput, setRenameInput] = useState('');
     const [renameColor, setRenameColor] = useState('#6366f1');
-    const [renameSaving, setRenameSaving] = useState(false);
-
     const [moveTarget, setMoveTarget] = useState<MediaFile | null>(null);
-    const [moveSaving, setMoveSaving] = useState(false);
-
-    const [showFolderCreateModal, setShowFolderCreateModal] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
     const [newFolderColor, setNewFolderColor] = useState('#6366f1');
     const [folderParentId, setFolderParentId] = useState<number | null>(null);
-    const [newFolderSaving, setNewFolderSaving] = useState(false);
-
-    const [showStorageSettings, setShowStorageSettings] = useState(false);
-    const [storageSettings, setStorageSettings] = useState<any[]>([]);
-    const [savingSettings, setSavingSettings] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        dispatch(setPageTitle('Media Library'));
-        fetchAll();
-    }, []);
-
+    /* ── Effects ── */
     useEffect(() => {
         setPage(1);
     }, [activeFolderId, typeFilter, search, favoriteFilter]);
 
+    /* ── Queries ── */
+    const { data: folders = [], isLoading: loadingFolders } = useMediaFolders();
+    const { data: filesData, isLoading: loadingFiles } = useMediaFiles({
+        folder_id: activeFolderId,
+        file_type: typeFilter,
+        search,
+        page,
+        per_page: pageSize,
+        favorites: favoriteFilter
+    });
+    const { data: storage = null, isLoading: loadingStorage } = useMediaStorageInfo();
+    const { data: storageSettings = [] } = useMediaStorageSettings();
+
+    const files = filesData?.data || [];
+    const totalPages = filesData?.last_page || 1;
+    const totalRows = filesData?.total || 0;
+
+    /* ── Mutations ── */
+    const createFolderMutation = useCreateMediaFolder();
+    const updateFolderMutation = useUpdateMediaFolder();
+    const deleteFolderMutation = useDeleteMediaFolder();
+    const uploadFileMutation = useUploadMediaFile();
+    const updateFileMutation = useUpdateMediaFile();
+    const deleteFileMutation = useDeleteMediaFile();
+    const toggleFavoriteMutation = useToggleMediaFavorite();
+    const updateSettingsMutation = useUpdateStorageSettings();
+
+    /* ── Loading state ── */
+    const loading = useDelayedLoading(loadingFolders || loadingFiles || loadingStorage);
+
     useEffect(() => {
-        fetchFiles();
-    }, [activeFolderId, typeFilter, search, page, pageSize, favoriteFilter]);
-
-    /* ── Data fetchers ── */
-    const fetchAll = () => {
-        fetchFolders();
-        fetchFiles();
-        fetchStorage();
-        fetchSettings();
-    };
-
-    const fetchSettings = async () => {
-        try {
-            const res = await api.get('/settings/storage');
-            setStorageSettings(Array.isArray(res.data) ? res.data : []);
-        } catch { }
-    };
+        dispatch(setPageTitle('Media Library'));
+    }, [dispatch]);
 
     const clearFilters = () => {
         setSearch('');
@@ -312,45 +289,11 @@ const MediaLibrary = () => {
 
     const hasFilters = search !== '' || typeFilter !== 'all';
 
-    const fetchFolders = async () => {
-        try {
-            const res = await api.get('/media/folders');
-            setFolders(Array.isArray(res.data) ? res.data : []);
-        } catch { }
-    };
+    const uploading = uploadFileMutation.isPending;
 
-    const fetchFiles = async () => {
-        setLoading(true);
-        try {
-            const params: any = {
-                file_type: typeFilter,
-                search,
-                page,
-                per_page: pageSize,
-                favorites: favoriteFilter
-            };
-            if (activeFolderId !== null) params.folder_id = activeFolderId;
-            const res = await api.get('/media/files', { params });
-            setFiles(res.data && Array.isArray(res.data.data) ? res.data.data : []);
-            setTotalPages(res.data?.last_page || 1);
-            setTotalRows(res.data?.total || 0);
-        } catch { }
-        setLoading(false);
-    };
-
-    const fetchStorage = async () => {
-        try {
-            const res = await api.get('/media/storage-info');
-            setStorage(res.data);
-        } catch { }
-    };
-
-    /* ── Upload ── */
     const handleUpload = useCallback(async (uploadFiles: FileList | null) => {
         if (!uploadFiles || uploadFiles.length === 0) return;
-        setUploading(true);
         let successCount = 0;
-
         const uploadId = toast.loading(`Uploading ${uploadFiles.length} file(s)...`);
 
         for (const file of Array.from(uploadFiles)) {
@@ -359,15 +302,11 @@ const MediaLibrary = () => {
                 fd.append('file', file);
                 if (activeFolderId) fd.append('folder_id', String(activeFolderId));
 
-                await api.post('/media/files/upload', fd, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                    _skipToast: true,
-                } as any);
+                await uploadFileMutation.mutateAsync(fd);
                 successCount++;
             } catch (err: any) {
                 const msg = err?.response?.data?.message || `Failed to upload ${file.name}`;
                 toast.error(msg, { id: uploadId });
-                setUploading(false);
                 return;
             }
         }
@@ -375,12 +314,8 @@ const MediaLibrary = () => {
         if (successCount > 0) {
             toast.success(`${successCount} file${successCount > 1 ? 's' : ''} uploaded successfully`, { id: uploadId });
         }
-
-        setUploading(false);
         setShowUploadModal(false);
-        fetchFiles();
-        fetchStorage();
-    }, [activeFolderId, fetchFiles]);
+    }, [activeFolderId, uploadFileMutation]);
 
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
@@ -396,18 +331,21 @@ const MediaLibrary = () => {
         setShowFolderCreateModal(true);
     };
 
+    const newFolderSaving = createFolderMutation.isPending;
+
     const handleCreateFolder = async () => {
         if (!newFolderName.trim()) return;
-        setNewFolderSaving(true);
         try {
-            await api.post('/media/folders', { name: newFolderName.trim(), parent_id: folderParentId, color: newFolderColor });
+            await createFolderMutation.mutateAsync({
+                name: newFolderName.trim(),
+                parent_id: folderParentId,
+                color: newFolderColor
+            });
             toast.success('Folder created');
             setShowFolderCreateModal(false);
-            fetchFolders();
         } catch (err: any) {
             toast.error(err?.response?.data?.message || 'Failed to create folder');
         }
-        setNewFolderSaving(false);
     };
 
     const openRename = (type: 'folder' | 'file', item: any) => {
@@ -416,38 +354,44 @@ const MediaLibrary = () => {
         setRenameColor(item.color || '#6366f1');
     };
 
+    const renameSaving = updateFolderMutation.isPending || updateFileMutation.isPending;
+
     const handleSaveRename = async () => {
         if (!renameInput.trim() || !renameTarget) return;
-        setRenameSaving(true);
         try {
             if (renameTarget.type === 'folder') {
-                await api.put(`/media/folders/${renameTarget.id}`, { name: renameInput.trim(), color: renameColor });
+                await updateFolderMutation.mutateAsync({
+                    id: renameTarget.id,
+                    name: renameInput.trim(),
+                    color: renameColor
+                });
             } else {
-                await api.put(`/media/files/${renameTarget.id}`, { name: renameInput.trim() });
+                await updateFileMutation.mutateAsync({
+                    id: renameTarget.id,
+                    name: renameInput.trim()
+                });
             }
             toast.success('Renamed successfully');
             setRenameTarget(null);
-            fetchFolders();
-            fetchFiles();
         } catch (err: any) {
             toast.error(err?.response?.data?.message || 'Failed to rename');
         }
-        setRenameSaving(false);
     };
+
+    const moveSaving = updateFileMutation.isPending;
 
     const handleSaveMove = async (newFolderId: number | null) => {
         if (!moveTarget) return;
-        setMoveSaving(true);
         try {
-            await api.put(`/media/files/${moveTarget.id}`, { folder_id: newFolderId });
+            await updateFileMutation.mutateAsync({
+                id: moveTarget.id,
+                folder_id: newFolderId
+            });
             toast.success('Moved successfully');
             setMoveTarget(null);
-            fetchFolders();
-            fetchFiles();
         } catch (err: any) {
             toast.error(err?.response?.data?.message || 'Failed to move');
         }
-        setMoveSaving(false);
     };
 
     const handleShare = (file: MediaFile) => {
@@ -456,48 +400,43 @@ const MediaLibrary = () => {
         toast.success('Link copied to clipboard');
     };
 
+    const deleteLoading = deleteFolderMutation.isPending || deleteFileMutation.isPending;
+
     const confirmDelete = async () => {
         if (!deleteTarget) return;
-        setDeleteLoading(true);
         try {
             if (deleteTarget.type === 'folder') {
-                await api.delete(`/media/folders/${deleteTarget.id}`);
+                await deleteFolderMutation.mutateAsync(deleteTarget.id);
                 if (activeFolderId === deleteTarget.id) setActiveFolderId(null);
-                fetchFolders();
             } else {
-                await api.delete(`/media/files/${deleteTarget.id}`);
+                await deleteFileMutation.mutateAsync(deleteTarget.id);
             }
-            fetchFiles();
-            fetchStorage();
             toast.success('Deleted');
         } catch {
             toast.error('Failed to delete');
         }
-        setDeleteLoading(false);
         setDeleteTarget(null);
     };
 
     const handleToggleFavorite = async (file: MediaFile) => {
         try {
-            const res = await api.put(`/media/files/${file.id}/favorite`);
-            setFiles(prev => prev.map(f => f.id === file.id ? res.data : f));
+            await toggleFavoriteMutation.mutateAsync(file.id);
             toast.success(file.is_favorite ? 'Removed from favorites' : 'Added to favorites');
         } catch {
             toast.error('Failed to update favorite status');
         }
     };
 
+    const savingSettings = updateSettingsMutation.isPending;
+
     const handleSaveSettings = async (provider: string, isActive: boolean, credentials?: any) => {
-        setSavingSettings(true);
         try {
-            await api.put(`/settings/storage/${provider}`, { is_active: isActive, credentials });
+            await updateSettingsMutation.mutateAsync({ provider, is_active: isActive, credentials });
             toast.success(`${provider.toUpperCase()} Settings Saved`);
-            fetchSettings();
             if (isActive) setShowStorageSettings(false);
         } catch (err: any) {
             toast.error('Failed to save settings');
         }
-        setSavingSettings(false);
     };
 
     /* ── Breadcrumb logic ── */
@@ -740,7 +679,7 @@ const MediaLibrary = () => {
                         </Button>
 
                         {/* Refresh */}
-                        <Button variant="ghost" size="icon" onClick={fetchAll} className="text-gray-400 h-9 w-9">
+                        <Button variant="ghost" size="icon" onClick={() => queryClient.invalidateQueries({ queryKey: ['media_folders', 'media_files', 'media_storage_info'] })} className="text-gray-400 h-9 w-9">
                             <IconRefresh size={16} />
                         </Button>
                     </div>
@@ -766,8 +705,8 @@ const MediaLibrary = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <div className="w-16 h-16 bg-indigo-50 border border-indigo-100 dark:bg-indigo-950/30 dark:border-indigo-800 rounded-2xl flex items-center justify-center mb-4">
-                                            <IconUpload size={28} className="text-indigo-400" />
+                                        <div className="w-16 h-16 bg-primary border border-primary dark:bg-primary/30 dark:border-primary rounded-2xl flex items-center justify-center mb-4">
+                                            <IconUpload size={28} className="text-white" />
                                         </div>
                                         <p className="text-gray-600 dark:text-gray-400 font-medium">{favoriteFilter ? 'No favorites yet' : 'No files here yet'}</p>
                                         <p className="text-sm text-gray-400 mt-1">{favoriteFilter ? 'Star your important files to find them easily' : 'Click the button below to upload your first file'}</p>
@@ -899,10 +838,14 @@ const MediaLibrary = () => {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-1.5">
-                                                        <Badge variant="secondary" className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${TYPE_BADGE[file.file_type]}`}>
+                                                        <Badge 
+                                                            size="sm"
+                                                            variant="secondary" className={`text-[10px] font-medium ${TYPE_BADGE[file.file_type]}`}>
                                                             {file.file_type}
                                                         </Badge>
-                                                        <Badge variant="outline" className="text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider text-gray-500 bg-gray-50 dark:bg-gray-800">
+                                                        <Badge 
+                                                            size="sm"
+                                                            variant="outline" className="text-[10px] ">
                                                             {file.disk === 'gdrive' ? 'Google Drive' : file.disk === 's3' ? 'Amazon S3' : 'Local'}
                                                         </Badge>
                                                     </div>

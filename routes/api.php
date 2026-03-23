@@ -173,6 +173,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('sales')->group(function () {
         Route::apiResource('orders', \App\Http\Controllers\SalesOrderController::class);
         Route::post('orders/{id}/cancel', [\App\Http\Controllers\SalesOrderController::class, 'cancel']);
+        Route::post('orders/{id}/deposits', [\App\Http\Controllers\SalesOrderController::class, 'addDeposit']);
     });
 
     Route::prefix('finance')->group(function () {

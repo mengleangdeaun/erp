@@ -122,6 +122,14 @@ export default function LeaveRecordIndex() {
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
+
+        const request = requests.find(r => r.id === itemToDelete);
+        if (request?.status === 'approved') {
+            toast.error('Cannot delete an already approved request. Consider reverting it first.');
+            setDeleteModalOpen(false);
+            return;
+        }
+
         deleteMutation.mutate(itemToDelete, {
             onSuccess: () => {
                 toast.success('Record deleted successfully');
@@ -185,6 +193,8 @@ export default function LeaveRecordIndex() {
 
         return result;
     }, [requests, search, statusFilter, employeeFilter, dateFilter, sortBy, sortDirection]);
+
+    const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
 
     const paginatedItems = useMemo(() => filteredRequests.slice(
         (currentPage - 1) * itemsPerPage,
@@ -367,7 +377,7 @@ export default function LeaveRecordIndex() {
                                                     skipDeleteConfirm={true}
                                                     onApprove={() => handleApprove(req.id)}
                                                     onReject={() => openRejectModal(req)}
-                                                    onDelete={() => { setItemToDelete(req.id); setDeleteModalOpen(true); }}
+                                                    onDelete={req.status !== 'approved' ? () => { setItemToDelete(req.id); setDeleteModalOpen(true); } : undefined}
                                                     disabled={isProcessing}
                                                 />
                                             </div>

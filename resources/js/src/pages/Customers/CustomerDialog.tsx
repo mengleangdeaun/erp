@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { IconUser, IconDeviceFloppy, IconPhone, IconMail, IconMapPin, IconBrandTelegram, IconCalendar, IconNotes, IconLoader2, IconClock } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useCRMCreateCustomer, useCRMUpdateCustomer, useCRMCustomerNextCode } from '@/hooks/useCRMData';
 
 interface CustomerType {
     id: number;
@@ -41,7 +42,10 @@ interface CustomerDialogProps {
 }
 
 const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: CustomerDialogProps) => {
-    const [saving, setSaving] = useState(false);
+    const createMutation = useCRMCreateCustomer();
+    const updateMutation = useCRMUpdateCustomer();
+    const { data: nextCodeData, refetch: fetchNextCode, isFetching: isFetchingNextCode } = useCRMCustomerNextCode();
+
     const [form, setForm] = useState({
         customer_code: '',
         name: '',
@@ -52,21 +56,15 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
         joined_at: format(new Date(), 'yyyy-MM-dd'),
         joined_time: format(new Date(), 'HH:mm'),
         customer_type_id: '',
-        status: 'ACTIVE',
+        status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
         notes: '',
     });
 
-    const fetchNextCode = async () => {
-        try {
-            const res = await fetch('/api/crm/customers/next-code');
-            const data = await res.json();
-            setForm(prev => ({ ...prev, customer_code: String(data.next_code) }));
-        } catch (error) {
-            console.error('Failed to fetch next code');
-        }
-    };
+    const saving = createMutation.isPending || updateMutation.isPending;
 
     useEffect(() => {
+        if (!isOpen) return;
+
         if (customer) {
             const dateObj = customer.joined_at ? new Date(customer.joined_at) : new Date();
             setForm({
@@ -97,67 +95,61 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
                 status: 'ACTIVE',
                 notes: '',
             });
-
-            if (isOpen) {
-                fetchNextCode();
-            }
+            fetchNextCode();
         }
-    }, [customer, isOpen, customerTypes]);
+    }, [isOpen, customer, customerTypes, fetchNextCode]);
+
+    useEffect(() => {
+        if (nextCodeData?.next_code && !customer && isOpen) {
+            setForm(prev => ({ ...prev, customer_code: String(nextCodeData.next_code) }));
+        }
+    }, [nextCodeData, customer, isOpen]);
 
     const handleSubmit = async (e: React.FormEvent, createNew: boolean = false) => {
         if (e) e.preventDefault();
-        setSaving(true);
-        try {
-            const method = customer ? 'PUT' : 'POST';
-            const url = customer ? `/api/crm/customers/${customer.id}` : '/api/crm/customers';
-            
-            // Combine date and time to UTC for the backend
-            const combinedDateTime = new Date(`${form.joined_at}T${form.joined_time}:00`);
-            
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
-                },
-                body: JSON.stringify({
-                    ...form,
-                    joined_at: combinedDateTime.toISOString(),
-                }),
-            });
+        
+        // Combine date and time to UTC for the backend
+        const combinedDateTime = new Date(`${form.joined_at}T${form.joined_time}:00`);
+        const payload = {
+            ...form,
+            joined_at: form.joined_at ? format(combinedDateTime, 'yyyy-MM-dd') : null,
+        };
+        
+        // Remove joined_time from payload as it's not a DB column
+        delete (payload as any).joined_time;
 
-            if (response.ok) {
-                toast.success(`Customer ${customer ? 'updated' : 'created'} successfully`);
-                onSave();
-                if (createNew && !customer) {
-                    // Reset form and fetch next code for next customer
-                    const defaultType = customerTypes.find(t => (t as any).is_default)?.id || (customerTypes[0]?.id ? String(customerTypes[0].id) : '');
-                    setForm({
-                        customer_code: '',
-                        name: '',
-                        phone: '',
-                        email: '',
-                        address: '',
-                        telegram_user_id: '',
-                        joined_at: format(new Date(), 'yyyy-MM-dd'),
-                        joined_time: format(new Date(), 'HH:mm'),
-                        customer_type_id: String(defaultType),
-                        status: 'ACTIVE',
-                        notes: '',
-                    });
-                    fetchNextCode();
-                } else {
-                    setIsOpen(false);
-                }
+        try {
+            if (customer) {
+                await updateMutation.mutateAsync({ id: customer.id, data: payload });
+                toast.success('Customer updated successfully');
             } else {
-                const data = await response.json();
-                toast.error(data.message || 'Something went wrong');
+                await createMutation.mutateAsync(payload);
+                toast.success('Customer created successfully');
             }
-        } catch (error) {
-            toast.error('Failed to save customer');
-        } finally {
-            setSaving(false);
+
+            onSave();
+            if (createNew && !customer) {
+                // Reset form and fetch next code for next customer
+                const defaultType = customerTypes.find(t => (t as any).is_default)?.id || (customerTypes[0]?.id ? String(customerTypes[0].id) : '');
+                setForm({
+                    customer_code: '',
+                    name: '',
+                    phone: '',
+                    email: '',
+                    address: '',
+                    telegram_user_id: '',
+                    joined_at: format(new Date(), 'yyyy-MM-dd'),
+                    joined_time: format(new Date(), 'HH:mm'),
+                    customer_type_id: String(defaultType),
+                    status: 'ACTIVE',
+                    notes: '',
+                });
+                fetchNextCode();
+            } else {
+                setIsOpen(false);
+            }
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to save customer');
         }
     };
 
@@ -183,7 +175,7 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
 
     {/* Scrollable content area */}
     <ScrollArea className="flex-1 min-h-0">
-      <form onSubmit={handleSubmit} className="p-6 !pt-0 space-y-6">
+      <form id="customer-form" onSubmit={handleSubmit} className="p-6 !pt-0 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Primary Info */}
           <div className="space-y-4">
@@ -195,11 +187,17 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-xs">#</span>
                 <Input 
                   value={form.customer_code} 
-                  onChange={e => setForm({ ...form, customer_code: e.target.value })}
-                  placeholder="Auto Increment"
+                  onChange={e => setForm({ ...form, customer_code: e.target.value.toUpperCase() })}
+                  placeholder={isFetchingNextCode ? "Fetching code..." : "Auto Increment"}
                   required
-                  className="pl-10 h-11"
+                  className={`pl-10 h-11 font-black ${isFetchingNextCode ? 'animate-pulse bg-gray-100 dark:bg-gray-800' : ''}`}
+                  disabled={isFetchingNextCode}
                 />
+                {isFetchingNextCode && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <IconLoader2 className="w-4 h-4 text-primary animate-spin" />
+                    </div>
+                )}
               </div>
             </div>
 
@@ -343,8 +341,7 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
           </div>
         </div>
 
-        {/* Hidden field to attach form ID if needed; we'll keep standard submit button in footer */}
-        <input type="submit" className="hidden" id="customer-form-submit" />
+        {/* Hidden field for fallback submit if needed */}
       </form>
     </ScrollArea>
 
@@ -369,11 +366,8 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
         )}
 
         <Button 
-          type="button" 
-          onClick={() => {
-            const form = document.querySelector('form');
-            if (form) form.dispatchEvent(new Event('submit', { bubbles: true }));
-          }}
+          type="submit" 
+          form="customer-form"
           disabled={saving} 
           className="h-11 gap-2 px-8 shadow-lg shadow-primary/20"
         >

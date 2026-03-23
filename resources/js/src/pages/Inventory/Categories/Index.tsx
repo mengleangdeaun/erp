@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import { ScrollArea } from '../../../components/ui/scroll-area';
@@ -16,8 +16,11 @@ import { Badge } from '../../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { IconCategory } from '@tabler/icons-react';
 import { useInventoryCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '@/hooks/useInventoryData';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const CategoryIndex = () => {
+    const dispatch = useDispatch();
     const { data: categories = [], isLoading: loading, refetch: refetchCategories } = useInventoryCategories();
     const createCategoryMutation = useCreateCategory();
     const updateCategoryMutation = useUpdateCategory();
@@ -40,6 +43,10 @@ const CategoryIndex = () => {
 
     const initialFormState = { code: '', name: '', description: '', parent_id: 'none', is_active: '1' };
     const [formData, setFormData] = useState(initialFormState);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Categories'));
+    }, [dispatch]);
 
     const handleCreate = () => { setEditingCategory(null); setFormData(initialFormState); setModalOpen(true); };
 

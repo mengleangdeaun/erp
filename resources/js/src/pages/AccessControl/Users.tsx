@@ -12,10 +12,14 @@ import SortableHeader from '../../components/ui/SortableHeader';
 import DeleteModal from '../../components/DeleteModal';
 import ActionButtons from '../../components/ui/ActionButtons';
 import { Badge } from '../../components/ui/badge';
-import { IconUsers, IconUserPlus } from '@tabler/icons-react';
+import { IconUsers, IconUserPlus, IconUser } from '@tabler/icons-react';
 import { Checkbox } from '../../components/ui/checkbox';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+
 
 const UsersIndex = () => {
+    const dispatch = useDispatch();
     const [users, setUsers] = useState<any[]>([]);
     const [roles, setRoles] = useState<any[]>([]);
     const [branches, setBranches] = useState<any[]>([]);
@@ -68,6 +72,10 @@ const UsersIndex = () => {
     useEffect(() => {
         fetchData();
     }, []);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Users'));
+    }, [dispatch]);
 
     const handleCreate = () => {
         setEditingUser(null);
@@ -232,77 +240,158 @@ const UsersIndex = () => {
                 </div>
             )}
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-xl">
-                    <DialogHeader>
-                        <DialogTitle>{editingUser ? 'Edit User' : 'Create System User'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4 py-4">
-                        <div className="grid grid-cols-1 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Full Name</label>
-                                <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="User Full Name" required />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Email Address</label>
-                                <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="user@example.com" required />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Password {editingUser && '(Leave blank to keep current)'}</label>
-                                <Input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="********" required={!editingUser} />
-                            </div>
-                            
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-primary">Assign Roles</label>
-                                <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 dark:bg-dark-light/10 rounded-lg">
-                                    {roles.map(role => (
-                                        <div key={role.id} className="flex items-center space-x-2">
-                                            <Checkbox 
-                                                id={`role-${role.id}`} 
-                                                checked={formData.roles.includes(role.id)}
-                                                onCheckedChange={() => {
-                                                    const exists = formData.roles.includes(role.id);
-                                                    setFormData({
-                                                        ...formData,
-                                                        roles: exists ? formData.roles.filter(id => id !== role.id) : [...formData.roles, role.id]
-                                                    });
-                                                }}
-                                            />
-                                            <label htmlFor={`role-${role.id}`} className="text-xs cursor-pointer">{role.name}</label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-2xl w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconUser className="text-primary w-7 h-7" /> {/* Use appropriate icon for users */}
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingUser ? 'Edit User' : 'Create System User'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingUser
+            ? 'Update the user details and assigned roles/branches.'
+            : 'Add a new system user with specific roles and branch access.'}
+        </p>
+      </div>
+    </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-primary">Assign Branches</label>
-                                <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 dark:bg-dark-light/10 rounded-lg">
-                                    {branches.map(branch => (
-                                        <div key={branch.id} className="flex items-center space-x-2">
-                                            <Checkbox 
-                                                id={`branch-${branch.id}`} 
-                                                checked={formData.branches.includes(branch.id)}
-                                                onCheckedChange={() => {
-                                                    const exists = formData.branches.includes(branch.id);
-                                                    setFormData({
-                                                        ...formData,
-                                                        branches: exists ? formData.branches.filter(id => id !== branch.id) : [...formData.branches, branch.id]
-                                                    });
-                                                }}
-                                            />
-                                            <label htmlFor={`branch-${branch.id}`} className="text-xs cursor-pointer">{branch.name}</label>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                        <DialogFooter className="mt-6">
-                            <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save User'}</Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+    {/* Scrollable Form Area */}
+    <ScrollArea className="flex-1 min-h-0">
+      <form onSubmit={handleSubmit} className="pt-0 p-6 space-y-6">
+        <div className="grid grid-cols-1 gap-4">
+          {/* Full Name */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Full Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="User Full Name"
+              required
+              className="bg-gray-50 dark:bg-gray-800/50"
+            />
+          </div>
+
+          {/* Email Address */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Email Address <span className="text-red-500">*</span>
+            </label>
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="user@example.com"
+              required
+              className="bg-gray-50 dark:bg-gray-800/50"
+            />
+          </div>
+
+          {/* Password */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Password {editingUser && '(Leave blank to keep current)'}
+            </label>
+            <Input
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="********"
+              required={!editingUser}
+              className="bg-gray-50 dark:bg-gray-800/50"
+            />
+          </div>
+
+          {/* Roles Section */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-primary">Assign Roles</label>
+            <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 dark:bg-gray-800/20 rounded-xl border border-gray-100 dark:border-gray-800">
+              {roles.map((role) => (
+                <div key={role.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`role-${role.id}`}
+                    checked={formData.roles.includes(role.id)}
+                    onCheckedChange={() => {
+                      const exists = formData.roles.includes(role.id);
+                      setFormData({
+                        ...formData,
+                        roles: exists
+                          ? formData.roles.filter((id) => id !== role.id)
+                          : [...formData.roles, role.id],
+                      });
+                    }}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary h-5 w-5 rounded-md"
+                  />
+                  <label
+                    htmlFor={`role-${role.id}`}
+                    className="text-xs font-medium mb-0 cursor-pointer text-gray-700 dark:text-gray-300"
+                  >
+                    {role.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Branches Section */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-primary">Assign Branches</label>
+            <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 dark:bg-gray-800/20 rounded-xl border border-gray-100 dark:border-gray-800">
+              {branches.map((branch) => (
+                <div key={branch.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`branch-${branch.id}`}
+                    checked={formData.branches.includes(branch.id)}
+                    onCheckedChange={() => {
+                      const exists = formData.branches.includes(branch.id);
+                      setFormData({
+                        ...formData,
+                        branches: exists
+                          ? formData.branches.filter((id) => id !== branch.id)
+                          : [...formData.branches, branch.id],
+                      });
+                    }}
+                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary h-5 w-5 rounded-md"
+                  />
+                  <label
+                    htmlFor={`branch-${branch.id}`}
+                    className="text-xs font-medium mb-0 cursor-pointer text-gray-700 dark:text-gray-300"
+                  >
+                    {branch.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </form>
+    </ScrollArea>
+
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button
+        type="button"
+        variant="ghost"
+        className="px-5"
+        onClick={() => setModalOpen(false)}
+      >
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : 'Save User'}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
             <DeleteModal
                 isOpen={deleteModalOpen}

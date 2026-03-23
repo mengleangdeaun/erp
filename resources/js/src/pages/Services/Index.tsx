@@ -11,6 +11,8 @@ import ActionButtons from '@/components/ui/ActionButtons';
 import { Badge } from '@/components/ui/badge';
 import TableSkeleton from '@/components/ui/TableSkeleton';
 import DeleteModal from '@/components/DeleteModal';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 import {
     Select,
     SelectContent,
@@ -20,6 +22,7 @@ import {
 } from "@/components/ui/select";
 
 const ServiceIndex: React.FC = () => {
+    const dispatch = useDispatch();
     const { t } = useTranslation();
     const [services, setServices] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
@@ -37,6 +40,10 @@ const ServiceIndex: React.FC = () => {
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Service Catalog'));
+    }, [dispatch]);
 
     const fetchData = async () => {
         setLoading(true);

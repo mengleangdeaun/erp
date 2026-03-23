@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { toast } from 'sonner';
 import { IconCar, IconLoader2 } from '@tabler/icons-react';
+import { useCRMCreateVehicle, useCRMUpdateVehicle, useCRMCustomersMinimal, useCRMVehicleBrands, useCRMVehicleModels } from '@/hooks/useCRMData';
 
 interface VehicleDialogProps {
     isOpen: boolean;
@@ -22,12 +23,10 @@ interface VehicleDialogProps {
 }
 
 const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProps) => {
-    const [loading, setLoading] = useState(false);
-    const [fetchingData, setFetchingData] = useState(false);
-    const [customers, setCustomers] = useState<any[]>([]);
-    const [brands, setBrands] = useState<any[]>([]);
-    const [models, setModels] = useState<any[]>([]);
+    const createMutation = useCRMCreateVehicle();
+    const updateMutation = useCRMUpdateVehicle();
     
+    // Form state
     const [formData, setFormData] = useState({
         customer_id: null as number | null,
         brand_id: null as number | null,
@@ -39,9 +38,17 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
         current_mileage: '' as string | number,
     });
 
+    // Queries
+    const { data: customersRaw = [], isLoading: customersLoading } = useCRMCustomersMinimal();
+    const { data: brands = [], isLoading: brandsLoading } = useCRMVehicleBrands();
+    const { data: models = [], isLoading: modelsLoading } = useCRMVehicleModels(formData.brand_id);
+
+    const customers = Array.isArray(customersRaw) ? customersRaw : (customersRaw?.data || []);
+    const fetchingData = customersLoading || brandsLoading;
+    const loading = createMutation.isPending || updateMutation.isPending;
+
     useEffect(() => {
         if (isOpen) {
-            fetchMasterData();
             if (vehicle) {
                 setFormData({
                     customer_id: vehicle.customer_id,
@@ -53,9 +60,6 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
                     year: vehicle.year || '',
                     current_mileage: vehicle.current_mileage || '',
                 });
-                if (vehicle.brand_id) {
-                    fetchModels(vehicle.brand_id);
-                }
             } else {
                 setFormData({
                     customer_id: null,
@@ -67,42 +71,13 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
                     year: '',
                     current_mileage: '',
                 });
-                setModels([]);
             }
         }
     }, [isOpen, vehicle]);
 
-    const fetchMasterData = async () => {
-        setFetchingData(true);
-        try {
-            const [custRes, brandRes] = await Promise.all([
-                fetch('/api/crm/customers?all=true'),
-                fetch('/api/services/vehicle-brands'),
-            ]);
-            const [cust, brnd] = await Promise.all([custRes.json(), brandRes.json()]);
-            setCustomers(Array.isArray(cust) ? cust : (cust.data || []));
-            setBrands(brnd);
-        } catch (error) {
-            toast.error('Failed to load master data');
-        } finally {
-            setFetchingData(false);
-        }
-    };
-
-    const fetchModels = async (brandId: number) => {
-        try {
-            const res = await fetch(`/api/services/vehicle-models?brand_id=${brandId}`);
-            const data = await res.json();
-            setModels(data);
-        } catch (error) {
-            toast.error('Failed to load models');
-        }
-    };
-
     const handleBrandChange = (val: number | string) => {
         const brandId = val as number;
         setFormData({ ...formData, brand_id: brandId, model_id: null });
-        fetchModels(brandId);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -112,33 +87,18 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
             return;
         }
 
-        setLoading(true);
         try {
-            const method = vehicle ? 'PUT' : 'POST';
-            const url = vehicle ? `/api/crm/customer-vehicles/${vehicle.id}` : '/api/crm/customer-vehicles';
-            
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
-                },
-                body: JSON.stringify(formData),
-            });
-
-            if (response.ok) {
-                toast.success(vehicle ? 'Vehicle updated successfully' : 'Vehicle registered successfully');
-                setIsOpen(false);
-                onSave();
+            if (vehicle) {
+                await updateMutation.mutateAsync({ id: vehicle.id, data: formData });
+                toast.success('Vehicle updated successfully');
             } else {
-                const data = await response.json();
-                toast.error(data.message || 'Failed to save vehicle');
+                await createMutation.mutateAsync(formData);
+                toast.success('Vehicle registered successfully');
             }
-        } catch (error) {
-            toast.error('An error occurred while saving');
-        } finally {
-            setLoading(false);
+            setIsOpen(false);
+            onSave();
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'An error occurred while saving');
         }
     };
 

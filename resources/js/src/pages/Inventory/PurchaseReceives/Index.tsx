@@ -23,6 +23,17 @@ import { DatePicker } from '../../../components/ui/date-picker';
 import { TimePicker } from '../../../components/ui/time-picker';
 import DateRangePicker from '../../../components/ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { 
+    usePurchaseReceives, 
+    usePurchaseOrders, 
+    useInventoryLocations,
+    useCreatePurchaseReceive,
+    usePurchaseOrderPendingItems
+} from '@/hooks/useInventoryData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Location { id: number; name: string; }
 interface PO { id: number; po_number: string; supplier: { name: string }; status: string; }
@@ -67,11 +78,9 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
     });
 
 export default function PurchaseReceivesPage() {
+    const dispatch = useDispatch();
+    const queryClient = useQueryClient();
     const { formatDate, formatDateTime } = useFormatDate();
-    const [receives, setReceives] = useState<PR[]>([]);
-    const [pendingOrders, setPendingOrders] = useState<PO[]>([]);
-    const [locations, setLocations] = useState<Location[]>([]);
-    const [loading, setLoading] = useState(true);
     
     // Filter, sort, pagination state
     const [search, setSearch] = useState('');
@@ -93,44 +102,48 @@ export default function PurchaseReceivesPage() {
         reference_number: '', 
         receiving_note: '' 
     });
-    const [submitting, setSubmitting] = useState(false);
-    const [loadingItems, setLoadingItems] = useState(false);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams();
-            if (search) params.append('search', search);
-            if (locationId && locationId !== 'all') params.append('location_id', String(locationId));
-            if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
-            if (dateRange?.from) params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
-            if (dateRange?.to) params.append('end_date', format(dateRange.to, 'yyyy-MM-dd'));
-
-            const [prRes, posRes, locRes] = await Promise.all([
-                apiFetch(`/api/inventory/purchase-receives?${params.toString()}`),
-                apiFetch('/api/inventory/purchase-orders'),
-                apiFetch('/api/inventory/locations'),
-            ]);
-            if (prRes.status === 401) {
-                window.location.href = '/auth/login';
-                return;
-            }
-            const prData = await prRes.json();
-            const posData = await posRes.json();
-            const locData = await locRes.json();
-            setReceives(Array.isArray(prData) ? prData : []);
-            setPendingOrders(Array.isArray(posData) ? posData.filter((po: PO) => !['Cancelled', 'Completed'].includes(po.status)) : []);
-            setLocations(Array.isArray(locData) ? locData : []);
-        } catch { 
-            toast.error('Failed to load data'); 
-        } finally { 
-            setLoading(false); 
-        }
+    // Query filters
+    const queryParams = useMemo(() => {
+        const p: any = {};
+        if (search) p.search = search;
+        if (locationId && locationId !== 'all') p.location_id = String(locationId);
+        if (statusFilter && statusFilter !== 'all') p.status = statusFilter;
+        if (dateRange?.from) p.start_date = format(dateRange.from, 'yyyy-MM-dd');
+        if (dateRange?.to) p.end_date = format(dateRange.to, 'yyyy-MM-dd');
+        return p;
     }, [search, locationId, statusFilter, dateRange]);
 
-    useEffect(() => { 
-        fetchData(); 
-    }, [fetchData]);
+    // Queries
+    const { data: prResponse, isLoading: prLoading } = usePurchaseReceives(queryParams);
+    const { data: poData = [] } = usePurchaseOrders();
+    const { data: locations = [] } = useInventoryLocations();
+    const { data: pendingItemsData, isLoading: loadingItems } = usePurchaseOrderPendingItems(selectedPoId || null);
+
+    const receives = Array.isArray(prResponse) ? prResponse : (prResponse?.data || []);
+    const totalItems = Array.isArray(prResponse) ? prResponse.length : (prResponse?.total || 0);
+    const pendingOrders = Array.isArray(poData) ? poData.filter((po: PO) => !['Cancelled', 'Completed'].includes(po.status)) : [];
+
+    // Loading State
+    const loading = useDelayedLoading(prLoading);
+
+    // Mutations
+    const receiveMutation = useCreatePurchaseReceive();
+    const submitting = receiveMutation.isPending;
+
+    useEffect(() => {
+        dispatch(setPageTitle('Purchase Receives'));
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (pendingItemsData) {
+            const items = (Array.isArray(pendingItemsData) ? pendingItemsData : []).filter((it: PendingItem) => it.remaining_qty > 0);
+            setPendingItems(items);
+            const qtys: Record<number, string> = {};
+            items.forEach((it: PendingItem) => { qtys[it.id] = String(it.remaining_qty); });
+            setReceiveQtys(qtys);
+        }
+    }, [pendingItemsData]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -149,24 +162,8 @@ export default function PurchaseReceivesPage() {
         setModalOpen(true);
     };
 
-    const loadPendingItems = async (poId: string) => {
-        if (!poId) { setPendingItems([]); return; }
-        setLoadingItems(true);
-        try {
-            const res = await apiFetch(`/api/inventory/purchase-orders/${poId}/pending-items`);
-            const data = await res.json();
-            const items = (Array.isArray(data) ? data : []).filter((it: PendingItem) => it.remaining_qty > 0);
-            setPendingItems(items);
-            const qtys: Record<number, string> = {};
-            items.forEach((it: PendingItem) => { qtys[it.id] = String(it.remaining_qty); });
-            setReceiveQtys(qtys);
-        } catch { toast.error('Failed to load PO items'); }
-        finally { setLoadingItems(false); }
-    };
-
     const handlePoChange = (poId: string) => {
         setSelectedPoId(poId);
-        loadPendingItems(poId);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -184,28 +181,18 @@ export default function PurchaseReceivesPage() {
 
         if (itemsPayload.length === 0) { toast.error('Enter at least one quantity to receive'); return; }
 
-        setSubmitting(true);
-        await fetch('/sanctum/csrf-cookie');
+        const payload = {
+            purchase_order_id: parseInt(selectedPoId),
+            ...formData,
+            items: itemsPayload,
+        };
+
         try {
-            const res = await apiFetch('/api/inventory/purchase-receives', {
-                method: 'POST',
-                body: JSON.stringify({
-                    purchase_order_id: parseInt(selectedPoId),
-                    ...formData,
-                    items: itemsPayload,
-                }),
-            });
-            if (res.ok) {
-                toast.success('Goods received! Stock has been updated automatically.');
-                setModalOpen(false);
-                fetchData();
-            } else {
-                const err = await res.json();
-                toast.error(err.message || 'Failed to save PR');
-            }
-        } catch {
-            toast.error('An error occurred');
-        } finally { setSubmitting(false); }
+            await receiveMutation.mutateAsync(payload);
+            setModalOpen(false);
+        } catch (error) {
+            // Handled by mutation
+        }
     };
 
     // Derived data with filtering and sorting
@@ -269,7 +256,7 @@ export default function PurchaseReceivesPage() {
                 setItemsPerPage={setItemsPerPage}
                 onAdd={openCreate}
                 addLabel="New Receive"
-                onRefresh={fetchData}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['purchase-receives'] })}
                 hasActiveFilters={sortBy !== 'receive_date' || sortDirection !== 'desc' || search !== '' || dateRange !== undefined || locationId !== 'all' || statusFilter !== 'all'}
                 onClearFilters={clearFilters}
             >
@@ -399,7 +386,7 @@ export default function PurchaseReceivesPage() {
                         <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
-                            totalItems={filteredAndSortedReceives.length}
+                            totalItems={totalItems}
                             itemsPerPage={itemsPerPage}
                             onPageChange={setCurrentPage}
                         />

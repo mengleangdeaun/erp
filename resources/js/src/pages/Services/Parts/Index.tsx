@@ -11,8 +11,11 @@ import ActionButtons from '@/components/ui/ActionButtons';
 import { Badge } from '@/components/ui/badge';
 import DeleteModal from '@/components/DeleteModal';
 import TableSkeleton from '@/components/ui/TableSkeleton';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const JobPartIndex: React.FC = () => {
+    const dispatch = useDispatch();
     const { t } = useTranslation();
     const [parts, setParts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -27,7 +30,11 @@ const JobPartIndex: React.FC = () => {
     // Search and Pagination state
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [itemsPerPage, setItemsPerPage] = useState(10);   
+
+    useEffect(() => {
+        dispatch(setPageTitle('Installation Parts'));
+    }, [dispatch]);
 
     const fetchParts = async () => {
         setLoading(true);

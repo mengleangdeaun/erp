@@ -14,8 +14,11 @@ import { Badge } from '../../../components/ui/badge';
 import { useInventoryServices, useBranches, useBranchServices, useSyncBranchServices } from '@/hooks/useInventoryData';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const BranchServiceIndex = () => {
+    const dispatch = useDispatch();
     const queryClient = useQueryClient();
     const { data: branches = [], isLoading: loadingBranches } = useBranches();
     const { data: services = [], isLoading: loadingServices } = useInventoryServices();
@@ -33,6 +36,10 @@ const BranchServiceIndex = () => {
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Branch Services'));
+    }, [dispatch]);
 
     // Set initial branch
     useEffect(() => {

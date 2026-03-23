@@ -20,6 +20,7 @@ class LocationController extends Controller
             'description' => 'nullable|string',
             'address' => 'nullable|string',
             'is_active' => 'boolean',
+            'is_primary' => 'boolean',
             'branch_id' => 'nullable|exists:branches,id'
         ]);
 
@@ -40,6 +41,7 @@ class LocationController extends Controller
             'description' => 'nullable|string',
             'address' => 'nullable|string',
             'is_active' => 'boolean',
+            'is_primary' => 'boolean',
             'branch_id' => 'nullable|exists:branches,id'
         ]);
 

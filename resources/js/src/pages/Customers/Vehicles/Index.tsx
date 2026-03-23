@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { IconCar, IconPlus, IconSearch, IconFilter, IconTrash, IconEdit, IconUser, IconCalendar, IconGauge, IconPalette } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,13 +13,18 @@ import { useTranslation } from 'react-i18next';
 import { useFormatDate } from '@/hooks/useFormatDate';
 import VehicleDialog from './VehicleDialog';
 import DeleteModal from '@/components/DeleteModal';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useCRMCustomerVehicles, useCRMVehicleBrands, useCRMDeleteVehicle } from '@/hooks/useCRMData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
+
 
 const CustomerVehicleIndex = () => {
+    const dispatch = useDispatch();
+    const queryClient = useQueryClient();
     const { t } = useTranslation();
     const { formatDateTime } = useFormatDate();
-    const [vehicles, setVehicles] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [brands, setBrands] = useState<any[]>([]);
 
     // Filters & Pagination
     const [search, setSearch] = useState('');
@@ -34,34 +39,22 @@ const CustomerVehicleIndex = () => {
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const queryParams = new URLSearchParams({
-                search: search,
-                ...(brandFilter !== 'all' && { brand_id: brandFilter }),
-            });
+    // Queries
+    const { data: vehicles = [], isLoading: vehiclesLoading } = useCRMCustomerVehicles({
+        search: search,
+        brand_id: brandFilter !== 'all' ? brandFilter : undefined,
+    });
+    const { data: brands = [] } = useCRMVehicleBrands();
 
-            const [vehRes, brandRes] = await Promise.all([
-                fetch(`/api/crm/customer-vehicles?${queryParams}`),
-                fetch('/api/services/vehicle-brands'),
-            ]);
+    // Mutations
+    const deleteMutation = useCRMDeleteVehicle();
 
-            const vehData = await vehRes.json();
-            const brandData = await brandRes.json();
-
-            setVehicles(vehData);
-            setBrands(brandData);
-        } catch (error) {
-            toast.error('Failed to load vehicles');
-        } finally {
-            setLoading(false);
-        }
-    }, [search, brandFilter]);
+    // Loading State
+    const loading = useDelayedLoading(vehiclesLoading);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        dispatch(setPageTitle('Customer Vehicles'));
+    }, [dispatch]);
 
     const handleEdit = (vehicle: any) => {
         setSelectedVehicle(vehicle);
@@ -76,21 +69,10 @@ const CustomerVehicleIndex = () => {
     const confirmDelete = async () => {
         if (!deleteId) return;
         try {
-            const response = await fetch(`/api/crm/customer-vehicles/${deleteId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
-                },
-            });
-            if (response.ok) {
-                toast.success('Vehicle deleted successfully');
-                fetchData();
-            } else {
-                const data = await response.json();
-                toast.error(data.message || 'Failed to delete vehicle');
-            }
-        } catch (error) {
-            toast.error('An error occurred');
+            await deleteMutation.mutateAsync(deleteId);
+            toast.success('Vehicle deleted successfully');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to delete vehicle');
         } finally {
             setIsDeleteModalOpen(false);
             setDeleteId(null);
@@ -107,7 +89,7 @@ const CustomerVehicleIndex = () => {
                 setSearch={setSearch}
                 onAdd={() => { setSelectedVehicle(null); setDialogOpen(true); }}
                 addLabel="Register Vehicle"
-                onRefresh={fetchData}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['crm_customer_vehicles'] })}
                 itemsPerPage={perPage}
                 setItemsPerPage={setPerPage}
                 hasActiveFilters={brandFilter !== 'all'}
@@ -124,7 +106,7 @@ const CustomerVehicleIndex = () => {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all" className="font-medium">All Brands</SelectItem>
-                            {brands.map(b => (
+                            {brands.map((b: any) => (
                                 <SelectItem key={b.id} value={String(b.id)} className="font-medium">{b.name}</SelectItem>
                             ))}
                         </SelectContent>
@@ -166,7 +148,7 @@ const CustomerVehicleIndex = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {vehicles.map((v) => (
+                                {vehicles.map((v: any) => (
                                     <tr key={v.id} className="hover:bg-gray-50/50 dark:hover:bg-white-dark/5 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
@@ -236,7 +218,7 @@ const CustomerVehicleIndex = () => {
                 isOpen={dialogOpen}
                 setIsOpen={setDialogOpen}
                 vehicle={selectedVehicle}
-                onSave={fetchData}
+                onSave={() => queryClient.invalidateQueries({ queryKey: ['crm_customer_vehicles'] })}
             />
 
             <DeleteModal

@@ -47,10 +47,11 @@ interface SalesOrder {
     global_discount_type: 'FIXED' | 'PERCENT';
     global_discount_value: number;
     grand_total: number;
+    taxable_amount: number;
     notes: string;
     use_tax: boolean;
     global_tax_percent: number;
-    deposits: { amount: number; payment_account_id: number | null; date: string; notes: string }[];
+    deposits: { amount: number; payment_account_id: number | null; date: string; notes: string; receipt: File | null }[];
 }
 
 interface SalesOrderItem {
@@ -80,6 +81,7 @@ const SalesCreate = () => {
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
     
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
+    const [invoiceImageFile, setInvoiceImageFile] = useState<File | null>(null);
     const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
 
     const [form, setForm] = useState<SalesOrder>({
@@ -93,6 +95,7 @@ const SalesCreate = () => {
         global_discount_type: 'FIXED',
         global_discount_value: 0,
         grand_total: 0,
+        taxable_amount: 0,
         notes: '',
         use_tax: true,
         global_tax_percent: 10,
@@ -108,7 +111,7 @@ const SalesCreate = () => {
     const { data: branches = [], isLoading: isLoadingBranches } = useBranches();
     const { data: brands = [], isLoading: isLoadingBrands } = useBrands();
     const { data: categories = [], isLoading: isLoadingCategories } = useCategories();
-    const { data: paymentAccounts = [], isLoading: isLoadingAccounts } = usePaymentAccounts();
+    const { data: paymentAccounts = [], isLoading: isLoadingAccounts } = usePaymentAccounts(selectedBranchId);
     const { data: vehicles = [], isLoading: isLoadingVehicles } = useCustomerVehicles(form.customer_id);
 
     const isLoading = isLoadingCustomers || isLoadingBranches || isLoadingCategories || isLoadingAccounts;
@@ -128,6 +131,9 @@ const SalesCreate = () => {
     const [selectedServiceForItems, setSelectedServiceForItems] = useState<any>(null);
     const [tempSelectedParts, setTempSelectedParts] = useState<number[]>([]);
     const [tempPartProductMap, setTempPartProductMap] = useState<Record<number, number>>({}); // part_id -> product_id
+    
+    const [isEditingService, setIsEditingService] = useState(false);
+    const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
 
     // Default branch selection
     useEffect(() => {
@@ -190,17 +196,29 @@ const SalesCreate = () => {
 
     const confirmServiceItems = () => {
         if (!selectedServiceForItems) return;
-        addServiceItem(selectedServiceForItems);
+        
+        // Calculate all items to add in one batch
+        const baseServiceItem: SalesOrderItem = { 
+            service_id: selectedServiceForItems.id, 
+            product_id: null, 
+            qty: 1, 
+            unit_price: parseFloat(selectedServiceForItems.base_price || 0), 
+            discount_type: 'FIXED', 
+            discount_value: 0, 
+            discount: 0,
+            tax_percent: 0
+        };
+
+        const newComponentItems: SalesOrderItem[] = [];
         
         tempSelectedParts.forEach((partId: number) => {
             const part = selectedServiceForItems.parts.find((p: any) => p.id === partId);
             if (part) {
-                // If a product is selected for this part, add it as a product item with job_part_id
                 const productId = tempPartProductMap[partId];
                 if (productId) {
                     const p = products.find((x: any) => x.id === productId);
                     if (p) {
-                        const item: SalesOrderItem = {
+                        newComponentItems.push({
                             service_id: selectedServiceForItems.id,
                             product_id: p.id,
                             job_part_id: part.id,
@@ -210,12 +228,10 @@ const SalesCreate = () => {
                             discount_value: 0,
                             discount: 0,
                             tax_percent: 0
-                        };
-                        setForm((prev: any) => ({ ...prev, items: [...prev.items, item] }));
+                        });
                     }
                 } else {
-                    // Just the part (no product)
-                    const item: SalesOrderItem = {
+                    newComponentItems.push({
                         service_id: selectedServiceForItems.id,
                         product_id: null,
                         job_part_id: part.id,
@@ -225,14 +241,53 @@ const SalesCreate = () => {
                         discount_value: 0,
                         discount: 0,
                         tax_percent: 0
-                    };
-                    setForm((prev: any) => ({ ...prev, items: [...prev.items, item] }));
+                    });
                 }
             }
         });
         
+        setForm(prev => {
+            let items = [...prev.items];
+            if (isEditingService) {
+                items = items.filter(i => i.service_id !== editingServiceId);
+            }
+            return { 
+                ...prev, 
+                items: [...items, ...newComponentItems] 
+            };
+        });
+        
+        toast.success(isEditingService ? `${selectedServiceForItems.name} components updated` : `${selectedServiceForItems.name} components added to cart`);
         setSelectedServiceForItems(null);
         setTempPartProductMap({});
+        setIsEditingService(false);
+        setEditingServiceId(null);
+    };
+
+    const handleEditPackage = (serviceId: number) => {
+        const s = services.find((x: any) => x.id === serviceId);
+        if (!s) return;
+
+        // Find items related to this service
+        const serviceItems = form.items.filter(i => i.service_id === serviceId);
+        const initialSelectedParts: number[] = [];
+        const initialPartProductMap: Record<number, number> = {};
+
+        serviceItems.forEach(item => {
+            if (item.job_part_id) {
+                initialSelectedParts.push(item.job_part_id);
+                if (item.product_id) {
+                    initialPartProductMap[item.job_part_id] = item.product_id;
+                }
+            }
+        });
+
+        setTempSelectedParts(initialSelectedParts);
+        setTempPartProductMap(initialPartProductMap);
+        setSelectedServiceForItems(s);
+        setIsEditingService(true);
+        setEditingServiceId(serviceId);
+        setShowCheckoutDialog(false);
     };
 
     const updateItem = (index: number, changes: Partial<SalesOrderItem>) => {
@@ -246,7 +301,7 @@ const SalesCreate = () => {
     };
 
     const addDeposit = () => {
-        setForm(prev => ({ ...prev, deposits: [...prev.deposits, { amount: 0, payment_account_id: null, date: format(new Date(), 'yyyy-MM-dd'), notes: '' }] }));
+        setForm(prev => ({ ...prev, deposits: [...prev.deposits, { amount: 0, payment_account_id: null, date: format(new Date(), 'yyyy-MM-dd'), notes: '', receipt: null }] }));
     };
 
     const updateDeposit = (index: number, changes: Partial<SalesOrder['deposits'][0]>) => {
@@ -256,10 +311,12 @@ const SalesCreate = () => {
     };
 
     // Totals calculation
+    const roundTo2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
+
     useEffect(() => {
         // 1. Determine Base Subtotal (Manual Override vs Item Sum)
         const items_sum = form.items.reduce((acc, item) => acc + (item.qty * item.unit_price), 0);
-        const subtotal = manualGrandTotal !== null ? manualGrandTotal : items_sum;
+        const subtotal = roundTo2(manualGrandTotal !== null ? manualGrandTotal : items_sum);
         
         // 2. Calculate Item-level discounts (Only if no manual override)
         let items_discount_total = 0;
@@ -280,23 +337,27 @@ const SalesCreate = () => {
             global_discount_amount = form.global_discount_value;
         }
 
-        const total_discount = items_discount_total + global_discount_amount;
+        const total_discount = roundTo2(items_discount_total + global_discount_amount);
         
         // 4. Calculate Tax
-        let tax_total = 0;
+        let raw_tax_total = 0;
         if (form.use_tax) {
-            tax_total = (subtotal - total_discount) * (form.global_tax_percent / 100);
+            raw_tax_total = (subtotal - total_discount) * (form.global_tax_percent / 100);
         } else {
-            tax_total = updatedItems.reduce((acc, item) => acc + (((item.qty * item.unit_price) - item.discount) * (item.tax_percent / 100)), 0);
-            if (manualGrandTotal !== null) tax_total = 0; // We don't support item-level tax with manual subtotal override
+            raw_tax_total = updatedItems.reduce((acc, item) => acc + (((item.qty * item.unit_price) - item.discount) * (item.tax_percent / 100)), 0);
+            if (manualGrandTotal !== null) raw_tax_total = 0; // We don't support item-level tax with manual subtotal override
         }
 
+        const tax_total = roundTo2(raw_tax_total);
+        const taxable_amount = roundTo2(subtotal - total_discount);
+        
         setForm(prev => ({ 
             ...prev, 
             subtotal, 
             discount_total: total_discount, 
             tax_total, 
-            grand_total: subtotal - total_discount + tax_total 
+            taxable_amount,
+            grand_total: roundTo2(subtotal - total_discount + tax_total) 
         }));
     }, [form.items, form.use_tax, form.global_tax_percent, form.global_discount_type, form.global_discount_value, manualGrandTotal]);
 
@@ -325,6 +386,10 @@ const SalesCreate = () => {
             formData.append('discount_total', form.discount_total.toString());
             formData.append('grand_total', finalGrandTotal.toString());
             formData.append('notes', form.notes);
+            formData.append('taxable_amount', form.taxable_amount.toString());
+            formData.append('tax_percent', form.global_tax_percent.toString());
+            formData.append('discount_type', form.global_discount_type);
+            formData.append('discount_value', form.global_discount_value.toString());
 
             form.items.forEach((item, idx) => {
                 if (item.service_id) formData.append(`items[${idx}][service_id]`, item.service_id.toString());
@@ -335,15 +400,19 @@ const SalesCreate = () => {
                 formData.append(`items[${idx}][discount]`, item.discount.toString());
             });
 
-            form.deposits.forEach((dep, idx) => {
+            form.deposits.forEach((dep: any, idx) => {
                 formData.append(`deposits[${idx}][amount]`, dep.amount.toString());
                 formData.append(`deposits[${idx}][payment_account_id]`, dep.payment_account_id?.toString() || '');
                 formData.append(`deposits[${idx}][date]`, dep.date);
                 formData.append(`deposits[${idx}][notes]`, dep.notes);
+                if (dep.receipt) {
+                    formData.append(`deposits[${idx}][receipt]`, dep.receipt);
+                }
             });
-
-            if (receiptFile) {
-                formData.append('receipt', receiptFile);
+            formData.append('branch_id', form.branch_id.toString());
+            formData.append('vehicle_id', form.vehicle_id?.toString() || '');
+            if (invoiceImageFile) {
+                formData.append('invoice_image', invoiceImageFile);
             }
 
             const response = await fetch('/api/sales/orders', {
@@ -595,112 +664,158 @@ const SalesCreate = () => {
                 updateDeposit={updateDeposit}
                 receiptFile={receiptFile}
                 setReceiptFile={setReceiptFile}
+                invoiceImageFile={invoiceImageFile}
+                setInvoiceImageFile={setInvoiceImageFile}
                 loadingVehicles={loadingVehicles}
+                onEditPackage={handleEditPackage}
             />
 
-            {/* Service Item Selector Overlay */}
-            {selectedServiceForItems && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-gray-950 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden border border-white/20 dark:border-gray-800 flex flex-col max-h-[90vh]">
-                        <div className="p-8 border-b dark:border-gray-800 shrink-0 flex justify-between items-start">
-                            <div>
-                                <Badge className="mb-2 bg-primary/10 text-primary uppercase font-bold tracking-widest px-3 py-1 text-[9px]">Package Configuration</Badge>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight leading-none">{selectedServiceForItems.name}</h2>
-                                <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest mt-2 italic">Select components to include in this professional service</p>
+            {/* Service Item Selector Dialog */}
+            <Dialog 
+                open={!!selectedServiceForItems} 
+                onOpenChange={(open) => !open && setSelectedServiceForItems(null)}
+            >
+                <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-none bg-white dark:bg-gray-950 shadow-2xl rounded-3xl animate-in fade-in zoom-in-95 duration-300">
+                    <DialogHeader className="p-8 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-inner">
+                                <IconTools size={28} />
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => setSelectedServiceForItems(null)} className="rounded-full h-10 w-10 p-0 text-gray-400 hover:text-danger">
-                                <IconX size={20} />
-                            </Button>
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-3">
+                                    <DialogTitle className="text-xl font-black tracking-tight text-gray-900 dark:text-white">
+                                        Package Configuration
+                                    </DialogTitle>
+                                    <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-0 font-black text-[9px] px-2 py-0.5 tracking-wider uppercase">
+                                        Optimization
+                                    </Badge>
+                                </div>
+                                <DialogDescription className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    {selectedServiceForItems?.name}
+                                    <span className="w-1 h-1 rounded-full bg-gray-300" />
+                                    Configure service components
+                                </DialogDescription>
+                            </div>
                         </div>
-                        
-                        <ScrollArea className="flex-1 p-8">
-                            <div className="space-y-8">
-                                {/* Parts Section */}
-                                {selectedServiceForItems.parts?.length > 0 && (
-                                    <section>
-                                        <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary mb-5 flex items-center gap-3">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-primary" /> Installation Parts & Products
+                    </DialogHeader>
+                    
+                    <ScrollArea className="max-h-[60vh]">
+                        <div className="p-8 space-y-10 !pt-0">
+                            {/* Implementation Parts Section */}
+                            {selectedServiceForItems?.parts?.length > 0 && (
+                                <section className="space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-3">
+                                            <div className="w-2 h-2 rounded-full bg-primary" /> 
+                                        Select Products & Installation Parts
                                         </h4>
-                                        <div className="grid grid-cols-1 gap-4">
-                                            {selectedServiceForItems.parts.map((p: any) => (
-                                                <div key={p.id} className="space-y-3">
-                                                    <div 
-                                                        onClick={() => setTempSelectedParts((prev: any) => prev.includes(p.id) ? prev.filter((x: any) => x !== p.id) : [...prev, p.id])}
-                                                        className={`w-full flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${tempSelectedParts.includes(p.id) ? 'bg-primary/5 border-primary shadow-sm shadow-primary/10' : 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 opacity-60'}`}
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${tempSelectedParts.includes(p.id) ? 'bg-primary text-white scale-110' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 opacity-50'} transition-all`}>
-                                                                {tempSelectedParts.includes(p.id) ? <IconChevronRight size={14} stroke={4} /> : <div className="w-1 h-1 rounded-full bg-current" />}
+                                        <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary px-2">
+                                            {selectedServiceForItems.parts.length} Parts
+                                        </Badge>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {selectedServiceForItems.parts.map((p: any) => (
+                                            <div 
+                                                key={p.id} 
+                                                className={`group relative overflow-hidden rounded-xl border transition-all duration-500 p-0.5 ${
+                                                    tempSelectedParts.includes(p.id) 
+                                                        ? 'border-primary ring-2 ring-primary/10 bg-primary/[0.02]' 
+                                                        : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-primary/40'
+                                                }`}
+                                            >
+                                                <div className="p-6 space-y-6">
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex items-center gap-4">
+                                                            <div 
+                                                                onClick={() => setTempSelectedParts((prev: any) => prev.includes(p.id) ? prev.filter((x: any) => x !== p.id) : [...prev, p.id])}
+                                                                className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center cursor-pointer transition-all duration-300 ${
+                                                                    tempSelectedParts.includes(p.id) 
+                                                                        ? 'bg-primary border-primary text-white scale-110 shadow-lg shadow-primary/20' 
+                                                                        : 'bg-transparent border-gray-200 dark:border-gray-700 hover:border-primary/50'
+                                                                }`}
+                                                            >
+                                                                {tempSelectedParts.includes(p.id) && <IconCheck size={16} stroke={4} />}
                                                             </div>
-                                                            <span className="font-bold text-gray-900 dark:text-white text-xs">{p.name}</span>
+                                                            <div className="flex flex-col">
+                                                                <span className="font-black text-gray-900 dark:text-white text-[13px] tracking-tight leading-none mb-1.5">{p.name}</span>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge variant="outline" className="text-[8px] font-black border-gray-200 dark:border-gray-800 text-gray-400 px-1.5 py-1 leading-none">{p.code}</Badge>
+                                                                    {tempSelectedParts.includes(p.id) && <span className="text-[8px] font-black text-primary animate-pulse tracking-widest uppercase">Active Selection</span>}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <Badge variant="outline" className="text-[10px] font-bold uppercase border-gray-200 dark:border-gray-700">Part #{p.code}</Badge>
                                                     </div>
-                                                    
+
                                                     {tempSelectedParts.includes(p.id) && (
-                                                        <div className="pl-11 pr-4">
-                                                            <Label className="text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-2 block">Select Product for {p.name} (Optional)</Label>
-                                                            <SearchableSelect 
-                                                                options={products.map((prod: any) => ({ value: prod.id, label: `${prod.name} (${prod.code}) - $${prod.price}` }))}
-                                                                value={tempPartProductMap[p.id]}
-                                                                onChange={(val) => setTempPartProductMap(prev => ({ ...prev, [p.id]: val as number }))}
-                                                                placeholder="Search Product..."
-                                                                className="h-10 text-xs font-bold rounded-xl"
-                                                            />
+                                                        <div className="pt-2 space-y-4 animate-in slide-in-from-top-4 duration-500">
+                                                            
+                                                            <div>
+                                                                
+                                                                {selectedServiceForItems.materials?.length > 0 ? (
+                                                                    <div className="space-y-4">
+                                                                        <SearchableSelect 
+                                                                            options={selectedServiceForItems.materials.map((m: any) => {
+                                                                                const prod = products.find(x => x.id === m.product_id);
+                                                                                return { 
+                                                                                    value: prod?.id, 
+                                                                                    label: prod ? `${prod.name} (${prod.code}) - $${prod.price}` : 'Unknown Product' 
+                                                                                };
+                                                                            }).filter(x => x.value)}
+                                                                            value={tempPartProductMap[p.id]}
+                                                                            onChange={(val) => setTempPartProductMap(prev => ({ ...prev, [p.id]: val as number }))}
+                                                                            placeholder="Search products..."
+                                                                            className="h-10 text-[10px] font-bold rounded-lg border-primary/20 bg-white dark:bg-dark shadow-sm"
+                                                                        />
+                                                                        {tempPartProductMap[p.id] && (
+                                                                            <p className="text-[9px] text-primary/60 italic ml-1 flex items-center gap-1.5 font-bold animate-in fade-in duration-300">
+                                                                                <IconBoxSeam size={10} className="text-primary" />
+                                                                                Component allocated for this part
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50/50 dark:bg-gray-900/50 border border-dashed border-gray-200 dark:border-gray-800">
+                                                                        <IconInfoCircle size={14} className="text-gray-400" />
+                                                                        <span className="text-[10px] font-bold text-gray-400">No suggested consumables defined.</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </section>
-                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
 
-                                {/* Materials Section (Legacy / Suggested) */}
-                                {selectedServiceForItems.materials?.length > 0 && (
-                                    <section>
-                                        <h4 className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-600 mb-5 flex items-center gap-3">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" /> Suggested Consumables
-                                        </h4>
-                                        <div className="grid grid-cols-1 gap-3">
-                                            {selectedServiceForItems.materials.map((m: any) => {
-                                                const p = products.find(x => x.id === m.product_id);
-                                                return (
-                                                    <div key={m.product_id} className="w-full flex items-center justify-between p-4 rounded-2xl border bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-gray-200 dark:bg-gray-800 text-gray-400">
-                                                                <IconPackage size={14} />
-                                                            </div>
-                                                            <span className="font-bold text-gray-900 dark:text-white text-xs">{p?.name || 'Loading...'}</span>
-                                                        </div>
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="sm" 
-                                                            onClick={() => addProductItem(p)}
-                                                            className="text-primary hover:bg-primary/5 h-8 font-bold text-[10px]"
-                                                        >
-                                                            ADD SEPARATELY
-                                                        </Button>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </section>
-                                )}
-                            </div>
-                        </ScrollArea>
-                        
-                        <div className="p-8 bg-gray-50 dark:bg-black/20 border-t dark:border-gray-800 shrink-0">
-                            <Button 
-                                onClick={confirmServiceItems}
-                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-14 rounded-xl shadow-xl shadow-primary/20 flex items-center justify-between px-8"
-                            >
-                                <span className="text-sm">Include Selected Components</span>
-                                <IconPlus size={20} />
-                            </Button>
+                            {/* Consumables Section is now integrated into Parts selection */}
                         </div>
-                    </div>
-                </div>
-            )}
+                    </ScrollArea>
+                    
+                    <DialogFooter className="p-8 bg-gray-50/50 dark:bg-gray-900/50 border-t dark:border-gray-800 shrink-0">
+                        <Button 
+                            onClick={confirmServiceItems}
+                            disabled={tempSelectedParts.length === 0 || tempSelectedParts.some(id => !tempPartProductMap[id])}
+                            className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black rounded-xl shadow-xl shadow-primary/20 flex items-center justify-between px-8 group transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
+                        >
+                            <div className="flex flex-col items-start gap-0.5">
+                                <span className="text-sm tracking-tight uppercase">Include Selected Components</span>
+                                <span className="text-[8px] font-bold text-white/60 tracking-widest leading-none uppercase">
+                                    {tempSelectedParts.some(id => !tempPartProductMap[id]) 
+                                        ? 'Selection is required for all parts' 
+                                        : 'Update current cart session'}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-[1px] h-6 bg-white/20" />
+                                <IconPlus size={20} className="transition-transform duration-500" stroke={3} />
+                            </div>
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Add Vehicle Dialog */}
             <Dialog open={showAddVehicle} onOpenChange={setShowAddVehicle}>

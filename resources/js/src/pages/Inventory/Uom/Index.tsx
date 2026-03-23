@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { ScrollArea } from '../../../components/ui/scroll-area';
@@ -15,8 +15,11 @@ import { Input } from '../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { IconScale } from '@tabler/icons-react';
 import { useInventoryUoms, useCreateUom, useUpdateUom, useDeleteUom } from '@/hooks/useInventoryData';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const UomIndex = () => {
+    const dispatch = useDispatch();
     const { data: uoms = [], isLoading: loading, refetch: refetchUoms } = useInventoryUoms();
     const createUomMutation = useCreateUom();
     const updateUomMutation = useUpdateUom();
@@ -42,6 +45,8 @@ const UomIndex = () => {
         name: '',
         is_active: '1',
     };
+
+
 
     const [formData, setFormData] = useState(initialFormState);
 
@@ -122,6 +127,10 @@ const UomIndex = () => {
 
     const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
     const paginated = filteredAndSorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Units of Measure'));
+    }, [dispatch]);
 
     return (
         <div>

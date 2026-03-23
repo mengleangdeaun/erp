@@ -11,9 +11,12 @@ import ActionButtons from '@/components/ui/ActionButtons';
 import { Badge } from '@/components/ui/badge';
 import TableSkeleton from '@/components/ui/TableSkeleton';
 import DeleteModal from '@/components/DeleteModal';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 
 const VehicleBrandIndex: React.FC = () => {
+    const dispatch = useDispatch();
     const { t } = useTranslation();
     const [brands, setBrands] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -29,6 +32,10 @@ const VehicleBrandIndex: React.FC = () => {
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Vehicle Brands'));
+    }, [dispatch]);
 
     const fetchBrands = async () => {
         setLoading(true);
@@ -148,9 +155,9 @@ const VehicleBrandIndex: React.FC = () => {
                                         </td>
                                         <td>
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors duration-200 overflow-hidden">
+                                                <div className="w-12 h-12 rounded-lg bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors duration-200 overflow-hidden">
                                                     {brand.image ? (
-                                                        <img src={brand.image} className="w-full h-full object-contain p-1" alt={brand.name} />
+                                                        <img src={brand.image} className="w-full h-full object-contain p-0" alt={brand.name} />
                                                     ) : (
                                                         <span className="font-bold text-xs">{brand.name.charAt(0)}</span>
                                                     )}

@@ -15,8 +15,11 @@ import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { IconBuildingWarehouse, IconLink } from '@tabler/icons-react';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const LocationIndex = () => {
+    const dispatch = useDispatch();
     const [locations, setLocations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -38,7 +41,7 @@ const LocationIndex = () => {
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const initialFormState = { name: '', description: '', address: '', is_active: '1' };
+    const initialFormState = { name: '', description: '', address: '', is_active: '1', is_primary: '0' };
     const [formData, setFormData] = useState(initialFormState);
 
     const getCookie = (name: string) => {
@@ -46,6 +49,10 @@ const LocationIndex = () => {
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop()?.split(';').shift();
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle('Locations'));
+    }, [dispatch]);
 
     const fetchLocations = () => {
         setLoading(true);
@@ -74,7 +81,13 @@ const LocationIndex = () => {
 
     const handleEdit = (loc: any) => {
         setEditingLocation(loc);
-        setFormData({ name: loc.name, description: loc.description || '', address: loc.address || '', is_active: loc.is_active ? '1' : '0' });
+        setFormData({ 
+            name: loc.name, 
+            description: loc.description || '', 
+            address: loc.address || '', 
+            is_active: loc.is_active ? '1' : '0',
+            is_primary: loc.is_primary ? '1' : '0'
+        });
         setModalOpen(true);
     };
 
@@ -101,7 +114,11 @@ const LocationIndex = () => {
             await fetch('/sanctum/csrf-cookie');
             const response = await fetch(url, {
                 method, headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' }, credentials: 'include',
-                body: JSON.stringify({ ...formData, is_active: formData.is_active === '1' }),
+                body: JSON.stringify({ 
+                    ...formData, 
+                    is_active: formData.is_active === '1',
+                    is_primary: formData.is_primary === '1'
+                }),
             });
             if (response.ok) { toast.success(`Location ${editingLocation ? 'updated' : 'created'}`); setModalOpen(false); fetchLocations(); } else {
                 const data = await response.json(); toast.error(data.message || 'Failed to save location');
@@ -194,7 +211,16 @@ const LocationIndex = () => {
                         <tbody>
                             {paginated.map((row: any) => (
                                 <tr key={row.id}>
-                                    <td className="whitespace-nowrap font-medium">{row.name}</td>
+                                    <td className="whitespace-nowrap font-medium">
+                                        <div className="flex items-center gap-2">
+                                            {row.name}
+                                            {row.is_primary && (
+                                                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] px-1.5 h-4 uppercase font-bold tracking-wider">
+                                                    Primary
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </td>
                                     <td className="text-gray-500 max-w-xs truncate">{row.address || '-'}</td>
                                     <td><Badge 
                                         size="sm"
@@ -227,6 +253,21 @@ const LocationIndex = () => {
                                 <div className="space-y-1"><label className="text-sm font-medium">Description</label><Textarea name="description" value={formData.description} onChange={handleChange} /></div>
                                 <div className="space-y-1"><label className="text-sm font-medium">Spatial Address</label><Textarea name="address" value={formData.address} onChange={handleChange} /></div>
                                 <div className="space-y-1.5"><label className="text-sm font-medium">Status <span className="text-red-500">*</span></label><Select onValueChange={(value) => handleSelectChange(value, 'is_active')} value={formData.is_active}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">Active</SelectItem><SelectItem value="0">Inactive</SelectItem></SelectContent></Select></div>
+                                <div className="space-y-1.5 pt-2">
+                                    <label className="text-sm font-medium">Primary Usage</label>
+                                    <Select onValueChange={(value) => handleSelectChange(value, 'is_primary')} value={formData.is_primary}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="1">Set as Primary (Default for Sales)</SelectItem>
+                                            <SelectItem value="0">Secondary Location</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-[10px] text-gray-500 mt-1 italic">
+                                        Sales will automatically deduct stock from the primary location of each branch.
+                                    </p>
+                                </div>
                             </div>
                         </form>
                     </ScrollArea>

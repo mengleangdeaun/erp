@@ -45,7 +45,10 @@ interface CheckoutDialogProps {
     updateDeposit: (idx: number, changes: any) => void;
     receiptFile: File | null;
     setReceiptFile: (file: File | null) => void;
+    invoiceImageFile: File | null;
+    setInvoiceImageFile: (file: File | null) => void;
     loadingVehicles?: boolean;
+    onEditPackage: (serviceId: number) => void;
 }
 
 const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
@@ -69,7 +72,10 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
     updateDeposit,
     receiptFile,
     setReceiptFile,
-    loadingVehicles = false
+    invoiceImageFile,
+    setInvoiceImageFile,
+    loadingVehicles = false,
+    onEditPackage
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     
@@ -82,14 +88,14 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
             <DialogContent className="sm:max-w-[1240px] w-[98vw] max-h-[98vh] p-0 overflow-hidden border-none rounded-2xl shadow-2xl [&>button]:hidden">
                 <div className="bg-white dark:bg-zinc-950 flex flex-col h-full lg:h-[750px] transition-all">
                     {/* Header */}
-                    <div className="px-8 py-4 border-b dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-black/40 backdrop-blur-sm shrink-0">
+                    <div className="p-6 border-b dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-black/40 backdrop-blur-sm shrink-0">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
                                 <IconReceipt2 size={24} stroke={2.5} />
                             </div>
                             <div>
                                 <h1 className="text-xl font-black text-zinc-900 dark:text-white tracking-tight leading-none">Checkout Terminal</h1>
-                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em] mt-1 opacity-70">Sales Order Settlement</p>
+                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mt-1 opacity-70">Sales Order Settlement</p>
                             </div>
                         </div>
                         <Button 
@@ -215,7 +221,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                         {/* Column 2: Basket Review */}
                         <div className="flex-1 p-6 flex flex-col border-r dark:border-zinc-800 bg-white dark:bg-zinc-950 min-w-0">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-[0.2em]">Order Review</h3>
+                                <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Order Review</h3>
                                 <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-[9px] font-black tracking-tight">{form.items.length} ITEMS</Badge>
                             </div>
 
@@ -231,25 +237,42 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                                         {item.service_id ? <IconTools size={14} /> : <IconPackage size={14} />}
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="font-bold text-zinc-900 dark:text-white text-[10px] truncate w-full tracking-tight">{s ? s.name : p ? p.name : 'Unknown'}</p>
+                                                        <p className="font-bold text-zinc-900 dark:text-white text-[10px] truncate w-full tracking-tight">
+                                                            {(() => {
+                                                                const part = s?.parts?.find((px: any) => px.id === item.job_part_id);
+                                                                if (part) return `${part.name}: ${p?.name || 'No Product'}`;
+                                                                return s ? s.name : p ? p.name : 'Unknown';
+                                                            })()}
+                                                        </p>
                                                         <div className="flex items-center gap-2 mt-0.5">
                                                             <div className="flex items-center bg-white dark:bg-black/40 rounded-md border dark:border-zinc-800 scale-90 origin-left">
                                                                 <button onClick={() => updateItem(idx, { qty: Math.max(1, item.qty - 1) })} className="w-6 h-6 flex items-center justify-center text-zinc-400">-</button>
                                                                 <span className="w-7 text-center text-[10px] font-black">{item.qty}</span>
                                                                 <button onClick={() => updateItem(idx, { qty: item.qty + 1 })} className="w-6 h-6 flex items-center justify-center text-zinc-400">+</button>
                                                             </div>
-                                                            <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-0.5">@ ${item.unit_price.toFixed(2)}</span>
+                                                            <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest leading-none mt-0.5"> ${item.unit_price.toFixed(2)}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-black text-zinc-900 dark:text-white text-xs tracking-tight">${((item.qty * item.unit_price) - item.discount).toFixed(2)}</span>
-                                                    <button 
-                                                        onClick={() => removeItem(idx)}
-                                                        className="p-1.5 text-zinc-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                                    >
-                                                        <IconTrash size={14} />
-                                                    </button>
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        {item.service_id && (
+                                                            <button 
+                                                                onClick={() => onEditPackage(item.service_id)}
+                                                                className="p-1.5 text-primary hover:bg-primary/5 dark:hover:bg-primary/10 rounded-lg transition-all"
+                                                                title="Edit Package Configuration"
+                                                            >
+                                                                <IconTools size={14} />
+                                                            </button>
+                                                        )}
+                                                        <button 
+                                                            onClick={() => removeItem(idx)}
+                                                            className="p-1.5 text-zinc-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all"
+                                                        >
+                                                            <IconTrash size={14} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -278,7 +301,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                         </div>
 
                         {/* Column 3: Assets & Finalize (Fixed Bottom) */}
-                        <div className="w-full lg:w-[380px] flex flex-col bg-zinc-50/30 dark:bg-black/10 overflow-hidden shrink-0">
+                        <div className="w-full lg:w-[420px] flex flex-col bg-zinc-50/30 dark:bg-black/10 overflow-hidden shrink-0">
                             <ScrollArea className="flex-1">
                                 <div className="space-y-6 p-6">
                                     <section className="space-y-3">
@@ -308,25 +331,64 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                                         <IconX size={10} stroke={4} />
                                                     </button>
                                                     <div className="flex gap-2">
-                                                        <Input 
-                                                            type="number" 
-                                                            value={dep.amount}
-                                                            onChange={(e) => updateDeposit(idx, { amount: parseFloat(e.target.value) || 0 })}
-                                                            className="h-9 w-24 text-xs font-bold rounded-md border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20"
-                                                        />
-                                                        <Select 
-                                                            value={dep.payment_account_id?.toString()} 
-                                                            onValueChange={(val) => updateDeposit(idx, { payment_account_id: parseInt(val) })}
-                                                        >
-                                                            <SelectTrigger className="h-9 flex-1 text-[10px] font-bold border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20">
-                                                                <SelectValue placeholder="Account..." />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {paymentAccounts.map(acc => (
-                                                                    <SelectItem key={acc.id} value={acc.id.toString()}>{acc.name}</SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        <div className="flex flex-col gap-2">
+                                                            <div className="flex gap-2">
+                                                                <Input 
+                                                                    type="number" 
+                                                                    value={dep.amount}
+                                                                    onChange={(e) => updateDeposit(idx, { amount: parseFloat(e.target.value) || 0 })}
+                                                                    className="h-9 w-24 text-xs font-bold rounded-md border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20"
+                                                                />
+                                                                <Select 
+                                                                    value={dep.payment_account_id?.toString()} 
+                                                                    onValueChange={(val) => updateDeposit(idx, { payment_account_id: parseInt(val) })}
+                                                                >
+                                                                    <SelectTrigger className="h-9 flex-1 text-[10px] font-bold border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20">
+                                                                        <SelectValue placeholder="Account..." />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                            {paymentAccounts.map(acc => (
+                                                                                <SelectItem key={acc.id} value={acc.id.toString()} className="font-bold">
+                                                                                    {acc.name}{acc.account_no ? ` - ${acc.account_no}` : ''}
+                                                                                </SelectItem>
+                                                                            ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                                
+                                                                <div className="relative">
+                                                                    <input 
+                                                                        type="file" 
+                                                                        id={`dep-receipt-${idx}`}
+                                                                        className="hidden"
+                                                                        onChange={(e) => updateDeposit(idx, { receipt: e.target.files?.[0] || null })}
+                                                                    />
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="sm" 
+                                                                        type="button"
+                                                                        onClick={() => document.getElementById(`dep-receipt-${idx}`)?.click()}
+                                                                        className={`h-9 w-9 p-0 rounded-md border border-dashed transition-all ${dep.receipt ? 'bg-primary/10 border-primary text-primary' : 'border-zinc-200 dark:border-zinc-800 text-zinc-400'}`}
+                                                                    >
+                                                                        {dep.receipt ? <IconPhoto size={14} /> : <IconUpload size={14} />}
+                                                                    </Button>
+                                                                    {dep.receipt && (
+                                                                        <button 
+                                                                            type="button"
+                                                                            onClick={() => updateDeposit(idx, { receipt: null })}
+                                                                            className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-sm"
+                                                                        >
+                                                                            <IconX size={8} stroke={4} />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {dep.receipt && (
+                                                                <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-zinc-50 dark:bg-black/40 border border-zinc-100 dark:border-zinc-800">
+                                                                    <IconPhoto size={10} className="text-primary" />
+                                                                    <span className="text-[8px] font-bold text-zinc-400 truncate max-w-[150px]">{dep.receipt.name}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -335,11 +397,11 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
 
                                     <section className="space-y-3 mb-4">
                                         <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest flex items-center gap-2">
-                                            <IconPhoto size={14} className="text-primary" /> Receipt Image
+                                            <IconPhoto size={14} className="text-primary" /> Invoice Image
                                         </h3>
                                         
                                         <div className="space-y-2">
-                                            {!receiptFile ? (
+                                            {!invoiceImageFile ? (
                                                 <div 
                                                     onClick={() => fileInputRef.current?.click()}
                                                     className="group cursor-pointer border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg p-6 flex flex-col items-center justify-center bg-white dark:bg-black/40 hover:border-primary/50 transition-all duration-300"
@@ -347,18 +409,18 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                                     <div className="w-10 h-10 rounded-lg bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:scale-110 transition-all">
                                                         <IconUpload size={20} />
                                                     </div>
-                                                    <span className="mt-3 text-[10px] font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Capture Receipt</span>
+                                                    <span className="mt-3 text-[10px] font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Capture Invoice</span>
                                                 </div>
                                             ) : (
                                                 <div className="relative aspect-vertical rounded-lg border border-zinc-100 dark:border-zinc-800 overflow-hidden bg-black/5 group/img">
-                                                    <img src={URL.createObjectURL(receiptFile)} alt="Receipt" className="w-full h-full object-cover" />
+                                                    <img src={URL.createObjectURL(invoiceImageFile)} alt="Invoice" className="w-full h-full object-cover" />
                                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                                         <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()} className="h-7 text-[9px] font-bold">REPLACE</Button>
-                                                        <Button size="sm" variant="destructive" onClick={() => setReceiptFile(null)} className="h-7 text-[9px] font-bold">REMOVE</Button>
+                                                        <Button size="sm" variant="destructive" onClick={() => setInvoiceImageFile(null)} className="h-7 text-[9px] font-bold">REMOVE</Button>
                                                     </div>
                                                 </div>
                                             )}
-                                            <input type="file" ref={fileInputRef} onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} className="hidden" />
+                                            <input type="file" ref={fileInputRef} onChange={(e) => setInvoiceImageFile(e.target.files?.[0] || null)} className="hidden" />
                                         </div>
 
                                         <Textarea 
@@ -374,7 +436,11 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                             {/* Fixed Bottom Section */}
                             <div className="p-6 bg-zinc-50/80 dark:bg-black backdrop-blur-md border-t dark:border-zinc-800 shrink-0">
                                 <div className="p-3 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-black space-y-3 shadow-2xl mb-4 relative overflow-hidden group">
-                                    <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest opacity-40">
+                                    <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest opacity-60">
+                                        <span>Taxable Amount</span>
+                                        <span className="font-bold">${form.taxable_amount.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest opacity-40 border-t border-white/10 dark:border-black/10 pt-2 mt-2">
                                         <span>Terminal Net Total</span>
                                         {manualGrandTotal !== null && <Badge className="bg-primary text-white h-4 text-[7px] border-0">OVERRIDE</Badge>}
                                     </div>

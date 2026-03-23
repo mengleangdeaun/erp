@@ -15,8 +15,11 @@ import { Badge } from '../../../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { IconTags } from '@tabler/icons-react';
 import { useInventoryTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useInventoryData';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const TagIndex = () => {
+    const dispatch = useDispatch();
     const { data: tags = [], isLoading: loading, refetch: refetchTags } = useInventoryTags();
     const createTagMutation = useCreateTag();
     const updateTagMutation = useUpdateTag();
@@ -131,6 +134,10 @@ const TagIndex = () => {
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
+
+    useEffect(() => {
+        dispatch(setPageTitle('Tags'));
+    }, [dispatch]);
 
     useEffect(() => {
         setCurrentPage(1);

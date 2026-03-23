@@ -66,6 +66,22 @@ const fetchBranches = async () => {
     return Array.isArray(data) ? data : (data.data || []);
 };
 
+// Attendance Employee Config
+const fetchEmployeeConfigs = async () => {
+    const { data } = await axios.get('/api/attendance/employee-config');
+    return Array.isArray(data) ? data : (data.data || []);
+};
+
+const fetchWorkingShifts = async () => {
+    const { data } = await axios.get('/api/attendance/working-shifts');
+    return Array.isArray(data) ? data : (data.data || []);
+};
+
+const fetchAttendancePolicies = async () => {
+    const { data } = await axios.get('/api/attendance/attendance-policies');
+    return Array.isArray(data) ? data : (data.data || []);
+};
+
 // --- Hooks ---
 
 // Attendance
@@ -162,6 +178,28 @@ export const useHRBranches = () => {
     return useQuery({
         queryKey: ['hr-branches'],
         queryFn: fetchBranches,
+    });
+};
+
+// Attendance Employee Config
+export const useHREmployeeConfigs = () => {
+    return useQuery({
+        queryKey: ['attendance-employee-configs'],
+        queryFn: fetchEmployeeConfigs,
+    });
+};
+
+export const useHRAttendanceWorkingShifts = () => {
+    return useQuery({
+        queryKey: ['attendance-working-shifts'],
+        queryFn: fetchWorkingShifts,
+    });
+};
+
+export const useHRAttendancePolicies = () => {
+    return useQuery({
+        queryKey: ['attendance-policies'],
+        queryFn: fetchAttendancePolicies,
     });
 };
 
@@ -286,13 +324,24 @@ export const useDeleteLeaveRecord = () => {
 };
 
 // Leave Balances
-export const useHROpsLeaveBalance = (isEditing: boolean) => {
+export const useHRCreateLeaveBalance = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (payload: any) => {
+            const { data } = await axios.post('/api/hr/leave-balances', payload);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['hr-leave-balances'] });
+        },
+    });
+};
+
+export const useHRUpdateLeaveBalance = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, ...payload }: any) => {
-            const url = isEditing ? `/api/hr/leave-balances/${id}` : '/api/hr/leave-balances';
-            const method = isEditing ? 'put' : 'post';
-            const { data } = await axios[method](url, payload);
+            const { data } = await axios.put(`/api/hr/leave-balances/${id}`, payload);
             return data;
         },
         onSuccess: () => {
@@ -315,17 +364,51 @@ export const useHRDeleteLeaveAllocation = () => {
     });
 };
 
-export const useHROpsLeaveAllocation = (isEditing: boolean) => {
+export const useHRCreateLeaveAllocation = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ id, ...payload }: any) => {
-            const url = isEditing ? `/api/hr/leave-allocations/${id}` : '/api/hr/leave-allocations';
-            const method = isEditing ? 'put' : 'post';
-            const { data } = await axios[method](url, payload);
+        mutationFn: async (payload: any) => {
+            const { data } = await axios.post('/api/hr/leave-allocations', payload);
             return data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['hr-leave-allocations'] });
+        },
+    });
+};
+
+export const useHRUpdateLeaveAllocation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, ...payload }: any) => {
+            const { data } = await axios.put(`/api/hr/leave-allocations/${id}`, payload);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['hr-leave-allocations'] });
+        },
+    });
+};
+
+// Attendance Employee Config Mutations
+export const useHRAttendanceUpdateEmployeeConfig = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, ...payload }: { id: number; [key: string]: any }) => {
+            const { data } = await axios.put(`/api/attendance/employee-config/${id}`, payload);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['attendance-employee-configs'] });
+        },
+    });
+};
+
+export const useHRAttendanceEmployeeQr = () => {
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const { data } = await axios.get(`/api/attendance/employee-qr/${id}`);
+            return data;
         },
     });
 };

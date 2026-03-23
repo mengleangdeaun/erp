@@ -15,8 +15,11 @@ import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import { ScrollArea } from '../../../components/ui/scroll-area';
 import { IconShieldCheck } from '@tabler/icons-react';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const AttendancePolicyIndex = () => {
+    const dispatch = useDispatch();
     const [policies, setPolicies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -49,6 +52,10 @@ const AttendancePolicyIndex = () => {
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop()?.split(';').shift();
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle('Attendance Policies'));
+    }, [dispatch]);
 
     const fetchPolicies = () => {
         setLoading(true);

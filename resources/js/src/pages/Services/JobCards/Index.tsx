@@ -9,8 +9,11 @@ import EmptyState from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import JobCardDialog from './JobCardDialog';
 import { format } from 'date-fns';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const JobCardIndex: React.FC = () => {
+    const dispatch = useDispatch();
     const { t } = useTranslation();
     const [jobs, setJobs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -21,6 +24,10 @@ const JobCardIndex: React.FC = () => {
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Workshop Jobs (Job Cards)'));
+    }, [dispatch]);
 
     const fetchJobs = async () => {
         setLoading(true);

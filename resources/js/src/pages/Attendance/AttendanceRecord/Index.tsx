@@ -14,8 +14,11 @@ import { useAttendanceRecords, useHRFilterEmployees } from '@/hooks/useHRData';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const AttendanceRecordIndex = () => {
+    const dispatch = useDispatch();
     const queryClient = useQueryClient();
     
     // Filter & Sort & Pagination state
@@ -104,6 +107,10 @@ const AttendanceRecordIndex = () => {
     useEffect(() => {
         setCurrentPage(1);
     }, [search, dateFilter, employeeFilter]);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Attendance Records'));
+    }, [dispatch]);
 
     const employeeOptions = useMemo(() => 
         employees.map((emp: any) => ({

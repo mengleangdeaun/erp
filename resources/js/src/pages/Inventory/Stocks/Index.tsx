@@ -11,8 +11,11 @@ import SortableHeader from '../../../components/ui/SortableHeader';
 import { Input } from '../../../components/ui/input';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { IconPackages } from '@tabler/icons-react';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const StockIndex = () => {
+    const dispatch = useDispatch();
     const [stocks, setStocks] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [locations, setLocations] = useState<any[]>([]);
@@ -40,6 +43,10 @@ const StockIndex = () => {
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop()?.split(';').shift();
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle('Stocks'));
+    }, [dispatch]);
 
     const fetchData = async () => {
         setLoading(true);

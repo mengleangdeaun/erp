@@ -44,6 +44,31 @@ const fetchServices = async () => {
     return Array.isArray(data) ? data : (data.data || []);
 };
 
+const fetchSuppliers = async () => {
+    const { data } = await axios.get('/api/inventory/suppliers');
+    return Array.isArray(data) ? data : (data.data || []);
+};
+
+const fetchLocations = async () => {
+    const { data } = await axios.get('/api/inventory/locations');
+    return Array.isArray(data) ? data : (data.data || []);
+};
+
+const fetchPurchaseOrders = async (params: any = {}) => {
+    const { data } = await axios.get('/api/inventory/purchase-orders', { params });
+    return data;
+};
+
+const fetchPurchaseOrderPendingItems = async (poId: number | string) => {
+    const { data } = await axios.get(`/api/inventory/purchase-orders/${poId}/pending-items`);
+    return data;
+};
+
+const fetchPurchaseReceives = async (params: any = {}) => {
+    const { data } = await axios.get('/api/inventory/purchase-receives', { params });
+    return data;
+};
+
 // --- Custom Hooks for Fetching ---
 
 export const useInventoryProducts = () => {
@@ -101,6 +126,42 @@ export const useInventoryServices = () => {
     return useQuery({
         queryKey: ['inventory-services'],
         queryFn: fetchServices,
+    });
+};
+
+export const useInventorySuppliers = () => {
+    return useQuery({
+        queryKey: ['inventory-suppliers'],
+        queryFn: fetchSuppliers,
+    });
+};
+
+export const useInventoryLocations = () => {
+    return useQuery({
+        queryKey: ['inventory-locations'],
+        queryFn: fetchLocations,
+    });
+};
+
+export const usePurchaseOrders = (params: any = {}) => {
+    return useQuery({
+        queryKey: ['purchase-orders', params],
+        queryFn: () => fetchPurchaseOrders(params),
+    });
+};
+
+export const usePurchaseOrderPendingItems = (poId: number | string | null) => {
+    return useQuery({
+        queryKey: ['purchase-order-pending-items', poId],
+        queryFn: () => poId ? fetchPurchaseOrderPendingItems(poId) : Promise.resolve([]),
+        enabled: !!poId,
+    });
+};
+
+export const usePurchaseReceives = (params: any = {}) => {
+    return useQuery({
+        queryKey: ['purchase-receives', params],
+        queryFn: () => fetchPurchaseReceives(params),
     });
 };
 
@@ -354,6 +415,79 @@ export const useSyncBranchServices = () => {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to update branch services');
+        },
+    });
+};
+
+// --- Purchase Order Mutations ---
+
+export const useCreatePurchaseOrder = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (payload: any) => {
+            const { data } = await axios.post('/api/inventory/purchase-orders', payload);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+            toast.success('Purchase Order created successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to create Purchase Order');
+        },
+    });
+};
+
+export const useUpdatePurchaseOrder = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, payload }: { id: number; payload: any }) => {
+            const { data } = await axios.put(`/api/inventory/purchase-orders/${id}`, payload);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+            toast.success('Purchase Order updated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to update Purchase Order');
+        },
+    });
+};
+
+export const useDeletePurchaseOrder = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const { data } = await axios.delete(`/api/inventory/purchase-orders/${id}`);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+            toast.success('Purchase Order deleted successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to delete Purchase Order');
+        },
+    });
+};
+
+// --- Purchase Receive Mutation ---
+
+export const useCreatePurchaseReceive = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (payload: any) => {
+            const { data } = await axios.post('/api/inventory/purchase-receives', payload);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['purchase-receives'] });
+            queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+            toast.success('Items received successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to receive items');
         },
     });
 };

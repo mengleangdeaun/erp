@@ -18,8 +18,12 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { TimePicker } from '../../../components/ui/time-picker';
 import { ScrollArea } from '../../../components/ui/scroll-area';
 import { IconClock, IconCalendarPlus, IconCoffee, IconRepeat, IconSeparator, IconTransferVertical } from '@tabler/icons-react';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+
 
 const WorkingShiftIndex = () => {
+    const dispatch = useDispatch();
     const [workingShifts, setWorkingShifts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -59,6 +63,10 @@ const WorkingShiftIndex = () => {
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop()?.split(';').shift();
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle('Working Shifts'));
+    }, [dispatch]);
 
     const fetchWorkingShifts = () => {
         setLoading(true);

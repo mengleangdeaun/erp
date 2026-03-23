@@ -8,11 +8,16 @@ import FilterBar from '@/components/ui/FilterBar';
 import Pagination from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
 import ActionButtons from '@/components/ui/ActionButtons';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useCRMCustomerTypes, useCRMCustomerTypeDelete } from '@/hooks/useCRMData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 const CustomerTypeIndex = () => {
+    const dispatch = useDispatch();
+    const queryClient = useQueryClient();
     const { t } = useTranslation();
-    const [types, setTypes] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [selectedType, setSelectedType] = useState<any>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     
@@ -21,22 +26,18 @@ const CustomerTypeIndex = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    const fetchTypes = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/crm/customer-types');
-            const data = await response.json();
-            setTypes(data);
-        } catch (error) {
-            toast.error('Failed to load customer types');
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Queries
+    const { data: types = [], isLoading: typesLoading } = useCRMCustomerTypes();
+
+    // Mutations
+    const deleteMutation = useCRMCustomerTypeDelete();
+
+    // Loading State
+    const loading = useDelayedLoading(typesLoading);
 
     useEffect(() => {
-        fetchTypes();
-    }, []);
+        dispatch(setPageTitle('Customer Types'));
+    }, [dispatch]);
 
     const handleEdit = (type: any) => {
         setSelectedType(type);
@@ -45,32 +46,18 @@ const CustomerTypeIndex = () => {
 
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this customer type?')) return;
-
         try {
-            const response = await fetch(`/api/crm/customer-types/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
-                },
-            });
-
-            if (response.ok) {
-                toast.success('Customer type deleted successfully');
-                fetchTypes();
-            } else {
-                const data = await response.json();
-                toast.error(data.message || 'Failed to delete type');
-            }
-        } catch (error) {
-            toast.error('Failed to delete customer type');
+            await deleteMutation.mutateAsync(id);
+            toast.success('Customer type deleted successfully');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to delete customer type');
         }
     };
 
     // Derived data
     const filteredTypes = useMemo(() => {
         if (!search) return types;
-        return types.filter(t => 
+        return types.filter((t: any) => 
             t.name.toLowerCase().includes(search.toLowerCase()) || 
             (t.description || '').toLowerCase().includes(search.toLowerCase())
         );
@@ -93,7 +80,7 @@ const CustomerTypeIndex = () => {
                     setSearch={setSearch}
                     onAdd={() => { setSelectedType(null); setDialogOpen(true); }}
                     addLabel="New Type"
-                    onRefresh={fetchTypes}
+                    onRefresh={() => queryClient.invalidateQueries({ queryKey: ['crm_customer_types'] })}
                     itemsPerPage={itemsPerPage}
                     setItemsPerPage={setItemsPerPage}
                 />
@@ -147,7 +134,7 @@ const CustomerTypeIndex = () => {
                 ) : (
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {paginatedTypes.map((type) => (
+                            {paginatedTypes.map((type: any) => (
 // Inside the map function, replace the existing card with this updated version:
 
 <div 
@@ -175,7 +162,7 @@ const CustomerTypeIndex = () => {
             </div>
         </div>
         <ActionButtons 
-            onEdit={() => handleEdit(type)}
+            onEdit={() => handleEdit(type as any)}
             onDelete={!type.is_default ? () => handleDelete(type.id) : undefined}
             skipDeleteConfirm
             className="opacity-70 group-hover:opacity-100 transition-opacity"
@@ -232,7 +219,7 @@ const CustomerTypeIndex = () => {
                 isOpen={dialogOpen} 
                 setIsOpen={setDialogOpen} 
                 type={selectedType} 
-                onSave={fetchTypes} 
+                onSave={() => queryClient.invalidateQueries({ queryKey: ['crm_customer_types'] })} 
             />
         </div>
     );

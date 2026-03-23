@@ -10,21 +10,26 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = InventoryProduct::with(['category', 'baseUom', 'purchaseUom', 'tags', 'stocks.location'])
+        $query = InventoryProduct::query()
+            ->with(['category', 'baseUom', 'purchaseUom', 'tags', 'stocks.location'])
             ->where('is_active', true);
+
+        // Core fields to always include
+        $columns = ['id', 'name', 'code', 'sku', 'price', 'category_id', 'img', 'is_active'];
+        $query->select($columns);
 
         if ($request->has('branch_id')) {
             $branchId = $request->branch_id;
-            $query->whereExists(function ($query) use ($branchId) {
-                $query->select(\Illuminate\Support\Facades\DB::raw(1))
+            $query->whereExists(function ($q) use ($branchId) {
+                $q->select(\Illuminate\Support\Facades\DB::raw(1))
                     ->from('branch_inventory_product')
                     ->whereColumn('branch_inventory_product.inventory_product_id', 'inventory_products.id')
                     ->where('branch_inventory_product.branch_id', $branchId)
                     ->where('branch_inventory_product.is_active', true);
             });
 
+            // Correctly add subquery for stock
             $query->addSelect([
-                'inventory_products.*',
                 'branch_stock_qty' => \App\Models\Inventory\InventoryStock::select(\Illuminate\Support\Facades\DB::raw('SUM(quantity)'))
                     ->join('inventory_locations', 'inventory_locations.id', '=', 'inventory_stocks.location_id')
                     ->where('inventory_locations.branch_id', $branchId)
@@ -47,7 +52,7 @@ class ProductController extends Controller
         }
 
         if ($request->has('all') || $request->paginate === 'false') {
-            return response()->json($query->select(['id', 'name', 'code', 'sku', 'price', 'category_id', 'img', 'is_active'])->orderBy('name')->get());
+            return response()->json($query->orderBy('name')->get());
         }
 
         return response()->json($query->orderBy('name')->paginate($request->per_page ?? 24));

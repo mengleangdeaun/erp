@@ -11,6 +11,8 @@ import ActionButtons from '@/components/ui/ActionButtons';
 import { Badge } from '@/components/ui/badge';
 import TableSkeleton from '@/components/ui/TableSkeleton';
 import DeleteModal from '@/components/DeleteModal';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 import {
     Select,
     SelectContent,
@@ -20,6 +22,7 @@ import {
 } from "@/components/ui/select";
 
 const VehicleModelIndex: React.FC = () => {
+    const dispatch = useDispatch();
     const { t } = useTranslation();
     const [models, setModels] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -37,6 +40,10 @@ const VehicleModelIndex: React.FC = () => {
     const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Vehicle Models'));
+    }, [dispatch]);
 
     const fetchModels = async () => {
         setLoading(true);

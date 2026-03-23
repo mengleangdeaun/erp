@@ -280,4 +280,3 @@ const EmployeeIndex = () => {
 };
 
 export default EmployeeIndex;
-dex;

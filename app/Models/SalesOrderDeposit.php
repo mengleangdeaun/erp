@@ -12,10 +12,22 @@ class SalesOrderDeposit extends Model
     protected $fillable = [
         'sales_order_id',
         'amount',
-        'payment_method',
+        'payment_account_id',
+        'receipt_path',
         'deposit_date',
-        'notes'
+        'notes',
+        'created_by'
     ];
+
+    public function paymentAccount()
+    {
+        return $this->belongsTo(\App\Models\Finance\PaymentAccount::class, 'payment_account_id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
+    }
 
     public function order()
     {

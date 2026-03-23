@@ -22,12 +22,13 @@ import {
     IconUser,
     IconBrandTelegram,
     IconChartBar,
-    IconBox
+    IconBox,
+    IconCoins
 } from '@tabler/icons-react';
 import * as Popover from '@radix-ui/react-popover';
 import * as Tooltip from '@radix-ui/react-tooltip';
 
-export type ActionType = 'edit' | 'delete' | 'view' | 'qr' | 'approve' | 'reject' | 'status' | 'telegram' | 'stats' | 'receive';
+export type ActionType = 'edit' | 'delete' | 'view' | 'qr' | 'approve' | 'reject' | 'status' | 'telegram' | 'stats' | 'receive' | 'payment';
 
 interface ActionConfig {
     icon: React.ElementType;
@@ -48,6 +49,7 @@ interface ActionButtonsProps {
     onTelegram?: () => void;
     onStats?: () => void;
     onReceive?: () => void;
+    onPayment?: () => void;
 
     // Custom labels
     editLabel?: string;
@@ -60,6 +62,7 @@ interface ActionButtonsProps {
     telegramLabel?: string;
     statsLabel?: string;
     receiveLabel?: string;
+    paymentLabel?: string;
 
     // Confirmation messages
     deleteConfirmMessage?: string;
@@ -99,6 +102,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     onTelegram,
     onStats,
     onReceive,
+    onPayment,
 
     // Labels
     editLabel = "Edit",
@@ -111,6 +115,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     telegramLabel = "Edit Telegram ID",
     statsLabel = "View Statistics",
     receiveLabel = "Receive Goods",
+    paymentLabel = "Record Payment",
 
     // Confirm messages
     deleteConfirmMessage = "Are you sure you want to delete this item?",
@@ -128,7 +133,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     tooltipPlacement = 'top',
 
     // Customization
-    actionOrder = ['approve', 'reject', 'receive', 'view', 'stats', 'qr', 'status', 'telegram', 'edit', 'delete'],
+    actionOrder = ['approve', 'reject', 'receive', 'payment', 'view', 'stats', 'qr', 'status', 'telegram', 'edit', 'delete'],
     showApproveReject = true,
 
     skipDeleteConfirm = false,
@@ -198,6 +203,11 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
             icon: IconBox,
             label: receiveLabel,
             style: 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/50'
+        },
+        payment: {
+            icon: IconCoins,
+            label: paymentLabel,
+            style: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/50'
         }
     };
 
@@ -355,6 +365,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
             telegram: onTelegram,
             stats: onStats,
             receive: onReceive,
+            payment: onPayment,
             edit: onEdit,
             delete: onDelete
         };
@@ -388,6 +399,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                                 telegram: onTelegram,
                                 stats: onStats,
                                 receive: onReceive,
+                                payment: onPayment,
                                 edit: onEdit,
                                 delete: onDelete
                             }[type]}
@@ -472,6 +484,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                                         telegram: onTelegram,
                                         stats: onStats,
                                         receive: onReceive,
+                                        payment: onPayment,
                                         edit: onEdit,
                                         delete: onDelete
                                     }[type];
@@ -536,6 +549,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                             telegram: onTelegram,
                             stats: onStats,
                             receive: onReceive,
+                            payment: onPayment,
                             edit: onEdit,
                             delete: onDelete
                         }[type]}

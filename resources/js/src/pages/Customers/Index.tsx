@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { IconUser, IconPlus, IconSearch, IconFilter, IconDownload, IconDotsVertical, IconEdit, IconTrash, IconBrandTelegram, IconPhone, IconMail } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,18 +9,21 @@ import { toast } from 'sonner';
 import CustomerDialog from './CustomerDialog';
 import FilterBar from '@/components/ui/FilterBar';
 import TableSkeleton from '@/components/ui/TableSkeleton';
-import EmptyState from '@/components/ui/EmptyState';
-import Pagination from '@/components/ui/Pagination';
+import DeleteModal from '@/components/DeleteModal';
 import ActionButtons from '@/components/ui/ActionButtons';
 import { useTranslation } from 'react-i18next';
 import { useFormatDate } from '@/hooks/useFormatDate';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useCRMCustomers, useCRMCustomerTypes, useCRMDeleteCustomer } from '@/hooks/useCRMData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 const CustomerIndex = () => {
+    const dispatch = useDispatch();
+    const queryClient = useQueryClient();
     const { t } = useTranslation();
     const { formatDate, formatDateTime } = useFormatDate();
-    const [customers, setCustomers] = useState<any[]>([]);
-    const [customerTypes, setCustomerTypes] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
 
     // Pagination & Filters
     const [search, setSearch] = useState('');
@@ -28,67 +31,64 @@ const CustomerIndex = () => {
     const [typeFilter, setTypeFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
-    const [totalItems, setTotalItems] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
 
     // Dialog state
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [customerToDelete, setCustomerToDelete] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const queryParams = new URLSearchParams({
-                page: String(currentPage),
-                per_page: String(perPage),
-                search: search,
-                ...(statusFilter !== 'all' && { status: statusFilter }),
-                ...(typeFilter !== 'all' && { customer_type_id: typeFilter }),
-            });
+    // Queries
+    const { data: customersData, isLoading: customersLoading } = useCRMCustomers({
+        page: currentPage,
+        per_page: perPage,
+        search,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        customer_type_id: typeFilter !== 'all' ? typeFilter : undefined,
+    });
+    const { data: customerTypes = [] } = useCRMCustomerTypes();
 
-            const [custRes, typesRes] = await Promise.all([
-                fetch(`/api/crm/customers?${queryParams}`),
-                fetch('/api/crm/customer-types'),
-            ]);
+    const customers = customersData?.data || [];
+    const totalItems = customersData?.total || 0;
+    const totalPages = customersData?.last_page || 1;
 
-            const custData = await custRes.json();
-            const typesData = await typesRes.json();
+    // Mutations
+    const deleteMutation = useCRMDeleteCustomer();
 
-            setCustomers(custData.data);
-            setTotalItems(custData.total);
-            setTotalPages(custData.last_page);
-            setCustomerTypes(typesData);
-        } catch (error) {
-            toast.error('Failed to load customers');
-        } finally {
-            setLoading(false);
-        }
-    }, [currentPage, perPage, search, statusFilter, typeFilter]);
+    // Loading State
+    const loading = useDelayedLoading(customersLoading);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        dispatch(setPageTitle('Customers'));
+    }, [dispatch]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, statusFilter, typeFilter]);
 
     const handleEdit = (customer: any) => {
         setSelectedCustomer(customer);
         setDialogOpen(true);
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this customer?')) return;
+    const handleDelete = (id: number) => {
+        setCustomerToDelete(id);
+        setDeleteModalOpen(true);
+    };
+
+    const executeDelete = async () => {
+        if (!customerToDelete) return;
+        setIsDeleting(true);
         try {
-            const response = await fetch(`/api/crm/customers/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
-                },
-            });
-            if (response.ok) {
-                toast.success('Customer deleted successfully');
-                fetchData();
-            }
-        } catch (error) {
-            toast.error('Failed to delete customer');
+            await deleteMutation.mutateAsync(customerToDelete);
+            toast.success('Customer deleted successfully');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to delete customer');
+        } finally {
+            setIsDeleting(false);
+            setDeleteModalOpen(false);
+            setCustomerToDelete(null);
         }
     };
 
@@ -102,7 +102,7 @@ const CustomerIndex = () => {
                 setSearch={setSearch}
                 onAdd={() => { setSelectedCustomer(null); setDialogOpen(true); }}
                 addLabel="New Customer"
-                onRefresh={fetchData}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['crm_customers'] })}
                 itemsPerPage={perPage}
                 setItemsPerPage={setPerPage}
                 hasActiveFilters={statusFilter !== 'all' || typeFilter !== 'all'}
@@ -133,7 +133,7 @@ const CustomerIndex = () => {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all" className="font-medium">All Types</SelectItem>
-                            {customerTypes.map(t => (
+                            {customerTypes.map((t: any) => (
                                 <SelectItem key={t.id} value={String(t.id)} className="font-medium">{t.name}</SelectItem>
                             ))}
                         </SelectContent>
@@ -167,7 +167,7 @@ const CustomerIndex = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {customers.map((c) => (
+                                {customers.map((c: any) => (
                                     <tr key={c.id} className=" transition-colors group">
                                         <td className="px-6 py-4 font-mono text-xs text-primary font-bold">
                                             {c.customer_code}
@@ -242,7 +242,16 @@ const CustomerIndex = () => {
                 setIsOpen={setDialogOpen}
                 customer={selectedCustomer}
                 customerTypes={customerTypes}
-                onSave={fetchData}
+                onSave={() => queryClient.invalidateQueries({ queryKey: ['crm_customers'] })}
+            />
+
+            <DeleteModal 
+                isOpen={deleteModalOpen} 
+                setIsOpen={setDeleteModalOpen} 
+                onConfirm={executeDelete} 
+                isLoading={isDeleting} 
+                title="Delete Customer" 
+                message="Are you sure you want to permanently delete this customer record? This action cannot be undone." 
             />
         </div>
     );

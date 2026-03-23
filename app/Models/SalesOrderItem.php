@@ -13,6 +13,7 @@ class SalesOrderItem extends Model
         'sales_order_id',
         'itemable_id',
         'itemable_type',
+        'job_part_id',
         'item_name',
         'description',
         'quantity',

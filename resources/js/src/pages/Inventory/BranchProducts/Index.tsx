@@ -14,8 +14,11 @@ import { Badge } from '../../../components/ui/badge';
 import { useInventoryProducts, useBranches, useBranchProducts, useSyncBranchProducts } from '@/hooks/useInventoryData';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const BranchProductIndex = () => {
+    const dispatch = useDispatch();
     const { data: branches = [], isLoading: loadingBranches } = useBranches();
     const { data: products = [], isLoading: loadingProducts } = useInventoryProducts();
     const [selectedBranchId, setSelectedBranchId] = useState<string | number | null>(null);
@@ -33,6 +36,10 @@ const BranchProductIndex = () => {
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Branch Products'));
+    }, [dispatch]);
 
     // Set initial branch
     useEffect(() => {

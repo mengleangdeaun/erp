@@ -9,7 +9,7 @@ class InventoryLocation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'description', 'address', 'is_active', 'branch_id'];
+    protected $fillable = ['name', 'description', 'address', 'is_active', 'is_primary', 'branch_id'];
 
     public function branch()
     {

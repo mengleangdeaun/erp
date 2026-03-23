@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 class Customer extends Model
 {
-    use HasFactory, \App\Traits\LogsSystemActivity;
+    use HasFactory, SoftDeletes, \App\Traits\LogsSystemActivity;
 
     protected $fillable = [
         'customer_code',

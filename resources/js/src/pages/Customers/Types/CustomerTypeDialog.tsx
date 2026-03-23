@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { IconSettings, IconDeviceFloppy, IconUsersGroup } from '@tabler/icons-react';
 import { toast } from 'sonner';
+import { useCRMCustomerTypeCreate, useCRMCustomerTypeUpdate } from '@/hooks/useCRMData';
 
 interface CustomerType {
     id: number;
@@ -23,12 +24,16 @@ interface CustomerTypeDialogProps {
 }
 
 const CustomerTypeDialog = ({ isOpen, setIsOpen, type, onSave }: CustomerTypeDialogProps) => {
-    const [saving, setSaving] = useState(false);
+    const createMutation = useCRMCustomerTypeCreate();
+    const updateMutation = useCRMCustomerTypeUpdate();
+
     const [form, setForm] = useState({
         name: '',
         description: '',
         is_default: false,
     });
+
+    const saving = createMutation.isPending || updateMutation.isPending;
 
     useEffect(() => {
         if (type) {
@@ -48,33 +53,18 @@ const CustomerTypeDialog = ({ isOpen, setIsOpen, type, onSave }: CustomerTypeDia
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSaving(true);
         try {
-            const method = type ? 'PUT' : 'POST';
-            const url = type ? `/api/crm/customer-types/${type.id}` : '/api/crm/customer-types';
-            
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
-                },
-                body: JSON.stringify(form),
-            });
-
-            if (response.ok) {
-                toast.success(`Customer type ${type ? 'updated' : 'created'} successfully`);
-                onSave();
-                setIsOpen(false);
+            if (type) {
+                await updateMutation.mutateAsync({ id: type.id, data: form });
+                toast.success('Customer type updated successfully');
             } else {
-                const data = await response.json();
-                toast.error(data.message || 'Something went wrong');
+                await createMutation.mutateAsync(form);
+                toast.success('Customer type created successfully');
             }
-        } catch (error) {
-            toast.error('Failed to save customer type');
-        } finally {
-            setSaving(false);
+            onSave();
+            setIsOpen(false);
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to save customer type');
         }
     };
 

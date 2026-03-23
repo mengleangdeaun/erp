@@ -17,7 +17,6 @@ import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import {
     IconCalendarStats,
     IconSettings,
-    IconRefresh,
     IconQrcode,
     IconUser,
     IconBrandTelegram,
@@ -27,24 +26,23 @@ import {
     IconCheck,
     IconUserCog,
     IconAlertTriangle,
-
 } from '@tabler/icons-react';
 import QRCode from 'react-qr-code';
 import { toPng } from 'html-to-image';
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
-
-const getCookie = (name: string) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift();
-};
+import { 
+    useHREmployeeConfigs, 
+    useHRAttendanceWorkingShifts, 
+    useHRAttendancePolicies, 
+    useHRAttendanceUpdateEmployeeConfig, 
+    useHRAttendanceEmployeeQr 
+} from '@/hooks/useHRData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 const EmployeeConfigIndex = () => {
-    const [employees, setEmployees] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [workingShifts, setWorkingShifts] = useState<any[]>([]);
-    const [attendancePolicies, setAttendancePolicies] = useState<any[]>([]);
+    const queryClient = useQueryClient();
     const navigate = useNavigate();
 
     // Filter & Sort & Pagination state
@@ -59,62 +57,38 @@ const EmployeeConfigIndex = () => {
     // Edit Modal States
     const [activeEmployee, setActiveEmployee] = useState<any>(null);
     const [editModalType, setEditModalType] = useState<'shift' | 'policy' | 'status' | 'telegram' | null>(null);
-    const [isUpdating, setIsUpdating] = useState(false);
     const [inputValue, setInputValue] = useState('');
 
     // QR Modal State
     const [qrModalOpen, setQrModalOpen] = useState(false);
-    const [loadingQr, setLoadingQr] = useState(false);
     const [qrData, setQrData] = useState<any>(null);
     const [isCopying, setIsCopying] = useState(false);
     const [isDownloadingPng, setIsDownloadingPng] = useState(false);
     const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
     const qrRef = useRef<HTMLDivElement>(null);
 
-    const fetchEmployees = () => {
-        setLoading(true);
-        fetch('/api/attendance/employee-config', {
-            headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => {
-                setEmployees(Array.isArray(data) ? data : []);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setEmployees([]);
-                setLoading(false);
-            });
+    // TanStack Query Hooks
+    const { data: employeeConfigs = [], isLoading: loadingConfigs } = useHREmployeeConfigs();
+    const { data: workingShifts = [], isLoading: loadingShifts } = useHRAttendanceWorkingShifts();
+    const { data: attendancePolicies = [], isLoading: loadingPolicies } = useHRAttendancePolicies();
+    
+    const updateConfigMutation = useHRAttendanceUpdateEmployeeConfig();
+    const generateQrMutation = useHRAttendanceEmployeeQr();
+
+    const isUpdating = updateConfigMutation.isPending;
+    const loadingQr = generateQrMutation.isPending;
+    
+    const rawLoading = loadingConfigs || loadingShifts || loadingPolicies;
+    const loading = useDelayedLoading(rawLoading, 500);
+
+    const handleRefresh = () => {
+        queryClient.invalidateQueries({ queryKey: ['attendance-employee-configs'] });
+        queryClient.invalidateQueries({ queryKey: ['attendance-working-shifts'] });
+        queryClient.invalidateQueries({ queryKey: ['attendance-policies'] });
     };
-
-    const fetchDropdowns = () => {
-        // Fetch Working Shifts
-        fetch('/api/attendance/working-shifts', {
-            headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => setWorkingShifts(Array.isArray(data) ? data : []));
-
-        // Fetch Attendance Policies
-        fetch('/api/attendance/attendance-policies', {
-            headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-            credentials: 'include',
-        })
-            .then(res => res.json())
-            .then(data => setAttendancePolicies(Array.isArray(data) ? data : []));
-    };
-
-    useEffect(() => {
-        fetchEmployees();
-        fetchDropdowns();
-    }, []);
 
     const handleUpdate = async () => {
         if (!activeEmployee || !editModalType) return;
-        setIsUpdating(true);
 
         const payload: any = {};
         if (editModalType === 'shift') payload.working_shift_id = inputValue;
@@ -122,53 +96,30 @@ const EmployeeConfigIndex = () => {
         if (editModalType === 'status') payload.status = inputValue;
         if (editModalType === 'telegram') payload.telegram_user_id = inputValue;
 
-        try {
-            const res = await fetch(`/api/attendance/employee-config/${activeEmployee.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-                },
-                body: JSON.stringify(payload),
-                credentials: 'include',
-            });
-            const data = await res.json();
-            if (res.ok) {
+        updateConfigMutation.mutate({ id: activeEmployee.id, ...payload }, {
+            onSuccess: () => {
                 toast.success('Updated successfully');
-                setEmployees(prev => prev.map(emp => emp.id === data.id ? data : emp));
                 setEditModalType(null);
-            } else {
-                toast.error(data.message || 'Update failed');
+            },
+            onError: (err: any) => {
+                toast.error(err.response?.data?.message || 'Update failed');
             }
-        } catch (e) {
-            toast.error('Network Error');
-        } finally {
-            setIsUpdating(false);
-        }
+        });
     };
 
     const handleGenerateQr = async (employeeId: number) => {
         setQrModalOpen(true);
-        setLoadingQr(true);
         setQrData(null);
-        try {
-            const res = await fetch(`/api/attendance/employee-qr/${employeeId}`, {
-                headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-                credentials: 'include',
-            });
-            const data = await res.json();
-            if (res.ok) setQrData(data);
-            else {
-                toast.error(data.message || 'Error generating QR');
+        
+        generateQrMutation.mutate(employeeId, {
+            onSuccess: (data) => {
+                setQrData(data);
+            },
+            onError: (err: any) => {
+                toast.error(err.response?.data?.message || 'Error generating QR');
                 setQrModalOpen(false);
             }
-        } catch (e) {
-            toast.error('Network Error');
-            setQrModalOpen(false);
-        } finally {
-            setLoadingQr(false);
-        }
+        });
     };
 
     const handleCopyLink = async () => {
@@ -189,10 +140,9 @@ const EmployeeConfigIndex = () => {
 
         setIsDownloadingPng(true);
         try {
-            // First, ensure all images/fonts are loaded (though here it's just SVG)
             const dataUrl = await toPng(qrRef.current, {
                 quality: 1.0,
-                pixelRatio: 4, // Higher resolution for "HD"
+                pixelRatio: 4,
                 backgroundColor: '#ffffff',
                 cacheBust: true,
                 width: qrRef.current.offsetWidth,
@@ -200,7 +150,7 @@ const EmployeeConfigIndex = () => {
                 style: {
                     transform: 'none',
                     margin: '0',
-                    padding: '24px', // Matches the p-6 (24px) padding
+                    padding: '24px',
                     left: '0',
                     top: '0',
                 }
@@ -254,7 +204,7 @@ const EmployeeConfigIndex = () => {
 
             // Employee Name
             pdf.setFontSize(18);
-            pdf.setTextColor(79, 70, 229); // Indigo-600 color
+            pdf.setTextColor(79, 70, 229);
             pdf.text(qrData.employee, pdfWidth / 2, 52, { align: 'center' });
 
             // QR Code
@@ -297,15 +247,8 @@ const EmployeeConfigIndex = () => {
         else if (type === 'telegram') setInputValue(employee.telegram_user_id || '');
     };
 
-    const statusColor: Record<string, string> = {
-        active: 'bg-success',
-        inactive: 'bg-danger',
-        on_leave: 'bg-warning',
-        terminated: 'bg-dark',
-    };
-
     const filteredAndSortedEmployees = useMemo(() => {
-        let result = [...employees];
+        let result = [...employeeConfigs];
 
         if (selectedEmployeeId) {
             result = result.filter(e => e.id === Number(selectedEmployeeId));
@@ -332,7 +275,7 @@ const EmployeeConfigIndex = () => {
         });
 
         return result;
-    }, [employees, search, selectedEmployeeId, statusFilter, sortBy, sortDirection]);
+    }, [employeeConfigs, search, selectedEmployeeId, statusFilter, sortBy, sortDirection]);
 
     const totalPages = Math.ceil(filteredAndSortedEmployees.length / itemsPerPage);
     const paginatedEmployees = filteredAndSortedEmployees.slice(
@@ -343,12 +286,12 @@ const EmployeeConfigIndex = () => {
     useEffect(() => { setCurrentPage(1); }, [search, selectedEmployeeId, statusFilter]);
 
     const employeeOptions = useMemo(() => {
-        return employees.map(emp => ({
+        return employeeConfigs.map(emp => ({
             value: emp.id,
             label: `${emp.full_name} (${emp.employee_id})`,
             description: emp.designation?.name
         }));
-    }, [employees]);
+    }, [employeeConfigs]);
 
     return (
         <div>
@@ -360,8 +303,8 @@ const EmployeeConfigIndex = () => {
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-                onRefresh={fetchEmployees}
-                hasActiveFilters={statusFilter !== 'all' || selectedEmployeeId !== null}
+                onRefresh={handleRefresh}
+                hasActiveFilters={statusFilter !== 'all' || selectedEmployeeId !== null || !!search}
                 onClearFilters={() => {
                     setStatusFilter('all');
                     setSelectedEmployeeId(null);
@@ -396,8 +339,8 @@ const EmployeeConfigIndex = () => {
             <div className="rounded-lg border overflow-hidden">
                 <div className="overflow-x-auto">
                     {loading ? (
-                        <TableSkeleton columns={7} rows={5} />
-                    ) : employees.length === 0 ? (
+                        <TableSkeleton columns={8} rows={itemsPerPage} />
+                    ) : (employeeConfigs.length === 0 && !loadingConfigs) ? (
                         <EmptyState title="No Employees Found" description="Start by adding employees in HR module." />
                     ) : filteredAndSortedEmployees.length === 0 ? (
                         <EmptyState isSearch searchTerm={search} onClearFilter={() => { setSearch(''); setStatusFilter('all'); setSelectedEmployeeId(null); }} />
@@ -502,7 +445,7 @@ const EmployeeConfigIndex = () => {
                     <div className="py-6 space-y-6">
                         <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
                             {activeEmployee?.profile_image ? (
-                                <img src={activeEmployee.profile_image?.startsWith('http') ? activeEmployee.profile_image : `/storage/${activeEmployee.profile_image}`} className="w-12 h-12 rounded-full object-cover" />
+                                <img src={activeEmployee.profile_image?.startsWith('http') ? activeEmployee.profile_image : `/storage/${activeEmployee.profile_image}`} className="w-12 h-12 rounded-full object-cover" alt={activeEmployee?.full_name} />
                             ) : (
                                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">{activeEmployee?.full_name?.charAt(0)}</div>
                             )}
@@ -526,7 +469,7 @@ const EmployeeConfigIndex = () => {
                                         <SelectValue placeholder="Choose shift..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {workingShifts.map(s => (
+                                        {workingShifts.map((s: any) => (
                                             <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -538,7 +481,7 @@ const EmployeeConfigIndex = () => {
                                         <SelectValue placeholder="Choose policy..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {attendancePolicies.map(p => (
+                                        {attendancePolicies.map((p: any) => (
                                             <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -575,160 +518,134 @@ const EmployeeConfigIndex = () => {
             </Dialog>
 
             {/* QR Modal */}
-<Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
-    <DialogContent className="sm:max-w-[600px] h-[90vh] p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
-        {/* Header */}
-        <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4 print:hidden">
-            <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
-                <IconQrcode className="text-primary w-6 h-6" />
-            </div>
-            <div>
-                <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                    Employee Login QR
-                </DialogTitle>
-                <p className="text-sm text-gray-500 mt-1">
-                    Scan this code with the mobile app to log in securely.
-                </p>
-            </div>
-        </div>
+            <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
+                <DialogContent className="sm:max-w-[600px] h-[90vh] p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4 print:hidden">
+                        <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+                            <IconQrcode className="text-primary w-6 h-6" />
+                        </div>
+                        <div>
+                            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+                                Employee Login QR
+                            </DialogTitle>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Scan this code with the mobile app to log in securely.
+                            </p>
+                        </div>
+                    </div>
 
-        <ScrollArea className="flex-1 min-h-0">
-            {loadingQr ? (
-                <div className="flex items-center justify-center py-16">
-                    <div className="flex flex-col items-center gap-4">
-                        {/* QR grid building animation */}
-                        <div className="relative w-36 h-36">
-                            {/* Corner markers */}
-                            <div className="absolute top-0 left-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
-                            <div className="absolute top-0 left-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
-
-                            <div className="absolute top-0 right-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
-                            <div className="absolute top-0 right-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
-
-                            <div className="absolute bottom-0 left-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
-                            <div className="absolute bottom-0 left-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
-
-                            {/* Data cells appearing */}
-                            <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 gap-0.5 p-1">
-                                {Array.from({ length: 36 }).map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className="rounded-[2px] bg-primary animate-[appear_0.3s_ease-out_forwards] opacity-0"
-                                        style={{
-                                            animationDelay: `${Math.floor(Math.random() * 900)}ms`,
-                                            animationIterationCount: "infinite",
-                                            animationDuration: `${900 + (i * 37) % 600}ms`,
-                                        }}
-                                    />
-                                ))}
+                    <ScrollArea className="flex-1 min-h-0">
+                        {loadingQr ? (
+                            <div className="flex items-center justify-center py-16">
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="relative w-36 h-36">
+                                        <div className="absolute top-0 left-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
+                                        <div className="absolute top-0 left-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
+                                        <div className="absolute top-0 right-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
+                                        <div className="absolute top-0 right-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
+                                        <div className="absolute bottom-0 left-0 w-8 h-8 border-2 border-primary rounded-sm opacity-50" />
+                                        <div className="absolute bottom-0 left-0 w-4 h-4 m-2 bg-primary rounded-[2px] animate-pulse" />
+                                        <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 gap-0.5 p-1">
+                                            {Array.from({ length: 36 }).map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="rounded-[2px] bg-primary animate-[appear_0.3s_ease-out_forwards] opacity-0"
+                                                    style={{
+                                                        animationDelay: `${Math.floor(Math.random() * 900)}ms`,
+                                                        animationIterationCount: "infinite",
+                                                        animationDuration: `${900 + (i * 37) % 600}ms`,
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="text-center space-y-1">
+                                        <p className="text-sm font-medium text-foreground">Generating secure payload</p>
+                                        <p className="text-xs text-muted-foreground">Building your QR code...</p>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        ) : qrData ? (
+                            <div ref={qrRef} className="p-6 space-y-6 bg-white dark:bg-black">
+                                <div className="text-center">
+                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                        {qrData.employee}
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-1">Scan to log in to the mobile app</p>
+                                </div>
 
-                        <div className="text-center space-y-1">
-                            <p className="text-sm font-medium text-foreground">Generating secure payload</p>
-                            <p className="text-xs text-muted-foreground">
-                                Building your QR code
-                                {["·", "·", "·"].map((dot, i) => (
-                                    <span
-                                        key={i}
-                                        className="inline-block animate-bounce ml-0.5"
-                                        style={{ animationDelay: `${i * 150}ms` }}
+                                <div className="flex justify-center">
+                                    <div className="bg-white p-4 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 inline-block">
+                                        <QRCode value={qrData.url} size={220} level="H" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 print:hidden">
+                                    <Label htmlFor="qr-url" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Login Link
+                                    </Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="qr-url"
+                                            value={qrData.url}
+                                            readOnly
+                                            className="bg-gray-50 dark:bg-gray-800 font-mono text-sm"
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={handleCopyLink}
+                                            className="shrink-0 h-10 w-10 border-gray-200 dark:border-gray-700"
+                                            title="Copy link"
+                                            disabled={isCopying}
+                                        >
+                                            {isCopying ? <IconCheck size={18} className="text-green-500" /> : <IconCopy size={18} />}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full print:hidden">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2 border-gray-200 dark:border-gray-700"
+                                        onClick={handleDownloadPng}
+                                        disabled={isDownloadingPng}
                                     >
-                                        {dot}
-                                    </span>
-                                ))}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            ) : qrData ? (
-                <div className="p-6 space-y-6">
-                    {/* Employee Name */}
-                    <div className="text-center">
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {qrData.employee}
-                        </h3>
-                        <p className="text-sm text-gray-500 mt-1">Scan to log in to the mobile app</p>
-                    </div>
+                                        <IconDownload size={16} />
+                                        {isDownloadingPng ? 'Downloading...' : 'PNG (HD)'}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2 border-gray-200 dark:border-gray-700"
+                                        onClick={handleDownloadPdf}
+                                        disabled={isDownloadingPdf}
+                                    >
+                                        <IconFileTypePdf size={16} />
+                                        {isDownloadingPdf ? 'Downloading...' : 'PDF'}
+                                    </Button>
+                                </div>
 
-                    {/* QR Code Card */}
-                    <div className="flex justify-center">
-                        <div className="bg-white p-4 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 inline-block">
-                            <QRCode value={qrData.url} size={220} level="H" />
-                        </div>
-                    </div>
+                                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
+                                    <div className="flex gap-2 items-start">
+                                        <IconAlertTriangle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                        <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed font-medium">
+                                            SECURITY WARNING: This QR code contains sensitive session credentials. Do not share or leave it unattended.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
+                    </ScrollArea>
 
-                    {/* URL Field with Copy (optional, but nice) */}
-                    <div className="space-y-2">
-                        <Label htmlFor="qr-url" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Login Link
-                        </Label>
-                        <div className="flex gap-2">
-                            <Input
-                                id="qr-url"
-                                value={qrData.url}
-                                readOnly
-                                className="bg-gray-50 dark:bg-gray-800 font-mono text-sm"
-                            />
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={handleCopyLink}
-                                className="shrink-0 h-10 w-10 border-gray-200 dark:border-gray-700"
-                                title="Copy link"
-                                disabled={isCopying}
-                            >
-                                {isCopying ? <IconCheck size={18} className="text-green-500" /> : <IconCopy size={18} />}
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2 border-gray-200 dark:border-gray-700"
-                            onClick={handleDownloadPng}
-                            disabled={isDownloadingPng}
-                        >
-                            <IconDownload size={16} />
-                            {isDownloadingPng ? 'Downloading...' : 'PNG (HD)'}
+                    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background print:hidden">
+                        <Button variant="ghost" onClick={() => setQrModalOpen(false)} className="h-9 px-4 rounded-lg">
+                            Close
                         </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2 border-gray-200 dark:border-gray-700"
-                            onClick={handleDownloadPdf}
-                            disabled={isDownloadingPdf}
-                        >
-                            <IconFileTypePdf size={16} />
-                            {isDownloadingPdf ? 'Downloading...' : 'PDF'}
-                        </Button>
-                        {/* The copy button is already above, but if you prefer a dedicated button, you can keep one here. We already have copy in the URL row, so we can use that. */}
                     </div>
-
-                    {/* Security Warning */}
-                    <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
-                        <div className="flex gap-2 items-start">
-                            <IconAlertTriangle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                            <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed font-medium">
-                                SECURITY WARNING: This QR code contains sensitive session credentials. Do not share or leave it unattended.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
-        </ScrollArea>
-
-        {/* Footer Actions */}
-        <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background print:hidden">
-            <Button variant="ghost" onClick={() => setQrModalOpen(false)} className="h-9 px-4 rounded-lg">
-                Close
-            </Button>
-        </div>
-    </DialogContent>
-</Dialog>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

@@ -10,12 +10,17 @@ import EmptyState from '../../components/ui/EmptyState';
 import Pagination from '../../components/ui/Pagination';
 import SortableHeader from '../../components/ui/SortableHeader';
 import DeleteModal from '../../components/DeleteModal';
+import { Textarea } from '../../components/ui/textarea';
 import ActionButtons from '../../components/ui/ActionButtons';
 import { Badge } from '../../components/ui/badge';
-import { IconShieldLock, IconCheck, IconX } from '@tabler/icons-react';
+import { IconShieldLock, IconCheck, IconX, IconShield } from '@tabler/icons-react';
 import { Checkbox } from '../../components/ui/checkbox';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+
 
 const RolesIndex = () => {
+    const dispatch = useDispatch();
     const [roles, setRoles] = useState<any[]>([]);
     const [permissions, setPermissions] = useState<any>({});
     const [loading, setLoading] = useState(true);
@@ -79,6 +84,10 @@ const RolesIndex = () => {
         fetchRoles();
         fetchPermissions();
     }, []);
+
+    useEffect(() => {
+        dispatch(setPageTitle('Roles'));
+    }, [dispatch]);
 
     const handleCreate = () => {
         setEditingRole(null);
@@ -249,60 +258,109 @@ const RolesIndex = () => {
                 </div>
             )}
 
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[800px] h-[90vh] flex flex-col p-0">
-                    <DialogHeader className="p-6 border-b">
-                        <DialogTitle>{editingRole ? 'Edit Role' : 'Create Role'}</DialogTitle>
-                    </DialogHeader>
-                    <ScrollArea className="flex-1 p-6">
-                        <form id="role-form" onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid grid-cols-1 gap-4">
-                                <div>
-                                    <label className="text-sm font-medium">Role Name</label>
-                                    <Input name="name" value={formData.name} onChange={handleChange} required />
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium">Description</label>
-                                    <textarea
-                                        name="description"
-                                        className="form-textarea mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-dark dark:border-gray-700"
-                                        rows={3}
-                                        value={formData.description}
-                                        onChange={handleChange}
-                                    ></textarea>
-                                </div>
-                            </div>
+<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+  <DialogContent className="sm:max-w-[1050px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    {/* Header */}
+    <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
+      <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
+        <IconShield className="text-primary w-7 h-7" /> {/* Use an appropriate icon for roles */}
+      </div>
+      <div>
+        <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          {editingRole ? 'Edit Role' : 'Create Role'}
+        </DialogTitle>
+        <p className="text-sm text-gray-500 mt-1">
+          {editingRole
+            ? 'Modify the role details and its permissions.'
+            : 'Define a new role and assign the corresponding permissions.'}
+        </p>
+      </div>
+    </div>
 
-                            <div className="space-y-4">
-                                <h3 className="text-md font-bold border-b pb-2">Permissions</h3>
-                                {Object.entries(permissions).map(([module, perms]: [string, any]) => (
-                                    <div key={module} className="bg-gray-50 dark:bg-dark-light/10 p-4 rounded-lg">
-                                        <h4 className="text-sm font-bold text-primary mb-3 uppercase tracking-wider">{module}</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                            {perms.map((p: any) => (
-                                                <div key={p.id} className="flex items-center space-x-2">
-                                                    <Checkbox
-                                                        id={`p-${p.id}`}
-                                                        checked={formData.permissions.includes(p.id)}
-                                                        onCheckedChange={() => handlePermissionToggle(p.id)}
-                                                    />
-                                                    <label htmlFor={`p-${p.id}`} className="text-xs font-medium cursor-pointer">
-                                                        {p.name}
-                                                    </label>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </form>
-                    </ScrollArea>
-                    <div className="p-4 border-t flex justify-end gap-2 bg-gray-50 dark:bg-black">
-                        <Button variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
-                        <Button type="submit" form="role-form" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Role'}</Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+    {/* Scrollable Form Area */}
+    <ScrollArea className="flex-1 min-h-0">
+      <form id="role-form" onSubmit={handleSubmit} className="pt-0 p-6 space-y-6">
+        {/* Role Details Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Role Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="e.g. Admin, Manager, Viewer"
+              required
+              className="bg-gray-50 dark:bg-gray-800/50"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Description</label>
+            <Textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Optional description..."
+              rows={2}
+              className="bg-gray-50 dark:bg-gray-800/50 resize-none h-11 min-h-[44px]"
+            />
+          </div>
+        </div>
+
+        {/* Permissions Section */}
+        <div className="space-y-4">
+          <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">
+            Permissions
+          </h3>
+          {Object.entries(permissions).map(([module, perms]: [string, any]) => (
+            <div
+              key={module}
+              className="bg-gray-50 dark:bg-dark-light/10 p-4 rounded-lg border border-gray-100 dark:border-gray-800"
+            >
+              <h4 className="text-sm font-bold text-primary mb-3 uppercase tracking-wider">
+                {module}
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {perms.map((p: any) => (
+                  <div key={p.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`p-${p.id}`}
+                      checked={formData.permissions.includes(p.id)}
+                      onCheckedChange={() => handlePermissionToggle(p.id)}
+                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary h-5 w-5 rounded-md"
+                    />
+                    <label
+                      htmlFor={`p-${p.id}`}
+                      className="text-xs font-medium cursor-pointer text-gray-700 dark:text-gray-300"
+                    >
+                      {p.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </form>
+    </ScrollArea>
+
+    {/* Sticky Footer */}
+    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
+      <Button type="button" variant="ghost" className="px-5" onClick={() => setModalOpen(false)}>
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        form="role-form"
+        disabled={isSaving}
+        className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+      >
+        {isSaving ? 'Saving...' : 'Save Role'}
+      </Button>
+    </div>
+  </DialogContent>
+</Dialog>
 
             <DeleteModal
                 isOpen={deleteModalOpen}

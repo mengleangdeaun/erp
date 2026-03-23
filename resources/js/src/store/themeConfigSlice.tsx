@@ -122,7 +122,7 @@ const themeConfigSlice = createSlice({
         },
 
         setPageTitle(state, { payload }) {
-            document.title = `${payload} | S-Cool`;
+            document.title = `${payload} | SCCG`;
         },
     },
 });

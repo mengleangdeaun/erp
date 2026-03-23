@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSystemActivityLogs } from '@/hooks/useSystemActivityLogs';
 import { useFormatDate } from '@/hooks/useFormatDate';
 import FilterBar from '@/components/ui/FilterBar';
 import TableSkeleton from '@/components/ui/TableSkeleton';
@@ -14,10 +13,59 @@ import { IconHistory, IconBox, IconClock, IconTrash, IconEraser } from '@tabler/
 import { DateRange } from "react-day-picker";
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSystemLogs, useSystemLogsDelete, useSystemLogsClear } from '@/hooks/useSystemLogData';
+import { useDelayedLoading } from '@/hooks/useDelayedLoading';
+import { useQueryClient } from '@tanstack/react-query';
 
 const SystemLogsIndex = () => {
-    const { data, loading, fetchLogs, total, deleteLogs, clearAllLogs } = useSystemActivityLogs();
+    const queryClient = useQueryClient();
     const { formatDateTime } = useFormatDate();
+
+    // Helper to format log description for readability
+    const formatLogDescription = (desc: string) => {
+        if (!desc) return '';
+        
+        // Handle common event patterns: "updated inventoryproduct" -> "Update Inventory Product"
+        let formatted = desc.toLowerCase().trim();
+        
+        // Mapping for specific concatenated model names
+        const modelMapping: { [key: string]: string } = {
+            'inventoryproduct': 'Inventory Product',
+            'inventorycategory': 'Inventory Category',
+            'inventorytag': 'Inventory Tag',
+            'inventoryuom': 'Inventory UOM',
+            'inventorypurchaseorder': 'Inventory Purchase Order',
+            'inventorypurchasereceiving': 'Inventory Purchase Receiving',
+            'customervehicle': 'Customer Vehicle',
+            'customertype': 'Customer Type',
+            'leaverecord': 'Leave Record',
+            'leavebalance': 'Leave Balance',
+            'leaveallocation': 'Leave Allocation',
+            'attendancepolicy': 'Attendance Policy',
+            'workingshift': 'Working Shift',
+            'branchqr': 'Branch QR',
+            'medialibrary': 'Media Library',
+            'salesorder': 'Sales Order',
+            'jobcard': 'Job Card',
+        };
+
+        const parts = formatted.split(/\s+/);
+        
+        return parts.map(part => {
+            // Check for model name mapping first
+            if (modelMapping[part]) return modelMapping[part];
+            
+            // Mapping for event verbs
+            if (part === 'updated') return 'Update';
+            if (part === 'created') return 'Create';
+            if (part === 'deleted') return 'Delete';
+            if (part === 'restored') return 'Restore';
+            
+            // Default capitalization
+            return part.charAt(0).toUpperCase() + part.slice(1);
+        }).join(' ');
+    };
 
     // Filters state
     const [search, setSearch] = useState('');
@@ -39,33 +87,27 @@ const SystemLogsIndex = () => {
         onConfirm: () => {}
     });
 
-    const loadData = useCallback((p = currentPage, l = itemsPerPage) => {
-        const filters: any = {};
-        
-        if (eventFilter !== 'all') filters.event = eventFilter;
-        if (search) filters.subject_type = search; 
-        
-        if (dateRange?.from) filters.start_date = format(dateRange.from, 'yyyy-MM-dd');
-        if (dateRange?.to) filters.end_date = format(dateRange.to, 'yyyy-MM-dd');
+    // Filters for Query
+    const filters = useMemo(() => {
+        const f: any = {};
+        if (eventFilter !== 'all') f.event = eventFilter;
+        if (search) f.subject_type = search;
+        if (dateRange?.from) f.start_date = format(dateRange.from, 'yyyy-MM-dd');
+        if (dateRange?.to) f.end_date = format(dateRange.to, 'yyyy-MM-dd');
+        return f;
+    }, [eventFilter, search, dateRange]);
 
-        fetchLogs(p, l, filters);
-        setSelectedIds([]); 
-    }, [eventFilter, search, dateRange, fetchLogs]);
+    // Queries
+    const { data: logsData, isLoading: logsLoading } = useSystemLogs(currentPage, itemsPerPage, filters);
+    const logs = logsData?.data || [];
+    const total = logsData?.total || 0;
 
-    useEffect(() => {
-        loadData(currentPage, itemsPerPage);
-    }, [currentPage, itemsPerPage, eventFilter, dateRange]);
+    // Mutations
+    const deleteMutation = useSystemLogsDelete();
+    const clearMutation = useSystemLogsClear();
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (currentPage !== 1) {
-                setCurrentPage(1);
-            } else {
-                loadData(1, itemsPerPage);
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [search]);
+    // Loading State
+    const loading = useDelayedLoading(logsLoading);
 
     const handleClearFilters = () => {
         setSearch('');
@@ -74,12 +116,16 @@ const SystemLogsIndex = () => {
         setCurrentPage(1);
     };
 
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [currentPage, itemsPerPage, eventFilter, dateRange, search]);
+
     // Selection Handlers
     const toggleSelectAll = () => {
-        if (selectedIds.length === data.length && data.length > 0) {
+        if (selectedIds.length === logs.length && logs.length > 0) {
             setSelectedIds([]);
         } else {
-            setSelectedIds(data.map(log => log.id));
+            setSelectedIds(logs.map(log => log.id));
         }
     };
 
@@ -97,12 +143,12 @@ const SystemLogsIndex = () => {
             title: 'Delete Selected Logs',
             message: `Are you sure you want to delete ${selectedIds.length} selected activity logs? This action is permanent and cannot be undone.`,
             onConfirm: async () => {
-                const success = await deleteLogs(selectedIds);
-                if (success) {
+                try {
+                    await deleteMutation.mutateAsync(selectedIds);
                     toast.success('Selected logs deleted successfully');
-                    loadData(currentPage, itemsPerPage);
+                    setSelectedIds([]);
                     setIsDeleteModalOpen(false);
-                } else {
+                } catch (error) {
                     toast.error('Failed to delete selected logs');
                 }
             }
@@ -115,12 +161,11 @@ const SystemLogsIndex = () => {
             title: 'Clear All System Logs',
             message: 'CRITICAL: This will permanently delete EVERY activity log in the database. This action is extremely destructive and cannot be reversed.',
             onConfirm: async () => {
-                const success = await clearAllLogs();
-                if (success) {
+                try {
+                    await clearMutation.mutateAsync();
                     toast.success('All system logs have been cleared');
-                    loadData(1, itemsPerPage);
                     setIsDeleteModalOpen(false);
-                } else {
+                } catch (error) {
                     toast.error('Failed to clear system logs');
                 }
             }
@@ -138,7 +183,7 @@ const SystemLogsIndex = () => {
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-                onRefresh={() => loadData(currentPage, itemsPerPage)}
+                onRefresh={() => queryClient.invalidateQueries({ queryKey: ['system_logs'] })}
                 hasActiveFilters={eventFilter !== 'all' || !!dateRange || !!search}
                 onClearFilters={handleClearFilters}
                 extraActions={
@@ -201,7 +246,7 @@ const SystemLogsIndex = () => {
                                     <tr>
                                         <th className="px-6 py-4 w-10 text-center">
                                             <Checkbox 
-                                                checked={data.length > 0 && selectedIds.length === data.length}
+                                                checked={logs.length > 0 && selectedIds.length === logs.length}
                                                 onCheckedChange={toggleSelectAll}
                                                 aria-label="Select all"
                                             />
@@ -214,7 +259,7 @@ const SystemLogsIndex = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                                    {data.length === 0 ? (
+                                    {logs.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                                                 <EmptyState 
@@ -227,7 +272,7 @@ const SystemLogsIndex = () => {
                                             </td>
                                         </tr>
                                     ) : (
-                                        data.map((log) => (
+                                        logs.map((log: any) => (
                                             <tr key={log.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors ${selectedIds.includes(log.id) ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
                                                 <td className="px-6 py-4 text-center">
                                                     <Checkbox 
@@ -288,14 +333,16 @@ const SystemLogsIndex = () => {
                                                 </td>
                                                 <td className="px-6 py-4 max-w-md">
                                                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-2 font-medium">
-                                                        {log.description}
+                                                        {formatLogDescription(log.description)}
                                                     </p>
                                                     {log.properties?.attributes && (
                                                         <div className="relative group">
-                                                            <div className="text-[10px] font-mono bg-slate-50 dark:bg-slate-950 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 max-h-32 overflow-y-auto scrollbar-thin shadow-inner">
-                                                                <pre className="whitespace-pre-wrap text-slate-700 dark:text-slate-400">
-                                                                    {JSON.stringify(log.properties.attributes, null, 2)}
-                                                                </pre>
+                                                            <div className="text-[10px] font-mono bg-slate-50 dark:bg-slate-950 p-2.5 pr-0 rounded-lg border border-slate-200 dark:border-slate-800 shadow-inner overflow-hidden">
+                                                                <ScrollArea className="h-40 w-full">
+                                                                    <pre className="whitespace-pre-wrap text-slate-700 dark:text-slate-400 p-1">
+                                                                        {JSON.stringify(log.properties.attributes, null, 2)}
+                                                                    </pre>
+                                                                </ScrollArea>
                                                             </div>
                                                         </div>
                                                     )}
@@ -324,7 +371,7 @@ const SystemLogsIndex = () => {
                 title={deleteConfig.title}
                 message={deleteConfig.message}
                 onConfirm={deleteConfig.onConfirm}
-                isLoading={loading}
+                isLoading={deleteMutation.isPending || clearMutation.isPending}
             />
         </div>
     );

@@ -22,8 +22,11 @@ import {
     useInventoryProducts, useInventoryCategories, useInventoryUoms, useInventoryTags,
     useCreateProduct, useUpdateProduct, useDeleteProduct
 } from '@/hooks/useInventoryData';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const ProductIndex = () => {
+    const dispatch = useDispatch();
     // TanStack Query Hooks
     const { data: products = [], isLoading: loadingProducts, refetch: refetchProducts } = useInventoryProducts();
     const { data: categories = [], isLoading: loadingCategories } = useInventoryCategories();
@@ -72,6 +75,10 @@ const ProductIndex = () => {
 
     const isSaving = createProductMutation.isPending || updateProductMutation.isPending;
     const isDeleting = deleteProductMutation.isPending;
+
+    useEffect(() => {
+        dispatch(setPageTitle('Products'));
+    }, [dispatch]);
 
     // Cleanup object URLs on unmount or when imagePreview changes
     useEffect(() => {

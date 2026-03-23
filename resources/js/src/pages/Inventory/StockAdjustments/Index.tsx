@@ -72,7 +72,7 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
         credentials: 'include',
     });
 
-export default function StockAdjustmentsPage() {
+const StockAdjustmentsPage = () => {
     const dispatch = useDispatch();
     const { formatDate } = useFormatDate();
     const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
@@ -387,3 +387,5 @@ export default function StockAdjustmentsPage() {
         </div>
     );
 }
+
+export default StockAdjustmentsPage;
