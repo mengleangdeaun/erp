@@ -1,66 +1,137 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# s_cool_crm ERP
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+> A Laravel-based CRM + Inventory & Service Management Platform for small businesses.
 
-## About Laravel
+## 🚀 Project Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This repository contains `s_cool_crm/erp`, a Laravel 11 web application for managing customers, inventory, sales, services, job cards, employee leave, and system activity logs. It provides RESTful APIs (see `routes/api.php` and `routes.txt`) and a backend for rapid business operations.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## ✨ Why This Project is Useful
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- Inventory management: categories, locations, products, suppliers, tags, UOMs.
+- Procurement workflows: purchase orders, purchase receives, stock adjustments.
+- CRM & sales order handling: customers, quotations, orders, deposits, invoices.
+- Service operations: job cards, parts/materials usage, service pricing.
+- Employee management: leave allocation, leave requests, policies, balances.
+- Media and document settings: file/folder management, configurable system settings.
+- Notification system and audit logging with activity history.
 
-## Learning Laravel
+## 📦 Tech Stack
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- PHP ^8.1
+- Laravel Framework ^11.0
+- Sanctum (API auth)
+- MySQL / Postgres / SQLite (configurable in `.env`)
+- AWS S3 / Google Drive file storage adapters
+- Vue or React front end (project includes `resources/js` infrastructure)
+- PHPUnit and Laravel Pint for tests and code style
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🧩 Repository Structure
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- `app/`: Models, Controllers, Requests, Services, Traits, Notifications
+- `config/`: App config and installed packages
+- `routes/`: `api.php`, `web.php`, etc.
+- `database/`: migrations, seeders, factories
+- `resources/`: views, assets (`js`, `css`)
+- `tests/`: unit & feature tests
 
-## Laravel Sponsors
+## 📥 Getting Started
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+1. Clone repository
 
-### Premium Partners
+```bash
+git clone https://github.com/<your-org>/s_cool_crm.git
+cd s_cool_crm/erp
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+2. Install PHP dependencies
 
-## Contributing
+```bash
+composer install
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3. Install JavaScript dependencies
 
-## Code of Conduct
+```bash
+npm install
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+4. Copy environment file
 
-## Security Vulnerabilities
+```bash
+cp .env.example .env
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+5. Generate application key
 
-## License
+```bash
+php artisan key:generate
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+6. Configure `.env`
+
+- `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
+- `FILESYSTEM_DRIVER` (local, s3, google)
+
+7. Run migrations and seeders
+
+```bash
+php artisan migrate --seed
+```
+
+8. Build frontend assets
+
+```bash
+npm run build
+```
+
+9. Start local server
+
+```bash
+php artisan serve
+npm run dev
+```
+
+## 🧪 Running Tests
+
+```bash
+vendor/bin/phpunit
+php artisan test
+```
+
+## 🛡️ Coding Standards
+
+- `composer test` (if configured, otherwise run `php artisan pint`)
+- `php artisan pint -- --fix` for code formatting
+
+## 📚 API Documentation
+
+For endpoint details, refer to:
+- `routes/api.php`
+- `routes.txt` (generated route list)
+
+This README avoids extensive API docs; use the project wiki or docs folder for full specs.
+
+## 💬 Support & Help
+
+- Check `storage/logs/laravel.log` for runtime errors
+- Open an issue in the repository
+- Use your team’s internal support channels (Slack/Teams)
+
+## 🤝 Contributing
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/name`)
+3. Commit changes with clear messages
+4. Push to origin and open a pull request
+
+See `CONTRIBUTING.md` (if available) for formal guidelines.
+
+## 👤 Maintainers
+
+- Primary maintainer: project team (update this with names/emails as needed)
+- Add recognized contributors to a `MAINTAINERS.md` or GitHub team
+
+## 📜 License
+
+MIT (see `LICENSE`)
