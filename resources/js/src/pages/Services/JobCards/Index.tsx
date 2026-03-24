@@ -1,7 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { IconTools, IconCar, IconUser, IconClock, IconSearch, IconX, IconCheck, IconExternalLink, IconSettings, IconFilter, IconCalendar } from '@tabler/icons-react';
-import { toast } from 'sonner';
+import { IconTools, IconExternalLink, IconHistory } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import FilterBar from '@/components/ui/FilterBar';
 import Pagination from '@/components/ui/Pagination';
@@ -11,12 +10,12 @@ import JobCardDialog from './JobCardDialog';
 import { format } from 'date-fns';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
+import { useJobCards } from '@/hooks/useJobCardData';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const JobCardIndex: React.FC = () => {
     const dispatch = useDispatch();
     const { t } = useTranslation();
-    const [jobs, setJobs] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [selectedJob, setSelectedJob] = useState<any>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     
@@ -25,36 +24,13 @@ const JobCardIndex: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
+    const { data: jobs = [], isLoading, refetch } = useJobCards({ search });
+
     useEffect(() => {
-        dispatch(setPageTitle('Workshop Jobs (Job Cards)'));
+        dispatch(setPageTitle('Workshop Jobs'));
     }, [dispatch]);
 
-    const fetchJobs = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/services/job-cards');
-            const data = await response.json();
-            setJobs(data);
-        } catch (error) {
-            toast.error('Failed to load workshop jobs');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchJobs();
-    }, []);
-
-    const filteredJobs = useMemo(() => {
-        if (!search) return jobs;
-        const q = search.toLowerCase();
-        return jobs.filter(j => 
-            j.job_no.toLowerCase().includes(q) ||
-            (j.customer?.name || '').toLowerCase().includes(q) ||
-            (j.vehicle?.plate_number || '').toLowerCase().includes(q)
-        );
-    }, [jobs, search]);
+    const filteredJobs = jobs; // Filtered by backend now
 
     const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
     const paginatedJobs = filteredJobs.slice(
@@ -77,19 +53,35 @@ const JobCardIndex: React.FC = () => {
         <div className="space-y-6">
             <FilterBar 
                 icon={<IconTools className="w-6 h-6 text-primary" />}
-                title={t('workshop_jobs', 'Workshop Jobs (Job Cards)')}
+                title={t('workshop_jobs', 'Workshop Jobs')}
                 description="Monitor active installations and technician progress."
                 search={search}
                 setSearch={setSearch}
-                onRefresh={fetchJobs}
+                onRefresh={() => { refetch(); }}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
             />
 
-            {loading ? (
+            {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {Array.from({ length: 6 }).map((_, index) => (
-                        <div key={index} className="h-64 bg-gray-50 dark:bg-gray-800 rounded-3xl animate-pulse border border-gray-100 dark:border-gray-800 shadow-sm"></div>
+                    {Array.from({ length: 9 }).map((_, index) => (
+                        <div key={index} className="h-64 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 space-y-5 animate-pulse shadow-sm">
+                            <div className="flex justify-between">
+                                <Skeleton className="h-6 w-24 rounded-full" />
+                                <Skeleton className="h-6 w-16 rounded-full" />
+                            </div>
+                            <div className="space-y-2 pt-2">
+                                <Skeleton className="h-8 w-3/4 rounded-lg" />
+                                <Skeleton className="h-4 w-1/2 rounded-lg" />
+                            </div>
+                            <div className="py-4 border-y border-gray-50 dark:border-gray-800/50">
+                                <Skeleton className="h-8 w-full rounded-lg" />
+                            </div>
+                            <div className="flex justify-between mt-auto">
+                                <Skeleton className="h-6 w-24 rounded-full" />
+                                <Skeleton className="h-10 w-10 rounded-full" />
+                            </div>
+                        </div>
                     ))}
                 </div>
             ) : filteredJobs.length === 0 ? (
@@ -101,9 +93,9 @@ const JobCardIndex: React.FC = () => {
                 />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {paginatedJobs.map((job) => (
+                    {paginatedJobs.map((job: any) => (
                         <div key={job.id} 
-                            className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 p-6 flex flex-col gap-5 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer group"
+                            className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 flex flex-col gap-5 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer group"
                             onClick={() => { setSelectedJob(job); setDialogOpen(true); }}
                         >
                             <div className="flex items-start justify-between">
@@ -174,7 +166,7 @@ const JobCardIndex: React.FC = () => {
                 isOpen={dialogOpen} 
                 setIsOpen={setDialogOpen} 
                 jobId={selectedJob?.id} 
-                onSave={fetchJobs} 
+                onSave={refetch} 
             />
         </div>
     );

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { IconReceipt, IconCar, IconDotsVertical, IconTrash, IconX, IconCoins, IconInfoCircle, IconFilter, IconHistory } from '@tabler/icons-react';
+import { IconReceipt, IconCar, IconDotsVertical, IconTrash, IconX, IconCoins, IconInfoCircle, IconFilter, IconHistory, IconEdit } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import FilterBar from '@/components/ui/FilterBar';
@@ -27,6 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import RecordPaymentDialog from './RecordPaymentDialog';
 import SalesOrderItemDetailsDialog from './SalesOrderItemDetailsDialog';
 import SalesOrderPaymentHistoryDialog from './SalesOrderPaymentHistoryDialog';
+import SalesOrderInfoDialog from './SalesOrderInfoDialog';
 
 const SalesOrderIndex: React.FC = () => {
     const navigate = useNavigate();
@@ -45,6 +46,7 @@ const SalesOrderIndex: React.FC = () => {
     const [showItems, setShowItems] = useState(false);
     const [showPayments, setShowPayments] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
+    const [showInfo, setShowInfo] = useState(false);
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [orderToCancel, setOrderToCancel] = useState<any>(null);
     const [activeOrder, setActiveOrder] = useState<any>(null);
@@ -135,7 +137,7 @@ const SalesOrderIndex: React.FC = () => {
                             setPaymentStatus(val);
                             setCurrentPage(1);
                         }}>
-                            <SelectTrigger className="h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm font-bold">
+                            <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
                                 <SelectValue placeholder="Payment" />
                             </SelectTrigger>
                             <SelectContent>
@@ -153,7 +155,7 @@ const SalesOrderIndex: React.FC = () => {
                             setTaxStatus(val);
                             setCurrentPage(1);
                         }}>
-                            <SelectTrigger className="h-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-sm font-bold">
+                            <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
                                 <SelectValue placeholder="Tax Status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -269,6 +271,13 @@ const SalesOrderIndex: React.FC = () => {
                                                                 Order Items
                                                             </button>
                                                             <button
+                                                                onClick={() => navigate(`/sales/edit/${order.id}`)}
+                                                                className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-md transition-colors text-left"
+                                                            >
+                                                                <IconEdit size={14} className="text-blue-500" />
+                                                                Edit Sale
+                                                            </button>
+                                                            <button
                                                                 onClick={() => {
                                                                     setSelectedOrderId(order.id);
                                                                     setShowPayments(true);
@@ -277,6 +286,16 @@ const SalesOrderIndex: React.FC = () => {
                                                             >
                                                                 <IconHistory size={14} className="text-emerald-500" />
                                                                 Payment History
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedOrderId(order.id);
+                                                                    setShowInfo(true);
+                                                                }}
+                                                                className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-md transition-colors text-left"
+                                                            >
+                                                                <IconInfoCircle size={14} className="text-amber-500" />
+                                                                Order Details
                                                             </button>
                                                         </div>
                                                     </PopoverContent>
@@ -303,7 +322,6 @@ const SalesOrderIndex: React.FC = () => {
                     </div>
 
                     {totalPages > 1 && (
-                        <div className="p-6 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/30">
                             <Pagination 
                                 currentPage={currentPage}
                                 totalPages={totalPages}
@@ -311,7 +329,6 @@ const SalesOrderIndex: React.FC = () => {
                                 itemsPerPage={itemsPerPage}
                                 onPageChange={setCurrentPage}
                              />
-                        </div>
                     )}
                 </div>
             )}
@@ -325,6 +342,12 @@ const SalesOrderIndex: React.FC = () => {
             <SalesOrderPaymentHistoryDialog 
                 open={showPayments}
                 onOpenChange={setShowPayments}
+                orderId={selectedOrderId}
+            />
+
+            <SalesOrderInfoDialog 
+                open={showInfo}
+                onOpenChange={setShowInfo}
                 orderId={selectedOrderId}
             />
 

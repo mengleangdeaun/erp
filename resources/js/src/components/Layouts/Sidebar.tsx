@@ -163,6 +163,9 @@ const Sidebar = () => {
                                             <NavLink to="/hr/employees">{t('employees')}</NavLink>
                                         </li>
                                         <li>
+                                            <NavLink to="/hr/branch-employees">{t('branch_employees')}</NavLink>
+                                        </li>
+                                        <li>
                                             <NavLink to="/hr/award-types">{t('award_types')}</NavLink>
                                         </li>
                                         <li>
@@ -347,6 +350,9 @@ const Sidebar = () => {
                                         </li>
                                         <li>
                                             <NavLink to="/inventory/tags">{t('tags', 'Tags')}</NavLink>
+                                        </li>
+                                        <li>
+                                            <NavLink to="/inventory/serials">{t('roll_inventory', 'Roll Inventory')}</NavLink>
                                         </li>
                                         <li>
                                             <NavLink to="/inventory/uoms">{t('uom', 'Units of Measure')}</NavLink>

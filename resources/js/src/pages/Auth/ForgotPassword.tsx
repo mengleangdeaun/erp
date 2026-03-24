@@ -1,13 +1,20 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { IconLoader2, IconArrowLeft, IconCheck, IconMail } from "@tabler/icons-react"
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 export default function ForgotPassword() {
+    const dispatch = useDispatch();
     const [email, setEmail] = useState("")
     const [status, setStatus] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [success, setSuccess] = useState(false)
+
+    useEffect(() => {
+        dispatch(setPageTitle('Forgot Password'));
+    }, [dispatch]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()

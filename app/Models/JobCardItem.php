@@ -15,9 +15,16 @@ class JobCardItem extends Model
         'part_id',
         'technician_id',
         'status',
+        'completion_percentage',
         'started_at',
         'completed_at',
         'notes'
+    ];
+
+    protected $casts = [
+        'completion_percentage' => 'integer',
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     public function jobCard()

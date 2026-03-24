@@ -49,6 +49,7 @@ interface CheckoutDialogProps {
     setInvoiceImageFile: (file: File | null) => void;
     loadingVehicles?: boolean;
     onEditPackage: (serviceId: number) => void;
+    isEdit?: boolean;
 }
 
 const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
@@ -75,13 +76,20 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
     invoiceImageFile,
     setInvoiceImageFile,
     loadingVehicles = false,
-    onEditPackage
+    onEditPackage,
+    isEdit = false
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     
     // Use pre-calculated totals from form (Calculated in Create.tsx)
     const finalTax = form.tax_total;
     const finalGrandTotal = form.grand_total;
+
+    const previewUrl = useMemo(() => {
+        if (invoiceImageFile) return URL.createObjectURL(invoiceImageFile);
+        if (form.invoice_image_path) return form.invoice_image_path;
+        return null;
+    }, [invoiceImageFile, form.invoice_image_path]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,6 +105,11 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                 <h1 className="text-xl font-black text-zinc-900 dark:text-white tracking-tight leading-none">Checkout Terminal</h1>
                                 <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mt-1 opacity-70">Sales Order Settlement</p>
                             </div>
+                            {isEdit && (
+                                <Badge variant="warning">
+                                    EDITING MODE
+                                </Badge>
+                            )}
                         </div>
                         <Button 
                             variant="ghost" 
@@ -401,10 +414,10 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                         </h3>
                                         
                                         <div className="space-y-2">
-                                            {!invoiceImageFile ? (
+                                            {!previewUrl ? (
                                                 <div 
                                                     onClick={() => fileInputRef.current?.click()}
-                                                    className="group cursor-pointer border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg p-6 flex flex-col items-center justify-center bg-white dark:bg-black/40 hover:border-primary/50 transition-all duration-300"
+                                                    className="group cursor-pointer border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg p-6 flex flex-col items-center justify-center bg-white dark:bg-zinc-950 hover:border-primary/50 transition-all duration-300"
                                                 >
                                                     <div className="w-10 h-10 rounded-lg bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:scale-110 transition-all">
                                                         <IconUpload size={20} />
@@ -412,11 +425,21 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                                     <span className="mt-3 text-[10px] font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Capture Invoice</span>
                                                 </div>
                                             ) : (
-                                                <div className="relative aspect-vertical rounded-lg border border-zinc-100 dark:border-zinc-800 overflow-hidden bg-black/5 group/img">
-                                                    <img src={URL.createObjectURL(invoiceImageFile)} alt="Invoice" className="w-full h-full object-cover" />
+                                                <div className="relative aspect-video rounded-lg border border-zinc-100 dark:border-zinc-800 overflow-hidden bg-black/5 group/img">
+                                                    <img src={previewUrl} alt="Invoice" className="w-full h-full object-contain" />
                                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                                         <Button size="sm" variant="secondary" onClick={() => fileInputRef.current?.click()} className="h-7 text-[9px] font-bold">REPLACE</Button>
-                                                        <Button size="sm" variant="destructive" onClick={() => setInvoiceImageFile(null)} className="h-7 text-[9px] font-bold">REMOVE</Button>
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="destructive" 
+                                                            onClick={() => {
+                                                                setInvoiceImageFile(null);
+                                                                setForm({ ...form, invoice_image_path: null });
+                                                            }} 
+                                                            className="h-7 text-[9px] font-bold"
+                                                        >
+                                                            REMOVE
+                                                        </Button>
                                                     </div>
                                                 </div>
                                             )}

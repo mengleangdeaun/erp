@@ -32,7 +32,7 @@ class Employee extends Model
         'line_manager_id',
         'date_of_joining',
         'employment_type',
-        'status',
+        'is_active',
         'working_shift_id',
         'attendance_policy_id',
         // Contact Information
@@ -51,6 +51,7 @@ class Employee extends Model
         'account_number',
         'tax_payer_id',
         'base_salary',
+        'is_technician',
         'preferences',
     ];
 
@@ -62,6 +63,8 @@ class Employee extends Model
         'date_of_birth'  => 'date',
         'date_of_joining' => 'date',
         'base_salary'    => 'decimal:2',
+        'is_technician'  => 'boolean',
+        'is_active'      => 'boolean',
         'preferences'    => 'array',
     ];
 

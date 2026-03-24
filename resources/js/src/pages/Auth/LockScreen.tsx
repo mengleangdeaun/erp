@@ -182,6 +182,16 @@ const LockScreen = () => {
                         <IconLogout size={14} />
                         Not {user?.name}? Log out
                     </button>
+                    {error && (
+                        <div className="flex items-center justify-center">
+                            <Link
+                                to="/auth/forgot-password"
+                                className="text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                            >
+                                Forgot password?
+                            </Link>
+                        </div>
+                    )}
                 </form>
 
                 {/* Bottom Footer Note */}

@@ -40,6 +40,11 @@ class InventoryProduct extends Model
         return $this->hasMany(InventoryStock::class, 'product_id');
     }
 
+    public function serials()
+    {
+        return $this->hasMany(InventoryProductSerial::class, 'product_id');
+    }
+
     public function branches()
     {
         return $this->belongsToMany(\App\Models\HR\Branch::class, 'branch_inventory_product', 'inventory_product_id', 'branch_id')->withPivot('is_active')->withTimestamps();

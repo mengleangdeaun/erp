@@ -15,6 +15,7 @@ const AttendanceRecordIndex = lazy(() => import('../pages/Attendance/AttendanceR
 const EmployeeIndex = lazy(() => import('../pages/HR/Employee/Index'));
 const EmployeeCreate = lazy(() => import('../pages/HR/Employee/Create'));
 const EmployeeEdit = lazy(() => import('../pages/HR/Employee/Edit'));
+const BranchEmployeeIndex = lazy(() => import('../pages/HR/BranchEmployees/Index'));
 const EmployeeConfigIndex = lazy(() => import('../pages/Attendance/EmployeeConfig/Index'));
 const AwardTypeIndex = lazy(() => import('../pages/HR/AwardType/Index'));
 const AwardIndex = lazy(() => import('../pages/HR/Award/Index'));
@@ -83,6 +84,7 @@ const InventoryStockTransferIndex = lazy(() => import('../pages/Inventory/StockT
 const InventoryStockTransferForm = lazy(() => import('../pages/Inventory/StockTransfers/Form'));
 const InventoryBranchProductIndex = lazy(() => import('../pages/Inventory/BranchProducts/Index'));
 const InventoryBranchServiceIndex = lazy(() => import('../pages/Inventory/BranchServices/Index'));
+const InventorySerialIndex = lazy(() => import('../pages/Inventory/Serials/Index'));
 
 // CRM Module
 const CRM_CustomerTypeIndex = lazy(() => import('../pages/Customers/Types/Index'));
@@ -317,6 +319,11 @@ const routes = [
         element: <EmployeeEdit />,
         layout: 'default',
     },
+    {
+        path: '/hr/branch-employees',
+        element: <BranchEmployeeIndex />,
+        layout: 'default',
+    },
     // Awards
     {
         path: '/hr/award-types',
@@ -421,6 +428,7 @@ const routes = [
     { path: '/inventory/stock-movements', element: <InventoryStockMovementIndex />, layout: 'default' },
     { path: '/inventory/branch-products', element: <InventoryBranchProductIndex />, layout: 'default' },
     { path: '/inventory/branch-services', element: <InventoryBranchServiceIndex />, layout: 'default' },
+    { path: '/inventory/serials', element: <InventorySerialIndex />, layout: 'default' },
     // Procurement
     { path: '/inventory/suppliers', element: <InventorySupplierIndex />, layout: 'default' },
     { path: '/inventory/purchase-orders', element: <InventoryPurchaseOrderIndex />, layout: 'default' },
@@ -444,6 +452,7 @@ const routes = [
     { path: '/services/job-cards', element: <JobCardIndex />, layout: 'default' },
     { path: '/sales/orders', element: <SalesOrderIndex />, layout: 'default' },
     { path: '/sales/create', element: <SalesCreate />, layout: 'default' },
+    { path: '/sales/edit/:id', element: <SalesCreate />, layout: 'default' },
     { path: '/finance/payment-accounts', element: <PaymentAccountIndex />, layout: 'default' },
     {
         path: '*',

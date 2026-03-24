@@ -212,14 +212,17 @@ const LocationIndex = () => {
                             {paginated.map((row: any) => (
                                 <tr key={row.id}>
                                     <td className="whitespace-nowrap font-medium">
-                                        <div className="flex items-center gap-2">
-                                            {row.name}
-                                            {row.is_primary && (
-                                                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] px-1.5 h-4 uppercase font-bold tracking-wider">
-                                                    Primary
-                                                </Badge>
-                                            )}
-                                        </div>
+                                    <div className="flex items-center gap-2">
+                                        {row.name}
+                                        {row.is_primary === 1 && (
+                                        <Badge
+                                            variant="success"
+                                            size="xs"
+                                        >
+                                            Primary
+                                        </Badge>
+                                        )}
+                                    </div>
                                     </td>
                                     <td className="text-gray-500 max-w-xs truncate">{row.address || '-'}</td>
                                     <td><Badge 

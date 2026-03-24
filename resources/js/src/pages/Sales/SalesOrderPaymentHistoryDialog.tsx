@@ -6,13 +6,16 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
-import { 
-    IconReceipt, IconUser, IconHistory, IconFileText, 
-    IconZoomIn, IconX, IconDownload, IconCoins
+import { Button } from '@/components/ui/button';
+import {
+    IconReceipt, IconUser, IconHistory, IconFileText,
+    IconZoomIn, IconX, IconDownload, IconEdit
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
-import { useSalesOrder } from '@/hooks/usePOSData';
+import { useSalesOrder, useDeleteSalesOrderDeposit } from '@/hooks/usePOSData';
 import { Skeleton } from '@/components/ui/skeleton';
+import EditPaymentDialog from './EditPaymentDialog';
+import DeleteModal from '@/components/DeleteModal';
 
 interface SalesOrderPaymentHistoryDialogProps {
     open: boolean;
@@ -22,7 +25,27 @@ interface SalesOrderPaymentHistoryDialogProps {
 
 const SalesOrderPaymentHistoryDialog: React.FC<SalesOrderPaymentHistoryDialogProps> = ({ open, onOpenChange, orderId }) => {
     const { data: order, isLoading } = useSalesOrder(orderId);
+    const deleteDepositMutation = useDeleteSalesOrderDeposit();
     const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [editingDeposit, setEditingDeposit] = useState<any>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [depositIdToDelete, setDepositIdToDelete] = useState<number | null>(null);
+
+    const handleDelete = (id: number) => {
+        setDepositIdToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (depositIdToDelete) {
+            deleteDepositMutation.mutate(depositIdToDelete, {
+                onSuccess: () => {
+                    setIsDeleteModalOpen(false);
+                    setDepositIdToDelete(null);
+                }
+            });
+        }
+    };
 
     const renderLoading = () => (
         <div className="p-6 space-y-8">
@@ -94,7 +117,7 @@ const SalesOrderPaymentHistoryDialog: React.FC<SalesOrderPaymentHistoryDialogPro
                                                         <p className="text-[10px] font-bold text-zinc-400 flex flex-wrap items-center gap-x-2 mt-0.5">
                                                             <span className="flex items-center gap-1"><IconFileText size={12} /> {dep.payment_account?.name}</span>
                                                             <span className="opacity-30">&bull;</span>
-                                                            <span>{format(new Date(dep.deposit_date), 'dd MMM yyyy')}</span>
+                                                            {dep.deposit_date && <span>{format(new Date(dep.deposit_date), 'dd MMM yyyy')}</span>}
                                                             <span className="opacity-30">&bull;</span>
                                                             <span>By {dep.creator?.name || '...'}</span>
                                                         </p>
@@ -104,12 +127,34 @@ const SalesOrderPaymentHistoryDialog: React.FC<SalesOrderPaymentHistoryDialogPro
                                                     {dep.receipt_path && (
                                                         <Badge
                                                             variant="outline"
-                                                            onClick={() => setPreviewImage(dep.receipt_path)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setPreviewImage(dep.receipt_path);
+                                                            }}
                                                             className="h-8 gap-1.5 text-[9px] font-black uppercase tracking-tighter cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors border-emerald-500/20 text-emerald-600"
                                                         >
                                                             <IconZoomIn size={12} /> Receipt
                                                         </Badge>
                                                     )}
+
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => setEditingDeposit(dep)}
+                                                            className="h-8 w-8 rounded-lg text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+                                                        >
+                                                            <IconEdit size={16} />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => handleDelete(dep.id)}
+                                                            className="h-8 w-8 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10"
+                                                        >
+                                                            <IconX size={16} />
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))
@@ -154,21 +199,21 @@ const SalesOrderPaymentHistoryDialog: React.FC<SalesOrderPaymentHistoryDialogPro
             <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
                 <DialogContent className="max-w-4xl p-0 overflow-hidden bg-transparent border-none shadow-none focus:outline-none [&>button]:hidden">
                     <div className="relative group">
-                        <img 
-                            src={previewImage || ''} 
-                            alt="Receipt Preview" 
-                            className="w-full h-auto max-h-[85vh] object-contain rounded-xl shadow-2xl" 
+                        <img
+                            src={previewImage || ''}
+                            alt="Receipt Preview"
+                            className="w-full h-auto max-h-[85vh] object-contain rounded-xl shadow-2xl"
                         />
-                        <button 
+                        <button
                             onClick={() => setPreviewImage(null)}
                             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                             <IconX size={20} stroke={3} />
                         </button>
                         <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-                            <a 
-                                href={previewImage || ''} 
-                                target="_blank" 
+                            <a
+                                href={previewImage || ''}
+                                target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/90 dark:bg-zinc-900/90 text-zinc-900 dark:text-white font-black text-[10px] uppercase tracking-widest shadow-xl backdrop-blur-md hover:scale-105 transition-all"
                             >
@@ -178,6 +223,24 @@ const SalesOrderPaymentHistoryDialog: React.FC<SalesOrderPaymentHistoryDialogPro
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Edit Payment Dialog */}
+            <EditPaymentDialog
+                open={!!editingDeposit}
+                onOpenChange={(open) => !open && setEditingDeposit(null)}
+                deposit={editingDeposit}
+                order={order}
+                onSuccess={() => onOpenChange(false)}
+            />
+
+            <DeleteModal
+                isOpen={isDeleteModalOpen}
+                setIsOpen={setIsDeleteModalOpen}
+                onConfirm={confirmDelete}
+                isLoading={deleteDepositMutation.isPending}
+                title="Delete Payment Record"
+                message="Are you sure you want to delete this payment record? This will increase the order balance and revert the payment status if necessary."
+            />
         </>
     );
 };

@@ -82,6 +82,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('telegram-settings', [App\Http\Controllers\HR\TelegramSettingController::class, 'show']);
         Route::post('telegram-settings', [App\Http\Controllers\HR\TelegramSettingController::class, 'save']);
         Route::post('telegram-settings/test', [App\Http\Controllers\HR\TelegramSettingController::class, 'test']);
+
+        // Branch Employee Management
+        Route::get('branch-employees', [App\Http\Controllers\HR\BranchEmployeeController::class, 'index']);
+        Route::put('branch-employees/{employee}', [App\Http\Controllers\HR\BranchEmployeeController::class, 'update']);
     });
 
     Route::prefix('attendance')->group(function () {
@@ -167,13 +171,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('job-cards/{id}', [\App\Http\Controllers\JobCardController::class, 'show']);
         Route::put('job-cards/items/{itemId}', [\App\Http\Controllers\JobCardController::class, 'updateItem']);
         Route::put('job-cards/material-usage/{usageId}', [\App\Http\Controllers\JobCardController::class, 'updateMaterialUsage']);
+        Route::get('inventory/products/{productId}/serials', [\App\Http\Controllers\JobCardController::class, 'getAvailableSerials']);
         Route::post('job-cards/{id}/complete', [\App\Http\Controllers\JobCardController::class, 'complete']);
+
+        // Serial Management
+        Route::apiResource('inventory/serials', \App\Http\Controllers\Inventory\InventoryProductSerialController::class);
+        Route::get('inventory/serials/{id}/history', [\App\Http\Controllers\Inventory\InventoryProductSerialController::class, 'history']);
     });
 
     Route::prefix('sales')->group(function () {
         Route::apiResource('orders', \App\Http\Controllers\SalesOrderController::class);
         Route::post('orders/{id}/cancel', [\App\Http\Controllers\SalesOrderController::class, 'cancel']);
         Route::post('orders/{id}/deposits', [\App\Http\Controllers\SalesOrderController::class, 'addDeposit']);
+        Route::put('deposits/{id}', [\App\Http\Controllers\SalesOrderController::class, 'updateDeposit']);
+        Route::delete('deposits/{id}', [\App\Http\Controllers\SalesOrderController::class, 'deleteDeposit']);
     });
 
     Route::prefix('finance')->group(function () {

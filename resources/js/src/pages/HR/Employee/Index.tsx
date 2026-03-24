@@ -184,7 +184,7 @@ const EmployeeIndex = () => {
                                 <SortableHeader label="Branch" value="branch" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <SortableHeader label="Department" value="department" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <SortableHeader label="Designation" value="designation" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label="Active" value="is_active" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <th className="text-right">Action</th>
                             </tr>
                         </thead>
@@ -213,8 +213,8 @@ const EmployeeIndex = () => {
                                         <Badge 
                                         size='sm'
                                         dot={true}
-                                        variant={emp.status === 'active' ? 'success' : 'destructive'}>
-                                            {emp.status?.replace('_', ' ')}
+                                        variant={emp.is_active ? 'success' : 'destructive'}>
+                                            {emp.is_active ? 'Active' : 'Inactive'}
                                         </Badge>
                                     </td>
                                     <td>

@@ -34,7 +34,7 @@ class JobCardController extends Controller
     public function show($id)
     {
         return JobCard::with([
-            'order.items.product', 
+            'order.items.itemable', 
             'customer', 
             'vehicle.brand', 
             'vehicle.model', 
@@ -53,6 +53,7 @@ class JobCardController extends Controller
             'technician_id' => 'sometimes|nullable|exists:employees,id',
             'status' => 'sometimes|in:Pending,In Progress,Completed,On Hold,Cancelled',
             'notes' => 'nullable|string',
+            'completion_percentage' => 'nullable|integer|min:0|max:100',
             'started_at' => 'nullable|date',
             'completed_at' => 'nullable|date',
         ]);
@@ -85,23 +86,74 @@ class JobCardController extends Controller
         
         $validated = $request->validate([
             'spent_qty' => 'sometimes|numeric',
-            'actual_qty' => 'required|numeric',
+            'actual_qty' => 'sometimes|numeric',
+            'serial_id' => 'sometimes|nullable|exists:inventory_product_serials,id',
+            'width_on_car' => 'sometimes|nullable|numeric',
+            'height_on_car' => 'sometimes|nullable|numeric',
+            'width_cut' => 'sometimes|nullable|numeric',
+            'height_cut' => 'sometimes|nullable|numeric',
             'notes' => 'nullable|string',
         ]);
 
         $usage->update($validated);
-        return $usage;
+        return $usage->load('serial');
+    }
+
+    public function getAvailableSerials(Request $request, $productId)
+    {
+        $query = \App\Models\Inventory\InventoryProductSerial::where('product_id', $productId)
+            ->where('status', 'Available');
+
+        if ($request->branch_id) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        return $query->get();
     }
 
     public function complete($id)
     {
-        $jobCard = JobCard::findOrFail($id);
+        $jobCard = JobCard::with(['materialUsage.serial', 'order'])->findOrFail($id);
         
         DB::transaction(function() use ($jobCard) {
             $jobCard->update([
                 'status' => 'Completed',
                 'completed_at' => now()
             ]);
+
+            // Deduct Materials from Stock
+            foreach ($jobCard->materialUsage as $usage) {
+                $qty = $usage->actual_qty ?: $usage->spent_qty;
+                if ($qty <= 0) continue;
+
+                // 1. Deduct from Serial if present
+                if ($usage->serial) {
+                    $usage->serial->decrement('current_quantity', $qty);
+                    if ($usage->serial->current_quantity <= 0) {
+                        $usage->serial->update(['status' => 'Empty']);
+                    }
+                }
+
+                // 2. Deduct from General Stock
+                $stock = \App\Models\Inventory\InventoryStock::where('product_id', $usage->product_id)
+                    ->where('branch_id', $jobCard->branch_id ?? $jobCard->order->branch_id)
+                    ->first();
+                
+                if ($stock) {
+                    $stock->decrement('quantity', $qty);
+                }
+
+                // 3. Record Stock Movement
+                \App\Models\Inventory\InventoryStockMovement::create([
+                    'product_id' => $usage->product_id,
+                    'location_id' => $stock ? $stock->location_id : null,
+                    'reference_type' => 'Job Card',
+                    'reference_id' => $jobCard->id,
+                    'type' => 'Out',
+                    'quantity' => $qty,
+                    'notes' => 'Consumed in Job Card #' . $jobCard->job_no
+                ]);
+            }
 
             // Update associated Sales Order if needed
             if ($jobCard->order && $jobCard->order->status !== 'Completed') {

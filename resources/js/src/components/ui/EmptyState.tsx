@@ -22,7 +22,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     onClearFilter,
 }) => {
     return (
-        <div className="group relative flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow duration-300">
+        <div className="group relative flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800">
             {/* Subtle decorative element */}
             <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-transparent via-gray-50/50 to-transparent dark:via-gray-900/20 pointer-events-none" />
             

@@ -54,7 +54,8 @@ class ServiceController extends Controller
             $service = Service::create($validated);
 
             if (isset($validated['materials'])) {
-                foreach ($validated['materials'] as $mat) {
+                $uniqueMaterials = collect($validated['materials'])->unique('product_id');
+                foreach ($uniqueMaterials as $mat) {
                     $service->materials()->create($mat);
                 }
             }
@@ -99,7 +100,8 @@ class ServiceController extends Controller
 
             if (isset($validated['materials'])) {
                 $list->materials()->delete();
-                foreach ($validated['materials'] as $mat) {
+                $uniqueMaterials = collect($validated['materials'])->unique('product_id');
+                foreach ($uniqueMaterials as $mat) {
                     $list->materials()->create($mat);
                 }
             }

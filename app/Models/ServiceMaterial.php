@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Traits\LogsSystemActivity;
+
 class ServiceMaterial extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsSystemActivity;
 
     protected $fillable = ['service_id', 'product_id', 'suggested_qty'];
 

@@ -14,17 +14,24 @@ class EmployeeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $employees = Employee::with([
+        $query = Employee::with([
             'branch:id,name',
             'department:id,name',
             'designation:id,name',
             'workingShift:id,name',
             'attendancePolicy:id,name'
-        ])
-            ->latest()
-            ->get();
+        ]);
+
+        if ($request->has('is_technician')) {
+            $query->where('is_technician', $request->is_technician);
+            if ($request->is_technician == 1) {
+                $query->where('is_active', 1);
+            }
+        }
+
+        $employees = $query->latest()->get();
 
         return response()->json($employees);
     }
@@ -47,7 +54,7 @@ class EmployeeController extends Controller
             'working_shift_id' => 'nullable|exists:working_shifts,id',
             'attendance_policy_id' => 'nullable|exists:attendance_policies,id',
             'employment_type' => 'nullable|in:full_time,part_time,contract,intern,freelance',
-            'status'      => 'nullable|in:active,inactive,on_leave,terminated',
+            'is_active'       => 'nullable|boolean',
             // Allow profile_image to be a string (URL from MediaLibrary) or an image file
             'profile_image' => 'nullable', 
             'base_salary' => 'nullable|numeric|min:0',
@@ -122,7 +129,7 @@ class EmployeeController extends Controller
             'working_shift_id' => 'nullable|exists:working_shifts,id',
             'attendance_policy_id' => 'nullable|exists:attendance_policies,id',
             'employment_type' => 'nullable|in:full_time,part_time,contract,intern,freelance',
-            'status'      => 'nullable|in:active,inactive,on_leave,terminated',
+            'is_active'       => 'nullable|boolean',
             'profile_image' => 'nullable',
             'base_salary' => 'nullable|numeric|min:0',
         ]);

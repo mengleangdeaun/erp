@@ -69,6 +69,22 @@ const addSalesOrderDeposit = async ({ id, formData }: { id: number, formData: Fo
     return data;
 };
 
+const updateSalesOrderDeposit = async ({ id, formData }: { id: number, formData: FormData }) => {
+    // We use POST with _method=PUT for multipart/form-data support in Laravel for PUT
+    if (formData instanceof FormData) {
+        formData.append('_method', 'PUT');
+    }
+    const { data } = await axios.post(`/api/sales/deposits/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return data;
+};
+
+const deleteSalesOrderDeposit = async (id: number) => {
+    const { data } = await axios.delete(`/api/sales/deposits/${id}`);
+    return data;
+};
+
 // Custom Hooks
 export const useCustomers = () => {
     return useQuery({
@@ -167,6 +183,36 @@ export const useAddSalesOrderDeposit = () => {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to record payment');
+        }
+    });
+};
+
+export const useUpdateSalesOrderDeposit = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: updateSalesOrderDeposit,
+        onSuccess: (data: any) => {
+            toast.success('Payment updated successfully');
+            queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
+            queryClient.invalidateQueries({ queryKey: ['salesOrder', data.id] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to update payment');
+        }
+    });
+};
+
+export const useDeleteSalesOrderDeposit = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: deleteSalesOrderDeposit,
+        onSuccess: (data: any) => {
+            toast.success('Payment deleted successfully');
+            queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
+            queryClient.invalidateQueries({ queryKey: ['salesOrder', data.id] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to delete payment');
         }
     });
 };

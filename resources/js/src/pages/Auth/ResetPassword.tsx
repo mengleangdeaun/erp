@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation, Link } from "react-router-dom"
 import { IconLoader2, IconCheck, IconEye, IconEyeOff, IconArrowRight } from "@tabler/icons-react"
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 export default function ResetPassword() {
+    const dispatch = useDispatch();
     const [email, setEmail] = useState("")
     const [token, setToken] = useState("")
     const [password, setPassword] = useState("")
@@ -17,6 +20,9 @@ export default function ResetPassword() {
     const navigate = useNavigate()
     const location = useLocation()
 
+    useEffect(() => {
+        dispatch(setPageTitle('Reset Password'));
+    }, [dispatch]);
 
     useEffect(() => {
         const query = new URLSearchParams(location.search)

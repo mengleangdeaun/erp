@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { IconLoader2, IconArrowRight } from "@tabler/icons-react"
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 export default function Login() {
+    const dispatch = useDispatch();
     // --- Auth State ---
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -22,6 +25,10 @@ export default function Login() {
         if (hour < 18) return "Good afternoon"
         return "Good evening"
     }
+
+    useEffect(() => {
+        dispatch(setPageTitle('Login'));
+    }, [dispatch]);
 
     // --- Mouse Tracking Effect ---
     useEffect(() => {

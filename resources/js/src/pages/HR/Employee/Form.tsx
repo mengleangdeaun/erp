@@ -40,7 +40,7 @@ const initialFormState = {
     line_manager_id: '',
     date_of_joining: '',
     employment_type: '',
-    status: 'active',
+    is_active: true,
     working_shift_id: '',
     attendance_policy_id: '',
     // Contact
@@ -175,7 +175,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                     line_manager_id: data.line_manager_id ? String(data.line_manager_id) : '',
                     date_of_joining: data.date_of_joining ? data.date_of_joining.substring(0, 10) : '',
                     employment_type: data.employment_type || '',
-                    status: data.status || 'active',
+                    is_active: !!data.is_active,
                     working_shift_id: data.working_shift_id ? String(data.working_shift_id) : '',
                     attendance_policy_id: data.attendance_policy_id ? String(data.attendance_policy_id) : '',
                     address_line_1: data.address_line_1 || '',
@@ -642,12 +642,12 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                 </Select>
                             </div>
                             <div>
-                                <label>Employee Status</label>
-                                <Select onValueChange={v => handleSelect(v, 'status')} value={formData.status}>
+                                <label>Active Status</label>
+                                <Select onValueChange={v => handleSelect(v === 'true' ? true : false, 'is_active')} value={String(formData.is_active)}>
                                     <SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                        <SelectItem value="true">Active</SelectItem>
+                                        <SelectItem value="false">Inactive</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -285,9 +285,9 @@ const ServiceDialog = ({ isOpen, setIsOpen, service, onSave }: ServiceDialogProp
         {/* Material Suggested Usage */}
         <div className="space-y-3">
           <div className="flex items-center justify-between border-b pb-2">
-            <Label className="text-xs font-bold uppercase text-gray-500">Material Associations (Suggested)</Label>
+            <Label className="text-xs font-bold uppercase text-gray-500">Product Associations</Label>
             <Button type="button" variant="ghost" size="sm" onClick={handleAddMaterial} className="h-7 text-[10px] gap-1 px-2">
-              <IconPlus size={14} /> Add Material
+              <IconPlus size={14} /> Add Product
             </Button>
           </div>
           
@@ -296,7 +296,9 @@ const ServiceDialog = ({ isOpen, setIsOpen, service, onSave }: ServiceDialogProp
               <div key={index} className="flex items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 p-2 rounded-lg border border-gray-100 dark:border-gray-800">
                 <div className="flex-1">
                   <SearchableSelect 
-                    options={products.map(p => ({ value: p.id, label: p.name, description: p.sku }))}
+                    options={products
+                      .filter(p => !form.materials.some((m, idx) => m.product_id === p.id && idx !== index))
+                      .map(p => ({ value: p.id, label: p.name, description: p.sku }))}
                     value={mat.product_id || null}
                     onChange={(val) => handleMaterialChange(index, 'product_id', val)}
                     placeholder="Select product"

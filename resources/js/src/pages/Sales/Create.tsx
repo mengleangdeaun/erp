@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,6 +51,7 @@ interface SalesOrder {
     notes: string;
     use_tax: boolean;
     global_tax_percent: number;
+    invoice_image_path?: string;
     deposits: { amount: number; payment_account_id: number | null; date: string; notes: string; receipt: File | null }[];
 }
 
@@ -71,9 +72,12 @@ import { useQueryClient } from '@tanstack/react-query';
 const SalesCreate = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
+    const { id } = useParams();
+    const isEdit = !!id;
     const [search, setSearch] = useState('');
     const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
+    const [loadingOrder, setLoadingOrder] = useState(false);
     const [loadingVehicles, setLoadingVehicles] = useState(false);
     const [activeTab, setActiveTab] = useState<'services' | 'products'>('services');
     
@@ -137,10 +141,70 @@ const SalesCreate = () => {
 
     // Default branch selection
     useEffect(() => {
-        if (!selectedBranchId && branches.length > 0) {
+        if (!selectedBranchId && branches.length > 0 && !isEdit) {
             setSelectedBranchId(branches[0].id);
         }
-    }, [branches, selectedBranchId]);
+    }, [branches, selectedBranchId, isEdit]);
+
+    // Fetch existing order for editing
+    useEffect(() => {
+        if (isEdit) {
+            const fetchOrder = async () => {
+                try {
+                    const response = await fetch(`/api/sales/orders/${id}`);
+                    if (!response.ok) throw new Error('Failed to fetch order');
+                    const data = await response.json();
+                    
+                    setForm({
+                        customer_id: data.customer_id,
+                        vehicle_id: data.vehicle_id,
+                        order_date: data.order_date,
+                        items: data.items.map((i: any) => ({
+                            service_id: i.itemable_type.includes('Service') ? i.itemable_id : null,
+                            product_id: i.itemable_type.includes('Product') ? i.itemable_id : null,
+                            job_part_id: i.job_part_id,
+                            qty: parseFloat(i.quantity),
+                            unit_price: parseFloat(i.unit_price),
+                            discount_type: 'FIXED', 
+                            discount_value: parseFloat(i.discount_amount || 0),
+                            discount: parseFloat(i.discount_amount || 0),
+                            tax_percent: 0,
+                        })),
+                        subtotal: parseFloat(data.subtotal),
+                        tax_total: parseFloat(data.tax_total),
+                        discount_total: parseFloat(data.discount_total),
+                        global_discount_type: data.discount_type || 'FIXED',
+                        global_discount_value: parseFloat(data.discount_value || 0),
+                        grand_total: parseFloat(data.grand_total),
+                        taxable_amount: parseFloat(data.taxable_amount || 0),
+                        notes: data.notes || '',
+                        use_tax: parseFloat(data.tax_percent) > 0,
+                        global_tax_percent: parseFloat(data.tax_percent || 10),
+                        invoice_image_path: data.invoice_image_path,
+                        deposits: [], // We don't edit old deposits in this flow usually
+                    });
+
+                    // Restore manual subtotal override if it existed
+                    const items_sum = data.items.reduce((acc: number, i: any) => acc + (parseFloat(i.quantity) * parseFloat(i.unit_price)), 0);
+                    const db_subtotal = parseFloat(data.subtotal);
+                    if (Math.abs(items_sum - db_subtotal) > 0.01) {
+                        setManualGrandTotal(db_subtotal);
+                    } else {
+                        setManualGrandTotal(null);
+                    }
+
+                    setSelectedBranchId(data.branch_id);
+                } catch (error) {
+                    toast.error('Error loading order data');
+                    console.error(error);
+                } finally {
+                    setLoadingOrder(false);
+                }
+            };
+            setLoadingOrder(true);
+            fetchOrder();
+        }
+    }, [id, isEdit]);
 
     const handleAddItem = (type: 'service' | 'product', id: number) => {
         if (type === 'service') {
@@ -409,13 +473,21 @@ const SalesCreate = () => {
                     formData.append(`deposits[${idx}][receipt]`, dep.receipt);
                 }
             });
-            formData.append('branch_id', form.branch_id.toString());
-            formData.append('vehicle_id', form.vehicle_id?.toString() || '');
             if (invoiceImageFile) {
                 formData.append('invoice_image', invoiceImageFile);
+            } else if (isEdit && form.invoice_image_path) {
+                // If we are editing and no new file is selected, 
+                // the backend already has it, but we could explicitly pass the path if needed.
+                // However, the backend update logic I wrote preserves it if no target file is uploaded.
             }
 
-            const response = await fetch('/api/sales/orders', {
+            if (isEdit) {
+                formData.append('_method', 'PUT');
+            }
+
+            const url = isEdit ? `/api/sales/orders/${id}` : '/api/sales/orders';
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -428,11 +500,31 @@ const SalesCreate = () => {
                 toast.success('Sale processed successfully!');
                 navigate('/sales/orders');
             } else {
-                const data = await response.json();
-                toast.error(data.message || 'Failed to process sale');
+                let errorMessage = 'Failed to process sale';
+                try {
+                    const data = await response.json();
+                    errorMessage = data.message || data.error || errorMessage;
+                    if (data.errors) {
+                        // Handle Laravel validation errors if present
+                        const firstError = Object.values(data.errors)[0];
+                        if (Array.isArray(firstError) && firstError.length > 0) {
+                            errorMessage = firstError[0] as string;
+                        }
+                    }
+                } catch (e) {
+                    // If JSON parsing fails, use the status text
+                    errorMessage = `Server Error: ${response.status} ${response.statusText}`;
+                }
+                toast.error(errorMessage);
+                console.error('Submission failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url
+                });
             }
         } catch (error) {
-            toast.error('A critical error occurred');
+            console.error('Fatal submission error:', error);
+            toast.error(error instanceof Error ? `Critical Error: ${error.message}` : 'A unexpected system error occurred');
         } finally {
             setSaving(false);
         }
@@ -452,6 +544,19 @@ const SalesCreate = () => {
     return (
         <div className="flex flex-col h-[calc(100vh-100px)] bg-gray-50 dark:bg-gray-950 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-800 shadow-lg relative">
             
+            {loadingOrder && (
+                <div className="absolute inset-0 bg-white/60 dark:bg-gray-950/60 backdrop-blur-sm z-[100] flex flex-col items-center justify-center space-y-4 animate-in fade-in duration-300">
+                    <div className="relative">
+                        <div className="w-16 h-16 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
+                        <IconReceipt className="absolute inset-0 m-auto text-primary" size={24} />
+                    </div>
+                    <div className="text-center">
+                        <p className="text-xs font-black uppercase text-gray-900 dark:text-white tracking-[0.2em]">Retreiving Order</p>
+                        <p className="text-[10px] text-gray-400 font-bold mt-1">Acquiring sale data from secure storage...</p>
+                    </div>
+                </div>
+            )}
+            
             {/* Top Navigation Bar */}
             <div className="bg-white dark:bg-gray-900 px-4 py-4.5 flex items-center justify-between border-b dark:border-gray-800 shrink-0">
                 <div className="flex items-center gap-3 shrink-0">
@@ -459,8 +564,12 @@ const SalesCreate = () => {
                         <IconArrowLeft size={16} />
                     </Button>
                     <div>
-                        <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">Point of Sale</h1>
-                        <p className="text-[9px] font-black uppercase text-primary tracking-widest leading-none mt-0.5">Direct Checkout</p>
+                        <h1 className="text-lg font-black text-gray-900 dark:text-white tracking-tight">
+                            {isEdit ? 'Edit Sale' : 'Point of Sale'}
+                        </h1>
+                        <p className="text-[9px] font-black uppercase text-primary tracking-widest leading-none mt-0.5">
+                            {isEdit ? `Order #${id}` : 'Direct Checkout'}
+                        </p>
                     </div>
                 </div>
 
@@ -668,6 +777,7 @@ const SalesCreate = () => {
                 setInvoiceImageFile={setInvoiceImageFile}
                 loadingVehicles={loadingVehicles}
                 onEditPackage={handleEditPackage}
+                isEdit={isEdit}
             />
 
             {/* Service Item Selector Dialog */}
