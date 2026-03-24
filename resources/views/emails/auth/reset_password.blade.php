@@ -31,7 +31,7 @@
 
                     <!-- ── HEADER ── -->
                     <tr>
-                        <td style="background-color:#0f1623;padding:0;position:relative;">
+                        <td style="background-color:#C0392B;padding:0;position:relative;">
 
                             <!-- Header content -->
                             <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -42,17 +42,22 @@
                                         <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                             <tr>
                                                 <td>
-                                                    <!-- Logo mark -->
                                                     <table cellpadding="0" cellspacing="0" border="0">
                                                         <tr>
                                                             <td style="padding:0 14px 0 0;vertical-align:middle;">
                                                                 <span style="font-family:'Google Sans','Product Sans',sans-serif;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">SCCG</span>
                                                             </td>
-                                                            <td style="padding-left:0;vertical-align:middle;border-left:1px solid rgba(255,255,255,0.15);">
-                                                                <span style="font-family:'Google Sans','Product Sans',sans-serif;font-size:14px;font-weight:400;color:#94a3b8;letter-spacing:0.3px;padding-left:14px;">SCC Group</span>
+                                                            <td style="padding-left:0;vertical-align:middle;border-left:1px solid rgba(255,255,255,0.30);">
+                                                                <span style="font-family:'Google Sans','Product Sans',sans-serif;font-size:14px;font-weight:400;color:rgba(255,255,255,0.75);letter-spacing:0.3px;padding-left:14px;">SCC Group</span>
                                                             </td>
                                                         </tr>
                                                     </table>
+                                                </td>
+                                            </tr>
+                                            <!-- White decorative line below logo -->
+                                            <tr>
+                                                <td style="padding-top:14px;">
+                                                    <div style="height:2px;width:100%;background-color:rgba(255,255,255);border-radius:1px;margin-left:auto;"></div>
                                                 </td>
                                             </tr>
                                         </table>
@@ -61,8 +66,8 @@
                                         <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                             <tr>
                                                 <td style="padding-top:36px;">
-                                                    <p style="margin:0 0 10px;font-family:'Google Sans','Product Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:#ee4343ff ;">Security Notice</p>
-                                                    <h1 style="margin:0;font-family:'Google Sans','Product Sans',sans-serif;font-size:34px;font-weight:700;color:#f8fafc;line-height:1.2;letter-spacing:-0.5px;">
+                                                    <p style="margin:0 0 10px;font-family:'Google Sans','Product Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.65);">Security Notice</p>
+                                                    <h1 style="margin:0;font-family:'Google Sans','Product Sans',sans-serif;font-size:34px;font-weight:700;color:#ffffff;line-height:1.2;letter-spacing:-0.5px;">
                                                         Password Reset<br>Request
                                                     </h1>
                                                 </td>
@@ -94,10 +99,9 @@
                                         <table width="100%" cellpadding="0" cellspacing="0" border="0">
                                             <tr>
                                                 <td style="padding-right:16px;vertical-align:middle;width:36px;">
-                                                    <!-- Icon circle -->
                                                     <table cellpadding="0" cellspacing="0" border="0">
                                                         <tr>
-<div style="width:36px;height:36px;background-color:#eff2ff;border-radius:18px;text-align:center;line-height:36px;">
+<div style="width:36px;height:36px;background-color:#ffe8e8;border-radius:18px;text-align:center;line-height:36px;">
   ✉
 </div>                                             </tr>
                                                     </table>
@@ -116,7 +120,7 @@
                             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:36px;">
                                 <tr>
                                     <td align="center">
-                                        <a href="{{ $url }}" style="display:inline-block;background:linear-gradient(180deg,#FF0000 0%,#B81212 55%);color:#ffffff;font-family:'Google Sans','Product Sans',sans-serif;font-size:15px;font-weight:600;letter-spacing:0.3px;text-decoration:none;padding:15px 40px;border-radius:10px;">
+                                        <a href="{{ $url }}" style="display:inline-block;background:linear-gradient(180deg,#E74C3C 0%,#C0392B 55%);color:#ffffff;font-family:'Google Sans','Product Sans',sans-serif;font-size:15px;font-weight:600;letter-spacing:0.3px;text-decoration:none;padding:15px 40px;border-radius:10px;">
                                             Reset My Password →
                                         </a>
                                     </td>
@@ -126,7 +130,7 @@
                             <!-- Expiry notice -->
                             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:36px;">
                                 <tr>
-                                    <td style="border-left:3px solid #ee4343ff;padding:12px 16px;background-color:#f8faff;border-radius:0 8px 8px 0;">
+                                    <td style="border-left:3px solid #C0392B;padding:12px 16px;background-color:#fff5f5;border-radius:0 8px 8px 0;">
                                         <p style="margin:0;font-family:'Google Sans','Product Sans',sans-serif;font-size:13px;line-height:20px;color:#64748b;">
                                             <strong style="color:#1e293b;">Link expires in 60 minutes.</strong> If you didn't request a password reset, you can safely ignore this email — your account remains secure.
                                         </p>
@@ -148,7 +152,7 @@
                                         <p style="margin:0 0 10px;font-family:'Google Sans','Product Sans',sans-serif;font-size:13px;color:#94a3b8;line-height:20px;">
                                             Having trouble with the button? Copy and paste this link into your browser:
                                         </p>
-                                        <p style="margin:0;font-family:monospace;font-size:12px;color:#4361ee;word-break:break-all;background-color:#f8fafc;padding:12px 14px;border-radius:8px;border:1px solid #e2e8f0;">
+                                        <p style="margin:0;font-family:monospace;font-size:12px;color:#C0392B;word-break:break-all;background-color:#f8fafc;padding:12px 14px;border-radius:8px;border:1px solid #e2e8f0;">
                                             {{ $url }}
                                         </p>
                                     </td>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { IconTools, IconExternalLink, IconHistory } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -18,13 +19,21 @@ const JobCardIndex: React.FC = () => {
     const { t } = useTranslation();
     const [selectedJob, setSelectedJob] = useState<any>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
-    
     // Search and Pagination state
+    const [searchParams] = useSearchParams();
+    const jobIdParam = searchParams.get('id');
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const { data: jobs = [], isLoading, refetch } = useJobCards({ search });
+
+    useEffect(() => {
+        if (jobIdParam) {
+            setSelectedJob({ id: parseInt(jobIdParam) });
+            setDialogOpen(true);
+        }
+    }, [jobIdParam]);
 
     useEffect(() => {
         dispatch(setPageTitle('Workshop Jobs'));

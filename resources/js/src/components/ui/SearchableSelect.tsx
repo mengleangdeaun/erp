@@ -4,7 +4,7 @@ import { Input } from './input';
 import { Button } from './button';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 import 'react-perfect-scrollbar/dist/css/styles.css';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { Check, ChevronsUpDown, Search, Inbox } from 'lucide-react';
 
 interface Option {
     value: string | number;
@@ -129,8 +129,9 @@ export function SearchableSelect({
                                     <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Loading Data</p>
                                 </div>
                             ) : filteredOptions.length === 0 ? (
-                                <div className="p-4 text-center">
-                                    <p className="text-sm text-gray-400">{emptyMessage}</p>
+                                <div className="p-8 text-center flex flex-col items-center justify-center gap-2">
+                                    <Inbox className="h-8 w-8 text-gray-200 dark:text-gray-700" />
+                                    <p className="text-xs text-gray-400">{emptyMessage}</p>
                                 </div>
                             ) : (
                                 filteredOptions.map((option) => (

@@ -34,7 +34,7 @@ class Branch extends Model
 
     public function inventoryProducts()
     {
-        return $this->belongsToMany(\App\Models\Inventory\InventoryProduct::class, 'branch_inventory_product', 'branch_id', 'inventory_product_id')->withPivot('is_active')->withTimestamps();
+        return $this->belongsToMany(\App\Models\Inventory\InventoryProduct::class, 'branch_inventory_product', 'branch_id', 'inventory_product_id')->withPivot('is_active', 'reorder_level')->withTimestamps();
     }
 
     public function services()

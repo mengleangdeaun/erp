@@ -90,6 +90,109 @@ interface ActionButtonsProps {
     skipRejectConfirm?: boolean;
 }
 
+export const TooltipWrapper = ({ 
+    children, 
+    content, 
+    placement = 'top' 
+}: { 
+    children: React.ReactNode; 
+    content: string;
+    placement?: 'top' | 'bottom' | 'left' | 'right';
+}) => (
+    <Tooltip.Provider delayDuration={300}>
+        <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+                {children}
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+                <Tooltip.Content
+                    className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg z-50 animate-in fade-in-0 zoom-in-95"
+                    side={placement}
+                    sideOffset={5}
+                >
+                    {content}
+                    <Tooltip.Arrow className="fill-gray-900" />
+                </Tooltip.Content>
+            </Tooltip.Portal>
+        </Tooltip.Root>
+    </Tooltip.Provider>
+);
+
+export const ActionButton = ({
+    onClick,
+    icon: Icon,
+    label,
+    style,
+    size = 'md',
+    isLoading = false,
+    disabled = false,
+    buttonClassName = '',
+    tooltipPlacement = 'top',
+    variant = 'inline',
+    confirmType,
+    onConfirm
+}: {
+    onClick?: () => void;
+    icon: React.ElementType;
+    label: string;
+    style: string;
+    size?: 'sm' | 'md' | 'lg';
+    isLoading?: boolean;
+    disabled?: boolean;
+    buttonClassName?: string;
+    tooltipPlacement?: 'top' | 'bottom' | 'left' | 'right';
+    variant?: 'inline' | 'popover' | 'rounded';
+    confirmType?: 'delete' | 'reject';
+    onConfirm?: (type: 'delete' | 'reject', callback: () => void) => void;
+}) => {
+    const sizeConfig = {
+        sm: { icon: 16, button: 'h-7 w-7' },
+        md: { icon: 18, button: 'h-8 w-8' },
+        lg: { icon: 20, button: 'h-9 w-9' }
+    };
+
+    const roundedStyles = variant === 'rounded'
+        ? 'rounded-full shadow-sm hover:shadow-md transition-shadow'
+        : 'rounded-md';
+
+    const handleClick = () => {
+        if (confirmType && onClick && onConfirm) {
+            onConfirm(confirmType, onClick);
+        } else if (onClick) {
+            onClick();
+        }
+    };
+
+    return (
+        <TooltipWrapper content={label} placement={tooltipPlacement}>
+            <Button
+                variant="ghost"
+                size="icon"
+                className={`
+                    ${sizeConfig[size].button} 
+                    ${roundedStyles}
+                    ${style}
+                    transition-all duration-200 ease-in-out
+                    hover:scale-110 active:scale-95
+                    disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                    ${isLoading ? 'animate-pulse' : ''}
+                    ${buttonClassName}
+                `}
+                style={{ animationDuration: isLoading ? '3s' : undefined }}
+                onClick={handleClick}
+                disabled={disabled || isLoading || !onClick}
+            >
+                {isLoading ? (
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                ) : <Icon size={sizeConfig[size].icon} />}
+            </Button>
+        </TooltipWrapper>
+    );
+};
+
 const ActionButtons: React.FC<ActionButtonsProps> = ({
     // Actions
     onEdit,
@@ -145,7 +248,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         callback: () => void;
     } | null>(null);
 
-    // Size mappings
+    // Size mappings for popover items
     const sizeConfig = {
         sm: { icon: 16, button: 'h-7 w-7', gap: 'gap-0.5', popoverItem: 'py-1.5' },
         md: { icon: 18, button: 'h-8 w-8', gap: 'gap-1', popoverItem: 'py-2' },
@@ -211,85 +314,8 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         }
     };
 
-    // Rounded variant styles
-    const roundedStyles = variant === 'rounded'
-        ? 'rounded-full shadow-sm hover:shadow-md transition-shadow'
-        : 'rounded-md';
-
-    // Loading spinner component
-    const LoadingSpinner = () => (
-        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-    );
-
-    const TooltipWrapper = ({ children, content }: { children: React.ReactNode; content: string }) => (
-        <Tooltip.Provider delayDuration={300}>
-            <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                    {children}
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                    <Tooltip.Content
-                        className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg z-50 animate-in fade-in-0 zoom-in-95"
-                        side={tooltipPlacement}
-                        sideOffset={5}
-                    >
-                        {content}
-                        <Tooltip.Arrow className="fill-gray-900" />
-                    </Tooltip.Content>
-                </Tooltip.Portal>
-            </Tooltip.Root>
-        </Tooltip.Provider>
-    );
-
-    const ActionButton = ({
-        onClick,
-        icon: Icon,
-        label,
-        style,
-        isLoading = false,
-        confirmType
-    }: {
-        onClick?: () => void;
-        icon: React.ElementType;
-        label: string;
-        style: string;
-        isLoading?: boolean;
-        confirmType?: 'delete' | 'reject';
-    }) => {
-        const handleClick = () => {
-            if (confirmType && onClick) {
-                setConfirmAction({ type: confirmType, callback: onClick });
-            } else if (onClick) {
-                onClick();
-            }
-        };
-
-        return (
-            <TooltipWrapper content={label}>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`
-                        ${sizeConfig[size].button} 
-                        ${roundedStyles}
-                        ${style}
-                        transition-all duration-200 ease-in-out
-                        hover:scale-110 active:scale-95
-                        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
-                        ${isLoading ? 'animate-pulse' : ''}
-                        ${buttonClassName}
-                    `}
-                    style={{ animationDuration: isLoading ? '3s' : undefined }}
-                    onClick={handleClick}
-                    disabled={disabled || isLoading || !onClick}
-                >
-                    {isLoading ? <LoadingSpinner /> : <Icon size={sizeConfig[size].icon} />}
-                </Button>
-            </TooltipWrapper>
-        );
+    const handleConfirm = (type: 'delete' | 'reject', callback: () => void) => {
+        setConfirmAction({ type, callback });
     };
 
     // Confirmation Dialog
@@ -382,32 +408,37 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 
     if (availableActions.length === 0) return null;
 
-    // Inline variant
-    if (variant === 'inline') {
+    // Inline or rounded variant
+    if (variant === 'inline' || variant === 'rounded') {
+        const actionHandlers: Record<ActionType, (() => void) | undefined> = {
+            approve: onApprove,
+            reject: onReject,
+            view: onView,
+            qr: onQr,
+            status: onStatus,
+            telegram: onTelegram,
+            stats: onStats,
+            receive: onReceive,
+            payment: onPayment,
+            edit: onEdit,
+            delete: onDelete
+        };
+
         return (
             <>
                 <div className={`flex items-center ${sizeConfig[size].gap} justify-end ${className}`}>
                     {availableActions.map(type => (
                         <ActionButton
                             key={type}
-                            onClick={{
-                                approve: onApprove,
-                                reject: onReject,
-                                view: onView,
-                                qr: onQr,
-                                status: onStatus,
-                                telegram: onTelegram,
-                                stats: onStats,
-                                receive: onReceive,
-                                payment: onPayment,
-                                edit: onEdit,
-                                delete: onDelete
-                            }[type]}
+                            onClick={actionHandlers[type]}
                             icon={actionConfigs[type].icon}
                             label={actionConfigs[type].label}
                             style={actionConfigs[type].style}
+                            size={size}
+                            variant={variant}
                             isLoading={loading}
-                            confirmType={type === 'delete' && !skipDeleteConfirm ? 'delete' : type === 'reject' && !skipRejectConfirm ? 'reject' : undefined}
+                            confirmType={(type === 'delete' && !skipDeleteConfirm) ? 'delete' : (type === 'reject' && !skipRejectConfirm) ? 'reject' : undefined}
+                            onConfirm={handleConfirm}
                         />
                     ))}
                 </div>
@@ -418,10 +449,24 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 
     // Popover variant
     if (variant === 'popover') {
+        const actionHandlers: Record<ActionType, (() => void) | undefined> = {
+            approve: onApprove,
+            reject: onReject,
+            view: onView,
+            qr: onQr,
+            status: onStatus,
+            telegram: onTelegram,
+            stats: onStats,
+            receive: onReceive,
+            payment: onPayment,
+            edit: onEdit,
+            delete: onDelete
+        };
+
         return (
             <>
                 <Popover.Root open={popoverOpen} onOpenChange={setPopoverOpen}>
-                    <TooltipWrapper content="Actions">
+                    <TooltipWrapper content="Actions" placement={tooltipPlacement}>
                         <Popover.Trigger asChild>
                             <Button
                                 variant="ghost"
@@ -437,7 +482,12 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
                                 `}
                                 disabled={disabled || loading}
                             >
-                                {loading ? <LoadingSpinner /> : <IconDotsVertical size={sizeConfig[size].icon} />}
+                                {loading ? (
+                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                ) : <IconDotsVertical size={sizeConfig[size].icon} />}
                             </Button>
                         </Popover.Trigger>
                     </TooltipWrapper>
@@ -475,19 +525,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
 
                                 {availableActions.map(type => {
                                     const config = actionConfigs[type];
-                                    const onClick = {
-                                        approve: onApprove,
-                                        reject: onReject,
-                                        view: onView,
-                                        qr: onQr,
-                                        status: onStatus,
-                                        telegram: onTelegram,
-                                        stats: onStats,
-                                        receive: onReceive,
-                                        payment: onPayment,
-                                        edit: onEdit,
-                                        delete: onDelete
-                                    }[type];
+                                    const onClick = actionHandlers[type];
 
                                     const handleClick = () => {
                                         if ((type === 'delete' && !skipDeleteConfirm) || (type === 'reject' && !skipRejectConfirm)) {
@@ -533,37 +571,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         );
     }
 
-    // Rounded variant
-    return (
-        <>
-            <div className={`flex items-center ${sizeConfig[size].gap} justify-end ${className}`}>
-                {availableActions.map(type => (
-                    <ActionButton
-                        key={type}
-                        onClick={{
-                            approve: onApprove,
-                            reject: onReject,
-                            view: onView,
-                            qr: onQr,
-                            status: onStatus,
-                            telegram: onTelegram,
-                            stats: onStats,
-                            receive: onReceive,
-                            payment: onPayment,
-                            edit: onEdit,
-                            delete: onDelete
-                        }[type]}
-                        icon={actionConfigs[type].icon}
-                        label={actionConfigs[type].label}
-                        style={actionConfigs[type].style}
-                        isLoading={loading}
-                        confirmType={type === 'delete' && !skipDeleteConfirm ? 'delete' : type === 'reject' && !skipRejectConfirm ? 'reject' : undefined}
-                    />
-                ))}
-            </div>
-            <ConfirmationDialog />
-        </>
-    );
+    return null;
 };
 
 export default ActionButtons;

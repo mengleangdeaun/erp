@@ -17,7 +17,7 @@ import { Badge } from '../../../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { Label } from '../../../components/ui/label';
 import { CustomQuillEditor } from '../../../components/ui/custom-quill-editor';
-import { IconBoxSeam, IconPhoto, IconLink, IconUpload, IconX, IconPhotoOff } from '@tabler/icons-react';
+import { IconBoxSeam, IconPhoto, IconLink, IconUpload, IconX, IconPhotoOff, IconLoader2 } from '@tabler/icons-react';
 import { 
     useInventoryProducts, useInventoryCategories, useInventoryUoms, useInventoryTags,
     useCreateProduct, useUpdateProduct, useDeleteProduct
@@ -50,6 +50,10 @@ const ProductIndex = () => {
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+
+    const [categoryFilter, setCategoryFilter] = useState<string>('all');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [isImageLoading, setIsImageLoading] = useState(false);
 
     const initialFormState = {
         code: '', sku: '', barcode: '', name: '', brand: '',
@@ -214,20 +218,76 @@ const ProductIndex = () => {
     const filteredAndSorted = useMemo(() => {
         let result = [...products];
         if (search) { const q = search.toLowerCase(); result = result.filter(d => d.name?.toLowerCase().includes(q) || d.code?.toLowerCase().includes(q) || d.sku?.toLowerCase().includes(q)); }
+        
+        if (categoryFilter !== 'all') {
+            result = result.filter(d => String(d.category_id) === categoryFilter);
+        }
+
+        if (statusFilter !== 'all') {
+            const isActive = statusFilter === '1';
+            result = result.filter(d => !!d.is_active === isActive);
+        }
+
         result.sort((a, b) => {
             let valA = a[sortBy] || ''; let valB = b[sortBy] || '';
             if (typeof valA === 'string') valA = valA.toLowerCase(); if (typeof valB === 'string') valB = valB.toLowerCase();
             if (valA < valB) return sortDirection === 'asc' ? -1 : 1; if (valA > valB) return sortDirection === 'asc' ? 1 : -1; return 0;
         });
         return result;
-    }, [products, search, sortBy, sortDirection]);
+    }, [products, search, sortBy, sortDirection, categoryFilter, statusFilter]);
 
     const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
     const paginated = filteredAndSorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <div>
-            <FilterBar icon={<IconBoxSeam className="w-6 h-6 text-primary" />} title="Products Catalog" description="Master material and product registry" search={search} setSearch={setSearch} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} onAdd={handleCreate} addLabel="Add Product" onRefresh={refetchProducts} hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('name'); setSortDirection('asc'); }} />
+            <FilterBar 
+                icon={<IconBoxSeam className="w-6 h-6 text-primary" />} 
+                title="Products Catalog" 
+                description="Master material and product registry" 
+                search={search} 
+                setSearch={setSearch} 
+                itemsPerPage={itemsPerPage} 
+                setItemsPerPage={setItemsPerPage} 
+                onAdd={handleCreate} 
+                addLabel="Add Product" 
+                onRefresh={refetchProducts} 
+                hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc' || categoryFilter !== 'all' || statusFilter !== 'all'} 
+                onClearFilters={() => { 
+                    setSortBy('name'); 
+                    setSortDirection('asc'); 
+                    setCategoryFilter('all');
+                    setStatusFilter('all');
+                }} 
+            >
+                <div className="space-y-1.5">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Category</span>
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <SelectValue placeholder="All Categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Categories</SelectItem>
+                            {categories.map((c: any) => (
+                                <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1.5">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Lifecycle Status</span>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="1">Active Component</SelectItem>
+                            <SelectItem value="0">Discontinued / Inactive</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </FilterBar>
 
             {loading ? (
                 <TableSkeleton columns={7} rows={5} />
@@ -258,7 +318,7 @@ const ProductIndex = () => {
                                 <SortableHeader label="Product Name" value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <th className="text-left font-semibold px-4 py-3">Category</th>
                                 <th className="text-left font-semibold px-4 py-3">Price</th>
-                                <th className="text-left font-semibold px-4 py-3">Physical Unit</th>
+                                <SortableHeader label="Reorder Level" value="reorder_level" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <SortableHeader label="Status" value="is_active" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <th className="text-right">Action</th>
                             </tr>
@@ -272,6 +332,7 @@ const ProductIndex = () => {
                                             type="button"
                                             onClick={() => {
                                                 if (row.img) {
+                                                    setIsImageLoading(true);
                                                     setImagePreviewUrl(row.img);
                                                     setPreviewModalOpen(true);
                                                 }
@@ -290,7 +351,7 @@ const ProductIndex = () => {
                                     <td className="font-medium whitespace-nowrap text-primary">{row.name}</td>
                                     <td className="text-sm">{row.category ? row.category.name : '-'}</td>
                                     <td className="text-sm font-semibold text-emerald-600">${parseFloat(row.price).toFixed(2)}</td>
-                                    <td className="text-xs">{row.base_uom ? row.base_uom.code : '-'}</td>
+                                    <td className="text-center font-bold text-red-500">{row.reorder_level || 0}</td>
                                     <td>
                                         <Badge variant={row.is_active ? 'success' : 'destructive'}>
                                             {row.is_active ? 'Active' : 'Inactive'}
@@ -305,14 +366,14 @@ const ProductIndex = () => {
                 </div>
             )}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[1050px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                <DialogContent className=" gap-0 sm:max-w-[1050px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-primary/20 p-3 rounded-2xl shadow-sm"><IconBoxSeam className="text-primary w-7 h-7" /></div>
                         <div><DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">{editingProduct ? 'Edit Product Parameters' : 'Register New Product'}</DialogTitle></div>
                     </div>
                     <form id="prod-form" onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                            <div className="px-6 py-2 border-b bg-gray-50/50 dark:bg-gray-900/20">
+                            <div className="px-6 py-4 border-b bg-gray-50/50 dark:bg-gray-900/20">
                                 <TabsList className="grid w-full max-w-md grid-cols-3">
                                     <TabsTrigger value="general">General Info</TabsTrigger>
                                     <TabsTrigger value="inventory">Inventory & Pricing</TabsTrigger>
@@ -321,7 +382,7 @@ const ProductIndex = () => {
                             </div>
 
                             <ScrollArea className="flex-1">
-                                <div className="p-6 !pt-0">
+                                <div className="p-6">
                                     <TabsContent value="general" className="mt-0 space-y-8 animate-in fade-in-50 duration-300">
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                             <div className="lg:col-span-2 space-y-8">
@@ -506,19 +567,31 @@ const ProductIndex = () => {
                 <DialogContent className="max-w-2xl p-0 overflow-hidden bg-transparent border-0 shadow-none [&>button]:hidden">
                     <div className="relative flex items-center justify-center w-full h-full min-h-[400px] bg-black/5 backdrop-blur-sm rounded-2xl group">
                         {imagePreviewUrl && (
-                            <img 
-                                src={imagePreviewUrl} 
-                                alt="Preview" 
-                                className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-200"
-                                onError={(e) => {
-                                    (e.target as HTMLImageElement).src = '/images/invalid-image.svg';
-                                }}
-                            />
+                            <>
+                                {isImageLoading && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100/10 rounded-2xl">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <IconLoader2 className="w-10 h-10 text-primary animate-spin" />
+                                            <span className="text-xs font-medium text-gray-500">Fetching Image...</span>
+                                        </div>
+                                    </div>
+                                )}
+                                <img 
+                                    src={imagePreviewUrl} 
+                                    alt="Preview" 
+                                    className={`max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-200 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
+                                    onLoad={() => setIsImageLoading(false)}
+                                    onError={(e) => {
+                                        setIsImageLoading(false);
+                                        (e.target as HTMLImageElement).src = '/images/invalid-image.svg';
+                                    }}
+                                />
+                            </>
                         )}
                         <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="absolute top-4 right-4 text-white bg-black/20 rounded-full"
+                            className="absolute top-4 right-4 text-white bg-black/20 rounded-full hover:bg-black/40 border-0"
                             onClick={() => setPreviewModalOpen(false)}
                         >
                             <IconX size={24} />

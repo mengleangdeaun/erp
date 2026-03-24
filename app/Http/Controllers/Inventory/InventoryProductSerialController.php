@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Inventory\InventoryProductSerial;
 use Illuminate\Http\Request;
 use App\Models\JobCardMaterialUsage;
+use App\Models\Inventory\InventoryStock;
 
 class InventoryProductSerialController extends Controller
 {
@@ -55,8 +56,22 @@ class InventoryProductSerialController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        // Calculate Area (sqm)
+        // Calculate Area (sqm) for the new serial record
         $area = $validated['length'] * $validated['width'];
+        
+        // Deduct 1 unit from bulk stock (e.g. 1 roll)
+        $stock = InventoryStock::where('product_id', $validated['product_id'])
+            ->where('location_id', $validated['location_id'])
+            ->first();
+
+        if (!$stock || $stock->quantity < 1) {
+            return response()->json([
+                'message' => 'Insufficient bulk stock (0 units available) to serialize a new unit.'
+            ], 422);
+        }
+
+        $stock->decrement('quantity', 1);
+
         $validated['initial_quantity'] = $area;
         $validated['current_quantity'] = $area;
         $validated['status'] = 'Available';
@@ -68,7 +83,7 @@ class InventoryProductSerialController extends Controller
     public function update(Request $request, $id)
     {
         $serial = InventoryProductSerial::findOrFail($id);
-        
+
         $validated = $request->validate([
             'current_quantity' => 'sometimes|numeric',
             'status' => 'sometimes|string',

@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { useCreateSerial } from '@/hooks/useSerialData';
-import { useInventoryProducts, useBranches, useInventoryLocations } from '@/hooks/useInventoryData';
+import { useInventoryProducts, useBranches, useInventoryLocations, useBranchProducts } from '@/hooks/useInventoryData';
 import { IconHash, IconRuler2, IconBuildingStore, IconPackage, IconMapPin } from '@tabler/icons-react';
 
 const AddSerialDialog = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (val: boolean) => void }) => {
-    const { data: products = [] } = useInventoryProducts();
-    const { data: branches = [] } = useBranches();
-    const { data: locations = [] } = useInventoryLocations();
+    const { data: products = [], isLoading: loadingProducts } = useInventoryProducts();
+    const { data: branches = [], isLoading: loadingBranches } = useBranches();
+    const { data: locations = [], isLoading: loadingLocations } = useInventoryLocations();
     const createMutation = useCreateSerial();
 
     const [form, setForm] = useState({
@@ -23,6 +23,8 @@ const AddSerialDialog = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v
         location_id: '',
         notes: ''
     });
+
+    const { data: branchProductsRaw = [], isLoading: loadingBranchProducts } = useBranchProducts(form.branch_id);
 
     // Auto-select primary location when branch changes
     useEffect(() => {
@@ -37,16 +39,25 @@ const AddSerialDialog = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v
         }
     }, [form.branch_id, locations]);
 
-    const productOptions = products.map((p: any) => ({
-        value: p.id,
-        label: p.name,
-        description: `${p.code} | ${p.width || 0}x${p.length || 0}`
-    }));
+    const displayProducts = useMemo(() => {
+        if (!form.branch_id) return products;
+        return branchProductsRaw.filter((p: any) => p.is_assigned);
+    }, [form.branch_id, products, branchProductsRaw]);
 
-    const branchOptions = branches.map((b: any) => ({
-        value: b.id,
-        label: b.name
-    }));
+    const productOptions = useMemo(() => 
+        displayProducts.map((p: any) => ({
+            value: p.id,
+            label: p.name,
+            description: `${p.code} | ${p.width || 0}x${p.length || 0}`
+        })),
+    [displayProducts]);
+
+    const branchOptions = branches
+        .filter((b: any) => b.status === 'active')
+        .map((b: any) => ({
+            value: b.id,
+            label: b.name
+        }));
 
     const locationOptions = locations
         .filter((loc: any) => !form.branch_id || loc.branch_id === parseInt(form.branch_id))
@@ -77,32 +88,18 @@ const AddSerialDialog = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v
                 </DialogHeader>
                 
                 <div className="grid gap-6 py-4">
-                    <div className="grid">
-                        <Label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                            <IconPackage size={14} /> Product
-                        </Label>
-                        <SearchableSelect 
-                            options={productOptions}
-                            value={form.product_id}
-                            onChange={(val) => {
-                                const prod = products.find((p: any) => p.id === val);
-                                setForm({ ...form, product_id: val as string, width: prod?.width?.toString() || '' });
-                            }}
-                            placeholder="Select Product..."
-                        />
-                    </div>
-
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid">
                             <Label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
                                 <IconBuildingStore size={14} /> Branch
                             </Label>
-                            <SearchableSelect 
-                                options={branchOptions}
-                                value={form.branch_id}
-                                onChange={(val) => setForm({ ...form, branch_id: val as string, location_id: '' })}
-                                placeholder="Select Branch..."
-                            />
+                             <SearchableSelect 
+                                 options={branchOptions}
+                                 value={form.branch_id}
+                                 onChange={(val) => setForm({ ...form, branch_id: val as string, location_id: '', product_id: '' })}
+                                 placeholder="Select Branch..."
+                                 loading={loadingBranches}
+                             />
                         </div>
 
                         <div className="grid">
@@ -115,8 +112,28 @@ const AddSerialDialog = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v
                                 onChange={(val) => setForm({ ...form, location_id: val as string })}
                                 placeholder="Select Location..."
                                 disabled={!form.branch_id}
+                                loading={loadingLocations || (!!form.branch_id && loadingBranches)} // Branches check for completeness
+                                emptyMessage={!form.branch_id ? "Select a branch first" : "No locations found"}
                             />
                         </div>
+                    </div>
+
+                    <div className="grid">
+                        <Label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                            <IconPackage size={14} /> Product
+                        </Label>
+                        <SearchableSelect 
+                            options={productOptions}
+                            value={form.product_id}
+                            onChange={(val) => {
+                                const prod = displayProducts.find((p: any) => p.id === val);
+                                setForm({ ...form, product_id: val as string, width: prod?.width?.toString() || '' });
+                            }}
+                            placeholder="Select Product..."
+                            disabled={!form.branch_id}
+                            loading={loadingProducts || (!!form.branch_id && loadingBranchProducts)}
+                            emptyMessage={!form.branch_id ? "Select a branch first" : (branchProductsRaw.length === 0 ? "No products assigned to this branch" : "No products found")}
+                        />
                     </div>
 
                     <div className="grid">

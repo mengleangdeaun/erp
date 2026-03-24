@@ -160,5 +160,11 @@
     "customers": "Customers",
     "customer_types": "Customer Types",
     "system_logs": "System Logs",
-    "setup_data": "Setup Data"
+    "setup_data": "Setup Data",
+    "inventory_dashboard": "Inventory Dashboard",
+    "total_products": "Total Products",
+    "total_stock_value": "Total Stock Value",
+    "low_stock_alerts": "Low Stock Alerts",
+    "monthly_consumption": "Monthly Consumption",
+    "add_product": "Add Product"
 }

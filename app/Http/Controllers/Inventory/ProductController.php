@@ -11,11 +11,18 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = InventoryProduct::query()
-            ->with(['category', 'baseUom', 'purchaseUom', 'tags', 'stocks.location'])
-            ->where('is_active', true);
+            ->with(['category', 'baseUom', 'purchaseUom', 'tags', 'stocks.location']);
+
+        if (!$request->has('all')) {
+            $query->where('is_active', true);
+        }
 
         // Core fields to always include
-        $columns = ['id', 'name', 'code', 'sku', 'price', 'category_id', 'img', 'is_active'];
+        $columns = [
+            'id', 'name', 'code', 'sku', 'barcode', 'brand', 'price', 'cost', 
+            'reorder_level', 'category_id', 'base_uom_id', 'purchase_uom_id', 
+            'uom_multiplier', 'length', 'width', 'img', 'is_active', 'description'
+        ];
         $query->select($columns);
 
         if ($request->has('branch_id')) {

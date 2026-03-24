@@ -69,7 +69,21 @@ const fetchPurchaseReceives = async (params: any = {}) => {
     return data;
 };
 
+const fetchInventoryDashboard = async (branchId?: string | number | null) => {
+    const { data } = await axios.get('/api/inventory/dashboard', {
+        params: { branch_id: branchId }
+    });
+    return data;
+};
+
 // --- Custom Hooks for Fetching ---
+
+export const useInventoryDashboard = (branchId?: string | number | null) => {
+    return useQuery({
+        queryKey: ['inventory-dashboard', branchId],
+        queryFn: () => fetchInventoryDashboard(branchId),
+    });
+};
 
 export const useInventoryProducts = () => {
     return useQuery({
@@ -388,7 +402,7 @@ export const useDeleteTag = () => {
 export const useSyncBranchProducts = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ branchId, products }: { branchId: string | number; products: number[] }) => {
+        mutationFn: async ({ branchId, products }: { branchId: string | number; products: Array<{ id: number; reorder_level: number }> }) => {
             const { data } = await axios.post(`/api/hr/branches/${branchId}/products/sync`, { products });
             return data;
         },

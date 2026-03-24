@@ -133,7 +133,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
             {/* Filter Drawer Section */}
             {showFilters && (
-                <div className="p-4 sm:p-5 bg-slate-50/50 dark:bg-slate-800/20 border border-slate-200/60 dark:border-slate-800 rounded-xl space-y-5 animate-in slide-in-from-top-3 fade-in duration-300">
+                <div className="p-4 sm:p-5 bg-white dark:bg-black border border-slate-200/60 dark:border-slate-800 rounded-xl space-y-5 animate-in slide-in-from-top-3 fade-in duration-300">
                     
                     {/* Filter Grid: Use grid for children and components */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">

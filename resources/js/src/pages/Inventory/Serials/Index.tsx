@@ -18,16 +18,22 @@ import {
     IconPackage, 
     IconHash, 
     IconChevronRight,
-    IconMapPin
+    IconMapPin,
+    IconAdjustmentsHorizontal,
+    IconInfoCircle
 } from '@tabler/icons-react';
+import { ActionButton } from '@/components/ui/ActionButtons';
 import { useSerials } from '@/hooks/useSerialData';
-import { useBranches, useInventoryProducts, useInventoryLocations } from '@/hooks/useInventoryData';
+import { useBranches, useInventoryProducts, useInventoryLocations, useBranchProducts } from '@/hooks/useInventoryData';
 import AddSerialDialog from './AddSerialDialog';
+import SerialDetailsDrawer from './SerialDetailsDrawer';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 
 const SerialIndex = () => {
     const dispatch = useDispatch();
     const [isAddOpen, setIsAddOpen] = useState(false);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+    const [selectedSerialId, setSelectedSerialId] = useState<number | null>(null);
     const [selectedBranchId, setSelectedBranchId] = useState<string | number | null>(null);
     const [selectedLocationId, setSelectedLocationId] = useState<string | number | null>(null);
     const [selectedProductId, setSelectedProductId] = useState<string | number | null>(null);
@@ -37,9 +43,10 @@ const SerialIndex = () => {
     const [sortBy, setSortBy] = useState('created_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-    const { data: branches = [] } = useBranches();
-    const { data: products = [] } = useInventoryProducts();
-    const { data: locations = [] } = useInventoryLocations();
+    const { data: branches = [], isLoading: loadingBranches } = useBranches();
+    const { data: products = [], isLoading: loadingProducts } = useInventoryProducts();
+    const { data: locations = [], isLoading: loadingLocations } = useInventoryLocations();
+    const { data: branchProductsRaw = [], isLoading: loadingBranchProducts } = useBranchProducts(selectedBranchId);
     
     const { data: serialsData, isLoading: loadingSerials } = useSerials({
         branch_id: selectedBranchId,
@@ -59,12 +66,17 @@ const SerialIndex = () => {
     }, [dispatch]);
 
     const branchOptions = useMemo(() => 
-        branches.map((b: any) => ({ value: b.id, label: b.name, description: b.code })),
+        branches.filter((b: any) => b.status === 'active').map((b: any) => ({ value: b.id, label: b.name, description: b.code })),
     [branches]);
 
+    const displayProducts = useMemo(() => {
+        if (!selectedBranchId || selectedBranchId === 'all') return products;
+        return branchProductsRaw.filter((p: any) => p.is_assigned);
+    }, [selectedBranchId, products, branchProductsRaw]);
+
     const productOptions = useMemo(() => 
-        products.map((p: any) => ({ value: p.id, label: p.name, description: p.code })),
-    [products]);
+        displayProducts.map((p: any) => ({ value: p.id, label: p.name, description: p.code })),
+    [displayProducts]);
 
     const filteredLocations = useMemo(() => 
         locations.filter((loc: any) => !selectedBranchId || loc.branch_id === parseInt(selectedBranchId as string)),
@@ -76,6 +88,13 @@ const SerialIndex = () => {
 
     const handleRefresh = () => {
         // Handled by react-query invalidation
+    };
+
+    const handleClearAll = () => {
+        setSelectedBranchId(null);
+        setSelectedLocationId(null);
+        setSelectedProductId(null);
+        setSearch('');
     };
 
     const handleSort = (column: string) => {
@@ -98,6 +117,8 @@ const SerialIndex = () => {
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onRefresh={handleRefresh}
+                onClearFilters={handleClearAll}
+                hasActiveFilters={!!selectedBranchId || !!selectedLocationId || !!selectedProductId}
                 onAdd={() => setIsAddOpen(true)}
                 addLabel="Register New Roll"
             />
@@ -106,15 +127,26 @@ const SerialIndex = () => {
                 {/* Sidebar Filters */}
                 <div className="lg:col-span-1 space-y-6">
                     <Card className="shadow-sm border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
-                        <CardHeader className="pb-4">
+                        <CardHeader className="pb-4 flex flex-row items-center justify-between">
                             <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-gray-500">
-                                <IconBuildingStore size={16} />
-                                Branch Filter
+                                <IconAdjustmentsHorizontal size={16} />
+                                Filters
                             </CardTitle>
+                            {(selectedBranchId || selectedProductId || selectedLocationId) && (
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={handleClearAll}
+                                    className="h-7 px-2 text-[10px] font-black uppercase text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                                >
+                                    Clear All
+                                </Button>
+                            )}
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-gray-400">Branch</Label>
+                        <div className="border-b border-gray-100 dark:border-gray-800 mx-6 mb-4" />
+                        <CardContent className="space-y-6">
+                            <div>
+                                <Label className="text-[11px] font-black uppercase text-gray-400">Branch</Label>
                                 <SearchableSelect
                                     options={[{ value: 'all', label: 'All Branches' }, ...branchOptions]}
                                     value={selectedBranchId || 'all'}
@@ -123,36 +155,34 @@ const SerialIndex = () => {
                                         setSelectedLocationId(null); // Reset location when branch changes
                                     }}
                                     placeholder="All Branches"
+                                    loading={loadingBranches}
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase text-gray-400">Location</Label>
+                            <div>
+                                <Label className="text-[11px] font-black uppercase text-gray-400">Location</Label>
                                 <SearchableSelect
                                     options={[{ value: 'all', label: 'All Locations' }, ...locationOptions]}
                                     value={selectedLocationId || 'all'}
                                     onChange={(val) => setSelectedLocationId(val === 'all' ? null : val)}
                                     placeholder="All Locations"
                                     disabled={!selectedBranchId && selectedBranchId !== null} 
+                                    loading={loadingLocations}
+                                    emptyMessage={!selectedBranchId ? "Select a branch first" : "No locations found"}
                                 />
                             </div>
-                        </CardContent>
-                    </Card>
 
-                    <Card className="shadow-sm border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-gray-500">
-                                <IconPackage size={16} />
-                                Product Filter
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <SearchableSelect
-                                options={[{ value: 'all', label: 'All Products' }, ...productOptions]}
-                                value={selectedProductId || 'all'}
-                                onChange={(val) => setSelectedProductId(val === 'all' ? null : val)}
-                                placeholder="All Products"
-                            />
+                            <div>
+                                <Label className="text-[11px] font-black uppercase text-gray-400">Product</Label>
+                                <SearchableSelect
+                                    options={[{ value: 'all', label: 'All Products' }, ...productOptions]}
+                                    value={selectedProductId || 'all'}
+                                    onChange={(val) => setSelectedProductId(val === 'all' ? null : val)}
+                                    placeholder="All Products"
+                                    loading={loadingProducts || (!!selectedBranchId && loadingBranchProducts)}
+                                    emptyMessage={!!selectedBranchId && branchProductsRaw.length === 0 ? "No products assigned to this branch" : "No products found"}
+                                />
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -235,9 +265,15 @@ const SerialIndex = () => {
                                                     </Badge>
                                                 </td>
                                                 <td className="px-6 py-5 text-right">
-                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg hover:bg-primary/5 hover:text-primary transition-all">
-                                                        <IconChevronRight size={18} />
-                                                    </Button>
+                                                    <ActionButton
+                                                        onClick={() => {
+                                                            setSelectedSerialId(serial.id);
+                                                            setIsDetailsOpen(true);
+                                                        }}
+                                                        icon={IconInfoCircle}
+                                                        label="View Details"
+                                                        style="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50"
+                                                    />
                                                 </td>
                                             </tr>
                                         ))
@@ -267,6 +303,11 @@ const SerialIndex = () => {
             </div>
 
             <AddSerialDialog isOpen={isAddOpen} setIsOpen={setIsAddOpen} />
+            <SerialDetailsDrawer 
+                serialId={selectedSerialId} 
+                isOpen={isDetailsOpen} 
+                onClose={() => setIsDetailsOpen(false)} 
+            />
         </div>
     );
 };

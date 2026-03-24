@@ -47,6 +47,6 @@ class InventoryProduct extends Model
 
     public function branches()
     {
-        return $this->belongsToMany(\App\Models\HR\Branch::class, 'branch_inventory_product', 'inventory_product_id', 'branch_id')->withPivot('is_active')->withTimestamps();
+        return $this->belongsToMany(\App\Models\HR\Branch::class, 'branch_inventory_product', 'inventory_product_id', 'branch_id')->withPivot('is_active', 'reorder_level')->withTimestamps();
     }
 }

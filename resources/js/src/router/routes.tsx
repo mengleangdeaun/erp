@@ -65,6 +65,7 @@ const EmployeePwaAnnouncementDetail = lazy(() => import('../pages/EmployeeApp/No
 
 // HR - Activity Log
 const HrActivityIndex = lazy(() => import('../pages/HR/Activity/Index'));
+const InventoryDashboard = lazy(() => import('../pages/Dashboard/Inventory'));
 
 // Inventory Module
 const InventoryTagIndex = lazy(() => import('../pages/Inventory/Tags/Index'));
@@ -419,6 +420,7 @@ const routes = [
         layout: 'mobile',
     },
     // Inventory Routes
+    { path: '/dashboard/inventory', element: <InventoryDashboard />, layout: 'default' },
     { path: '/inventory/categories', element: <InventoryCategoryIndex />, layout: 'default' },
     { path: '/inventory/tags', element: <InventoryTagIndex />, layout: 'default' },
     { path: '/inventory/uoms', element: <InventoryUomIndex />, layout: 'default' },

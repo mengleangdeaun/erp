@@ -23,13 +23,13 @@ const BranchServiceIndex = () => {
     const { data: branches = [], isLoading: loadingBranches } = useBranches();
     const { data: services = [], isLoading: loadingServices } = useInventoryServices();
     const [selectedBranchId, setSelectedBranchId] = useState<string | number | null>(null);
-    const { data: assignedData = [], isLoading: loadingAssignments } = useBranchServices(selectedBranchId);
+    const { data: assignedData, isLoading: loadingAssignments } = useBranchServices(selectedBranchId);
     const syncMutation = useSyncBranchServices();
 
     const [assignedServiceIds, setAssignedServiceIds] = useState<Set<number>>(new Set());
     
-    const rawLoading = loadingBranches || loadingServices || loadingAssignments;
-    const loading = useDelayedLoading(rawLoading, 500);
+    // Loading state for the table and main actions
+    const loadingTable = useDelayedLoading(loadingServices || loadingBranches || (!!selectedBranchId && loadingAssignments), 500);
     const isSaving = syncMutation.isPending;
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('name');
@@ -41,12 +41,6 @@ const BranchServiceIndex = () => {
         dispatch(setPageTitle('Branch Services'));
     }, [dispatch]);
 
-    // Set initial branch
-    useEffect(() => {
-        if (branches.length > 0 && !selectedBranchId) {
-            setSelectedBranchId(branches[0].id);
-        }
-    }, [branches, selectedBranchId]);
 
     // Sync assignedServiceIds state when assignedData changes
     useEffect(() => {
@@ -57,7 +51,7 @@ const BranchServiceIndex = () => {
     }, [assignedData]);
 
     const branchOptions = useMemo(() => 
-        branches.map((b: any) => ({ value: b.id, label: b.name, description: b.code })),
+        branches.filter((b: any) => b.status === 'active').map((b: any) => ({ value: b.id, label: b.name, description: b.code })),
     [branches]);
 
     const filteredAndSortedServices = useMemo(() => {
@@ -184,7 +178,7 @@ const BranchServiceIndex = () => {
                 </Card>
 
                 <div className="lg:col-span-3">
-                    {loading ? (
+                    {loadingTable ? (
                         <TableSkeleton columns={4} rows={10} />
                     ) : (
                         <div className="bg-white dark:bg-black rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
@@ -206,7 +200,19 @@ const BranchServiceIndex = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedServices.length > 0 ? (
+                                    {!selectedBranchId ? (
+                                        <tr>
+                                            <td colSpan={4}>
+                                                <div className="flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50/50 dark:bg-gray-900/50">
+                                                    <IconBuildingStore size={48} className="mb-4 text-gray-300 animate-pulse" />
+                                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">No Branch Selected</h3>
+                                                    <p className="text-sm max-w-xs text-center mt-1">
+                                                        Please select a branch from the left panel to manage its service catalog.
+                                                    </p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : paginatedServices.length > 0 ? (
                                         paginatedServices.map((service: any) => (
                                             <tr key={service.id} className="group transition-colors duration-150 cursor-pointer" onClick={() => handleToggleService(service.id)}>
                                                 <td className="text-center">

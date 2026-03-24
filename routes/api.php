@@ -137,6 +137,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('purchase-receives', PurchaseReceiveController::class)->except(['update']);
         Route::get('purchase-orders/{id}/pending-items', [PurchaseReceiveController::class, 'getPendingItems']);
         
+        // Dashboard
+        Route::get('dashboard', [\App\Http\Controllers\Inventory\InventoryDashboardController::class, 'index']);
+
         // Stock Movements
         Route::get('stock-movements', [\App\Http\Controllers\Inventory\StockMovementController::class, 'index']);
         Route::get('stock-movements/{id}', [\App\Http\Controllers\Inventory\StockMovementController::class, 'show']);

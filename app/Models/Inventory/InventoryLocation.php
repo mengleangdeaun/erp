@@ -15,4 +15,9 @@ class InventoryLocation extends Model
     {
         return $this->belongsTo(\App\Models\HR\Branch::class);
     }
+
+    public function stocks()
+    {
+        return $this->hasMany(InventoryStock::class, 'location_id');
+    }
 }
