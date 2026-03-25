@@ -24,6 +24,7 @@ class JobPartController extends Controller
             'name' => 'required|string|max:255',
             'code' => 'nullable|string|max:50|unique:job_parts_master,code',
             'type' => 'nullable|string|max:20',
+            'side' => 'nullable|string|max:20',
             'is_active' => 'boolean'
         ]);
 
@@ -49,6 +50,7 @@ class JobPartController extends Controller
             'name' => 'string|max:255',
             'code' => 'nullable|string|max:50|unique:job_parts_master,code,' . $part->id,
             'type' => 'nullable|string|max:20',
+            'side' => 'nullable|string|max:20',
             'is_active' => 'boolean'
         ]);
 

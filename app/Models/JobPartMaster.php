@@ -13,7 +13,7 @@ class JobPartMaster extends Model
 
     protected $table = 'job_parts_master';
 
-    protected $fillable = ['name', 'code', 'type', 'is_active'];
+    protected $fillable = ['name', 'code', 'type', 'side', 'is_active'];
 
     public function services()
     {

@@ -261,80 +261,90 @@ const BranchProductIndex = () => {
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <div className={`flex items-center gap-1.5 font-black text-sm ${
-                                                            (assignedData?.find((ad: any) => ad.id === product.id)?.branch_stock_qty || 0) <= (reorderLevels[product.id] || 0) 
-                                                                ? 'text-danger' 
-                                                                : 'text-success'
-                                                        }`}>
-                                                            <span>{assignedData?.find((ad: any) => ad.id === product.id)?.branch_stock_qty || 0}</span>
-                                                            {assignedData?.find((ad: any) => ad.id === product.id)?.serial_stock_count > 0 && (
-                                                                <div className="group/detail relative ml-1">
-                                                                    <IconInfoCircle size={14} className="text-gray-400 hover:text-primary cursor-help transition-colors" />
-                                                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/detail:block z-50">
-                                                                        <div className="bg-gray-900 text-white text-[10px] p-3 rounded-xl shadow-2xl border border-gray-800 whitespace-nowrap min-w-[260px]">
-                                                                            <div className="flex justify-between gap-4 mb-2 border-b border-gray-700 pb-2">
-                                                                                <span className="text-gray-400 uppercase font-black tracking-widest text-[9px]">Inventory Breakdown</span>
-                                                                                <Badge variant="outline" className="h-4 border-gray-700 text-gray-400 text-[8px] px-1">{assignedData?.find((ad: any) => ad.id === product.id)?.branch_stock_qty} Total Units</Badge>
-                                                                            </div>
-                                                                            
-                                                                            {/* Summary Rows */}
-                                                                            <div className="space-y-1.5 mb-3">
-                                                                                <div className="flex justify-between gap-4">
-                                                                                    <span className="text-gray-400 font-bold">Bulk Units</span>
-                                                                                    <span className="font-black text-emerald-400">{assignedData?.find((ad: any) => ad.id === product.id)?.bulk_stock_qty || 0}</span>
-                                                                                </div>
-                                                                                <div className="flex justify-between gap-4">
-                                                                                    <span className="text-gray-400 font-bold">Serialized Rolls</span>
-                                                                                    <span className="font-black text-primary">{assignedData?.find((ad: any) => ad.id === product.id)?.serial_stock_count || 0}</span>
-                                                                                </div>
-                                                                            </div>
+<div className="flex flex-col items-center gap-1">
+  <div className={`flex items-center gap-1.5 font-black text-sm ${
+    (assignedData?.find((ad: any) => ad.id === product.id)?.branch_stock_qty || 0) <= (reorderLevels[product.id] || 0) 
+      ? 'text-danger' 
+      : 'text-success'
+  }`}>
+    <span>{assignedData?.find((ad: any) => ad.id === product.id)?.branch_stock_qty || 0}</span>
+    {assignedData?.find((ad: any) => ad.id === product.id)?.serial_stock_count > 0 && (
+      <div className="group/detail relative ml-1">
+        <IconInfoCircle size={14} className="text-gray-400 dark:text-gray-500 hover:text-primary dark:hover:text-primary transition-colors cursor-help" />
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/detail:block z-50">
+          <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-[10px] p-3 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 whitespace-nowrap min-w-[260px]">
+            <div className="flex justify-between gap-4 mb-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+              <span className="text-gray-500 dark:text-gray-400 uppercase font-black tracking-widest text-[9px]">Inventory Breakdown</span>
+              <Badge variant="outline" className="h-4 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-[8px] px-1">
+                {assignedData?.find((ad: any) => ad.id === product.id)?.branch_stock_qty} Total Units
+              </Badge>
+            </div>
 
-                                                                            {/* Individual Serials List */}
-                                                                            <div className="pt-2 border-t border-gray-800">
-                                                                                <span className="text-gray-500 uppercase font-black tracking-widest text-[8px] block mb-2">Available Rolls Details</span>
-                                                                                <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-                                                                                    {assignedData?.find((ad: any) => ad.id === product.id)?.available_serials?.map((serial: any) => (
-                                                                                        <div key={serial.id} className="space-y-1 group/item">
-                                                                                            <div className="flex justify-between items-center bg-gray-800/50 p-1.5 rounded-lg border border-gray-700/50">
-                                                                                                <code className="text-amber-400 font-black tracking-tighter text-[9px]">{serial.serial_number}</code>
-                                                                                                <span className="font-black text-[9px] tabular-nums">
-                                                                                                    {serial.current_quantity.toFixed(2)} <span className="text-gray-500 font-bold">/ {serial.initial_quantity.toFixed(1)}</span>
-                                                                                                </span>
-                                                                                            </div>
-                                                                                            <div className="flex items-center gap-2 px-1">
-                                                                                                <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
-                                                                                                    <div 
-                                                                                                        className={`h-full transition-all duration-500 ${serial.percentage < 20 ? 'bg-rose-500' : 'bg-primary'}`} 
-                                                                                                        style={{ width: `${Math.min(100, serial.percentage)}%` }}
-                                                                                                    />
-                                                                                                </div>
-                                                                                                <span className={`text-[8px] font-black w-7 text-right ${serial.percentage < 20 ? 'text-rose-500' : 'text-gray-400'}`}>
-                                                                                                    {serial.percentage.toFixed(0)}%
-                                                                                                </span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            </div>
-                                                                            
-                                                                            {/* Cumulative SQM Footer */}
-                                                                            <div className="mt-3 pt-2 border-t border-gray-700 flex justify-between items-center">
-                                                                                <span className="text-[9px] text-gray-400 font-black tracking-widest uppercase">Total Available Area</span>
-                                                                                <span className="text-amber-400 font-black text-[11px]">{assignedData?.find((ad: any) => ad.id === product.id)?.serial_total_sqm.toFixed(2)} SQM</span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="w-2 h-2 bg-gray-900 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2 border-r border-b border-gray-800" />
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        {assignedData?.find((ad: any) => ad.id === product.id)?.serial_total_sqm > 0 && (
-                                                            <span className="text-[10px] font-bold text-gray-400">
-                                                                {assignedData?.find((ad: any) => ad.id === product.id)?.serial_total_sqm.toFixed(2)} sqm
-                                                            </span>
-                                                        )}
-                                                    </div>
+            {/* Summary Rows */}
+            <div className="space-y-1.5 mb-3">
+              <div className="flex justify-between gap-4">
+                <span className="text-gray-500 dark:text-gray-400 font-bold">Bulk Units</span>
+                <span className="font-black text-emerald-600 dark:text-emerald-400">
+                  {assignedData?.find((ad: any) => ad.id === product.id)?.bulk_stock_qty || 0}
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-gray-500 dark:text-gray-400 font-bold">Serialized Rolls</span>
+                <span className="font-black text-primary">
+                  {assignedData?.find((ad: any) => ad.id === product.id)?.serial_stock_count || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Individual Serials List */}
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+              <span className="text-gray-500 dark:text-gray-400 uppercase font-black tracking-widest text-[8px] block mb-2">Available Rolls Details</span>
+<div className="space-y-3 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+  {assignedData?.find((ad: any) => ad.id === product.id)?.available_serials?.map((serial: any) => (
+    <div key={serial.id} className="space-y-1 group/item">
+      <div className="flex items-center justify-between gap-2 bg-gray-50 dark:bg-gray-800/70 p-1.5 rounded-lg border border-gray-200 dark:border-gray-700/70">
+        <code className="text-amber-600 dark:text-amber-400 font-black tracking-tighter text-[9px]">
+          {serial.serial_number}
+        </code>
+        <div className="flex items-center gap-2">
+          <span className="font-black text-[9px] tabular-nums text-gray-700 dark:text-gray-300">
+            {serial.current_quantity.toFixed(2)} <span className="text-gray-400 dark:text-gray-500 font-bold">/ {serial.initial_quantity.toFixed(1)}</span>
+          </span>
+          <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-500 ${serial.percentage < 20 ? 'bg-rose-500' : 'bg-primary'}`} 
+              style={{ width: `${Math.min(100, serial.percentage)}%` }}
+            />
+          </div>
+          <span className={`text-[8px] font-black w-7 text-right ${serial.percentage < 20 ? 'text-rose-500' : 'text-gray-400 dark:text-gray-500'}`}>
+            {serial.percentage.toFixed(0)}%
+          </span>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+            </div>
+
+            {/* Cumulative SQM Footer */}
+            <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <span className="text-[9px] text-gray-500 dark:text-gray-400 font-black tracking-widest uppercase">Total Available Area</span>
+              <span className="text-amber-600 dark:text-amber-400 font-black text-[11px]">
+                {assignedData?.find((ad: any) => ad.id === product.id)?.serial_total_sqm.toFixed(2)} SQM
+              </span>
+            </div>
+          </div>
+          <div className="w-2 h-2 bg-white dark:bg-gray-900 rotate-45 absolute -bottom-1 left-1/2 -translate-x-1/2 border-r border-b border-gray-200 dark:border-gray-700" />
+        </div>
+      </div>
+    )}
+  </div>
+  {assignedData?.find((ad: any) => ad.id === product.id)?.serial_total_sqm > 0 && (
+    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">
+      {assignedData?.find((ad: any) => ad.id === product.id)?.serial_total_sqm.toFixed(2)} sqm
+    </span>
+  )}
+</div>
                                                 </td>
                                                 <td className="text-center" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex justify-center">

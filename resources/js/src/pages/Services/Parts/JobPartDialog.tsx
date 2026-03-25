@@ -19,6 +19,7 @@ interface JobPart {
     name: string;
     code?: string;
     type?: string;
+    side?: string;
     is_active: boolean;
 }
 
@@ -35,6 +36,7 @@ const JobPartDialog = ({ isOpen, setIsOpen, part, onSave }: JobPartDialogProps) 
         name: '',
         code: '',
         type: '',
+        side: '',
         is_active: true,
     });
 
@@ -44,6 +46,7 @@ const JobPartDialog = ({ isOpen, setIsOpen, part, onSave }: JobPartDialogProps) 
                 name: part.name,
                 code: part.code || '',
                 type: part.type || '',
+                side: part.side || '',
                 is_active: Boolean(part.is_active),
             });
         } else {
@@ -51,6 +54,7 @@ const JobPartDialog = ({ isOpen, setIsOpen, part, onSave }: JobPartDialogProps) 
                 name: '',
                 code: '',
                 type: '',
+                side: '',
                 is_active: true,
             });
         }
@@ -133,6 +137,23 @@ const JobPartDialog = ({ isOpen, setIsOpen, part, onSave }: JobPartDialogProps) 
                             placeholder="e.g. Exterior, Interior, Glass"
                             className="h-10"
                         />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-xs font-bold uppercase text-gray-500">Installation Side</Label>
+                        <Select 
+                            value={form.side || "Main"} 
+                            onValueChange={val => setForm({ ...form, side: val })}
+                        >
+                            <SelectTrigger className="h-10">
+                                <SelectValue placeholder="Select Side" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Main">Main / Center</SelectItem>
+                                <SelectItem value="Left">Left Side</SelectItem>
+                                <SelectItem value="Right">Right Side</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white-dark/5 rounded-xl border border-gray-100 dark:border-gray-800">

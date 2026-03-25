@@ -72,11 +72,11 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
         credentials: 'include',
     });
 
+import { useStockAdjustments, useDeleteStockAdjustment, useApproveStockAdjustment, useRejectStockAdjustment } from '@/hooks/useInventoryData';
+
 const StockAdjustmentsPage = () => {
     const dispatch = useDispatch();
     const { formatDate } = useFormatDate();
-    const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
-    const [loading, setLoading] = useState(true);
 
     // Filter, sort, pagination state
     const [search, setSearch] = useState('');
@@ -85,20 +85,31 @@ const StockAdjustmentsPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
+    // TanStack Query Hooks
+    const { data, isLoading: loading, refetch: fetchData } = useStockAdjustments({
+        search,
+        limit: itemsPerPage,
+        page: currentPage,
+    });
+    const adjustments = data?.data || [];
+    const totalItems = data?.total || 0;
+    const totalPages = data?.last_page || 1;
+
+    const deleteMutation = useDeleteStockAdjustment();
+    const approveMutation = useApproveStockAdjustment();
+    const rejectMutation = useRejectStockAdjustment();
+
     // Delete modal state
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     // Approve modal state
     const [approveModalOpen, setApproveModalOpen] = useState(false);
     const [itemToApprove, setItemToApprove] = useState<number | null>(null);
-    const [isApproving, setIsApproving] = useState(false);
 
     // Reject modal state
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
     const [itemToReject, setItemToReject] = useState<number | null>(null);
-    const [isRejecting, setIsRejecting] = useState(false);
 
     // Detail dialog state
     const [detailOpen, setDetailOpen] = useState(false);
@@ -108,32 +119,6 @@ const StockAdjustmentsPage = () => {
         dispatch(setPageTitle('Stock Adjustments'));
     }, [dispatch]);
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams({
-                search: search,
-                limit: String(itemsPerPage),
-                page: String(currentPage),
-            });
-            const res = await apiFetch(`/api/inventory/stock-adjustments?${params.toString()}`);
-            if (res.status === 401) {
-                window.location.href = '/auth/login';
-                return;
-            }
-            const data = await res.json();
-            setAdjustments(data.data || []);
-        } catch {
-            toast.error('Failed to load data');
-        } finally {
-            setLoading(false);
-        }
-    }, [search, currentPage, itemsPerPage]);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
-
     const confirmDelete = (id: number) => {
         setItemToDelete(id);
         setDeleteModalOpen(true);
@@ -141,23 +126,12 @@ const StockAdjustmentsPage = () => {
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
-        try {
-            const res = await apiFetch(`/api/inventory/stock-adjustments/${itemToDelete}`, { method: 'DELETE' });
-            if (res.ok) {
-                toast.success('Adjustment deleted');
-                fetchData();
-            } else {
-                const err = await res.json();
-                toast.error(err.message || 'Failed to delete');
+        deleteMutation.mutate(itemToDelete, {
+            onSuccess: () => {
+                setDeleteModalOpen(false);
+                setItemToDelete(null);
             }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setIsDeleting(false);
-            setDeleteModalOpen(false);
-            setItemToDelete(null);
-        }
+        });
     };
 
     const handleApprove = (id: number) => {
@@ -167,23 +141,12 @@ const StockAdjustmentsPage = () => {
 
     const executeApprove = async () => {
         if (!itemToApprove) return;
-        setIsApproving(true);
-        try {
-            const res = await apiFetch(`/api/inventory/stock-adjustments/${itemToApprove}/approve`, { method: 'POST' });
-            if (res.ok) {
-                toast.success('Adjustment approved');
-                fetchData();
-            } else {
-                const err = await res.json();
-                toast.error(err.message || 'Failed to approve');
+        approveMutation.mutate(itemToApprove, {
+            onSuccess: () => {
+                setApproveModalOpen(false);
+                setItemToApprove(null);
             }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setIsApproving(false);
-            setApproveModalOpen(false);
-            setItemToApprove(null);
-        }
+        });
     };
 
     const handleReject = (id: number) => {
@@ -193,26 +156,12 @@ const StockAdjustmentsPage = () => {
 
     const executeReject = async (reason: string) => {
         if (!itemToReject) return;
-        setIsRejecting(true);
-        try {
-            const res = await apiFetch(`/api/inventory/stock-adjustments/${itemToReject}/reject`, {
-                method: 'POST',
-                body: JSON.stringify({ reason })
-            });
-            if (res.ok) {
-                toast.success('Adjustment rejected');
-                fetchData();
-            } else {
-                const err = await res.json();
-                toast.error(err.message || 'Failed to reject');
+        rejectMutation.mutate({ id: itemToReject, reason }, {
+            onSuccess: () => {
+                setRejectModalOpen(false);
+                setItemToReject(null);
             }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setIsRejecting(false);
-            setRejectModalOpen(false);
-            setItemToReject(null);
-        }
+        });
     };
 
     const filteredAndSorted = useMemo(() => {
@@ -256,7 +205,7 @@ const StockAdjustmentsPage = () => {
                     onAction={() => window.location.href = '/inventory/stock-adjustments/create'}
                 />
             ) : (
-                <div className="table-responsive bg-white dark:bg-black rounded-lg shadow-sm border border-gray-100 dark:border-gray-800">
+                <div className="table-responsive bg-white dark:bg-black rounded-lg shadow-sm border">
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
@@ -338,8 +287,8 @@ const StockAdjustmentsPage = () => {
                     <div className="border-t border-gray-100 dark:border-gray-800">
                         <Pagination
                             currentPage={currentPage}
-                            totalPages={1} // For now, handle pagination better later
-                            totalItems={filteredAndSorted.length}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
                             itemsPerPage={itemsPerPage}
                             onPageChange={setCurrentPage}
                         />
@@ -351,7 +300,7 @@ const StockAdjustmentsPage = () => {
                 isOpen={deleteModalOpen}
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
-                isLoading={isDeleting}
+                isLoading={deleteMutation.isPending}
                 title="Delete Adjustment"
                 message="Are you sure you want to delete this draft adjustment? This action cannot be undone."
             />
@@ -360,7 +309,7 @@ const StockAdjustmentsPage = () => {
                 isOpen={approveModalOpen}
                 setIsOpen={setApproveModalOpen}
                 onConfirm={executeApprove}
-                loading={isApproving}
+                loading={approveMutation.isPending}
                 title="Approve Stock Adjustment"
                 description="Are you sure you want to approve this adjustment? This will update the inventory stock levels permanently."
                 confirmText="Approve Adjustment"
@@ -371,7 +320,7 @@ const StockAdjustmentsPage = () => {
                 isOpen={rejectModalOpen}
                 setIsOpen={setRejectModalOpen}
                 onConfirm={executeReject}
-                loading={isRejecting}
+                loading={rejectMutation.isPending}
                 title="Reject Stock Adjustment"
                 description="Please provide a clear reason for rejecting this adjustment. This will be visible to the user who created it."
             />

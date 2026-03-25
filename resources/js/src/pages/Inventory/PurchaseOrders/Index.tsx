@@ -648,15 +648,29 @@ const PurchaseOrdersPage = () => {
                                             />
                                         </td>
                                         <td className="px-3 py-2">
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                min="0.01"
-                                                value={it.order_qty}
-                                                onChange={e => updateItem(idx, 'order_qty', e.target.value)}
-                                                placeholder="Qty"
-                                                required
-                                            />
+                                            <div className="flex flex-col gap-1">
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0.01"
+                                                    value={it.order_qty}
+                                                    onChange={e => updateItem(idx, 'order_qty', e.target.value)}
+                                                    placeholder="Qty"
+                                                    required
+                                                />
+                                                {it.product_id && (
+                                                    <div className="flex items-center justify-between px-1">
+                                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">
+                                                            {products.find(p => String(p.id) === it.product_id)?.purchase_uom?.code || 'UNIT'}
+                                                        </span>
+                                                        {products.find(p => String(p.id) === it.product_id)?.uom_multiplier > 1 && (
+                                                            <span className="text-[9px] font-medium text-slate-400 italic">
+                                                                Total: {(parseFloat(it.order_qty || '0') * (products.find(p => String(p.id) === it.product_id)?.uom_multiplier || 1)).toFixed(2)} {products.find(p => String(p.id) === it.product_id)?.base_uom?.code}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-3 py-2">
                                             <Input
@@ -796,17 +810,18 @@ const PurchaseOrdersPage = () => {
                                             <th className="px-3 py-2 text-center">Ordered</th>
                                             <th className="px-3 py-2 text-center">Received</th>
                                             <th className="px-3 py-2 text-center">Remaining</th>
+                                            <th className="px-3 py-2 text-center">UOM</th>
                                             <th className="px-3 py-2 text-center w-32">Qty to Receive</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y dark:divide-gray-700">
                                         {loadingPending ? (
                                             <tr>
-                                                <td colSpan={5} className="px-3 py-6 text-center text-gray-500">Loading items...</td>
+                                                <td colSpan={6} className="px-3 py-6 text-center text-gray-500">Loading items...</td>
                                             </tr>
                                         ) : pendingItems.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="px-3 py-6 text-center text-gray-500">No pending items found.</td>
+                                                <td colSpan={6} className="px-3 py-6 text-center text-gray-500">No pending items found.</td>
                                             </tr>
                                         ) : pendingItems.map((it, idx) => (
                                             <tr key={it.id}>
@@ -814,6 +829,9 @@ const PurchaseOrdersPage = () => {
                                                 <td className="px-3 py-2 text-center text-gray-600">{it.order_qty}</td>
                                                 <td className="px-3 py-2 text-center text-green-600">{it.received_qty}</td>
                                                 <td className="px-3 py-2 text-center text-orange-600 font-semibold">{it.remaining_qty}</td>
+                                                <td className="px-3 py-2 text-center text-xs font-bold text-gray-400 capitalize">
+                                                    {it.product?.purchase_uom?.code || 'UNIT'}
+                                                </td>
                                                 <td className="px-3 py-2">
                                                     <Input
                                                         type="number"

@@ -139,10 +139,15 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Dashboard
         Route::get('dashboard', [\App\Http\Controllers\Inventory\InventoryDashboardController::class, 'index']);
+        Route::get('stock-balance', [\App\Http\Controllers\Inventory\StockBalanceController::class, 'index']);
 
         // Stock Movements
         Route::get('stock-movements', [\App\Http\Controllers\Inventory\StockMovementController::class, 'index']);
         Route::get('stock-movements/{id}', [\App\Http\Controllers\Inventory\StockMovementController::class, 'show']);
+
+        // Serial Movements
+        Route::get('serial-movements', [\App\Http\Controllers\Inventory\SerialMovementController::class, 'index']);
+        Route::get('serial-movements/{id}', [\App\Http\Controllers\Inventory\SerialMovementController::class, 'show']);
 
         // Stock Adjustments
         Route::apiResource('stock-adjustments', \App\Http\Controllers\Inventory\StockAdjustmentController::class);

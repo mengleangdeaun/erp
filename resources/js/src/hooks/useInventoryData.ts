@@ -76,6 +76,36 @@ const fetchInventoryDashboard = async (branchId?: string | number | null) => {
     return data;
 };
 
+const fetchStockBalance = async (params: any = {}) => {
+    const { data } = await axios.get('/api/inventory/stock-balance', { params });
+    return data;
+};
+
+const fetchStocks = async () => {
+    const { data } = await axios.get('/api/inventory/stocks');
+    return Array.isArray(data) ? data : [];
+};
+
+const fetchStockMovements = async (params: any = {}) => {
+    const { data } = await axios.get('/api/inventory/stock-movements', { params });
+    return Array.isArray(data) ? data : [];
+};
+
+const fetchSerialMovements = async (params: any = {}) => {
+    const { data } = await axios.get('/api/inventory/serial-movements', { params });
+    return Array.isArray(data) ? data : [];
+};
+
+const fetchStockAdjustments = async (params: any = {}) => {
+    const { data } = await axios.get('/api/inventory/stock-adjustments', { params });
+    return data;
+};
+
+const fetchStockTransfers = async (params: any = {}) => {
+    const { data } = await axios.get('/api/inventory/stock-transfers', { params });
+    return data;
+};
+
 // --- Custom Hooks for Fetching ---
 
 export const useInventoryDashboard = (branchId?: string | number | null) => {
@@ -176,6 +206,48 @@ export const usePurchaseReceives = (params: any = {}) => {
     return useQuery({
         queryKey: ['purchase-receives', params],
         queryFn: () => fetchPurchaseReceives(params),
+    });
+};
+
+export const useStockBalance = (params: any = {}) => {
+    return useQuery({
+        queryKey: ['inventory-stock-balance', params],
+        queryFn: () => fetchStockBalance(params),
+    });
+};
+
+export const useInventoryStocks = () => {
+    return useQuery({
+        queryKey: ['inventory-stocks'],
+        queryFn: fetchStocks,
+    });
+};
+
+export const useStockMovements = (params: any = {}) => {
+    return useQuery({
+        queryKey: ['inventory-stock-movements', params],
+        queryFn: () => fetchStockMovements(params),
+    });
+};
+
+export const useSerialMovements = (params: any = {}) => {
+    return useQuery({
+        queryKey: ['inventory-serial-movements', params],
+        queryFn: () => fetchSerialMovements(params),
+    });
+};
+
+export const useStockAdjustments = (params: any = {}) => {
+    return useQuery({
+        queryKey: ['inventory-stock-adjustments', params],
+        queryFn: () => fetchStockAdjustments(params),
+    });
+};
+
+export const useStockTransfers = (params: any = {}) => {
+    return useQuery({
+        queryKey: ['inventory-stock-transfers', params],
+        queryFn: () => fetchStockTransfers(params),
     });
 };
 
@@ -502,6 +574,131 @@ export const useCreatePurchaseReceive = () => {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to receive items');
+        },
+    });
+};
+
+// --- Stock Mutations ---
+
+export const useAdjustStock = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (payload: any) => {
+            const { data } = await axios.post('/api/inventory/stocks', payload);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['inventory-stocks'] });
+            toast.success('Stock operations tracked correctly!');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to update ledger records');
+        },
+    });
+};
+
+// --- Stock Adjustment Mutations ---
+
+export const useDeleteStockAdjustment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const { data } = await axios.delete(`/api/inventory/stock-adjustments/${id}`);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['inventory-stock-adjustments'] });
+            toast.success('Adjustment deleted');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to delete adjustment');
+        },
+    });
+};
+
+export const useApproveStockAdjustment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const { data } = await axios.post(`/api/inventory/stock-adjustments/${id}/approve`);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['inventory-stock-adjustments'] });
+            toast.success('Adjustment approved');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to approve adjustment');
+        },
+    });
+};
+
+export const useRejectStockAdjustment = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
+            const { data } = await axios.post(`/api/inventory/stock-adjustments/${id}/reject`, { reason });
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['inventory-stock-adjustments'] });
+            toast.success('Adjustment rejected');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to reject adjustment');
+        },
+    });
+};
+
+// --- Stock Transfer Mutations ---
+
+export const useDeleteStockTransfer = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const { data } = await axios.delete(`/api/inventory/stock-transfers/${id}`);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['inventory-stock-transfers'] });
+            toast.success('Transfer deleted');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to delete transfer');
+        },
+    });
+};
+
+export const useApproveStockTransfer = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const { data } = await axios.post(`/api/inventory/stock-transfers/${id}/approve`);
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['inventory-stock-transfers'] });
+            toast.success('Transfer approved successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to approve transfer');
+        },
+    });
+};
+
+export const useRejectStockTransfer = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
+            const { data } = await axios.post(`/api/inventory/stock-transfers/${id}/reject`, { reason });
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['inventory-stock-transfers'] });
+            toast.success('Transfer rejected');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to reject transfer');
         },
     });
 };

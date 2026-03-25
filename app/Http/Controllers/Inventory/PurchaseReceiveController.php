@@ -148,7 +148,7 @@ class PurchaseReceiveController extends Controller
      */
     public function getPendingItems($poId)
     {
-        $items = InventoryPurchaseOrderItem::with('product')
+        $items = InventoryPurchaseOrderItem::with(['product.purchaseUom', 'product.baseUom'])
             ->where('purchase_order_id', $poId)
             ->get()
             ->map(function ($item) {

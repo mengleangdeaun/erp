@@ -5,11 +5,9 @@ import {
     IconHistory, 
     IconArrowUpRight, 
     IconArrowDownLeft, 
-    IconArrowsExchange, 
     IconAdjustments,
-    IconSearch,
-    IconFilter,
-    IconPackage
+    IconPackage,
+    IconBarcode
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { useFormatDate } from '@/hooks/useFormatDate';
@@ -22,25 +20,32 @@ import DateRangePicker from '../../../components/ui/date-range-picker';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { DateRange } from 'react-day-picker';
+import { useSerialMovements, useInventoryLocations } from '@/hooks/useInventoryData';
 
-interface StockMovement {
+interface SerialMovement {
     id: number;
+    serial_id: number;
     product_id: number;
     location_id: number;
     user_id: number | null;
     movement_type: string;
     quantity: string;
+    width: string | null;
+    height: string | null;
     previous_quantity: string;
     current_quantity: string;
     reference_type: string | null;
     reference_id: number | null;
     reason: string | null;
     created_at: string;
+    serial?: {
+        id: number;
+        serial_number: string;
+    };
     product?: {
         id: number;
         name: string;
         code: string;
-        category?: { name: string };
         baseUom?: { name: string; short_name: string };
     };
     location?: {
@@ -55,38 +60,12 @@ interface StockMovement {
 
 const TYPE_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
     PURCHASE_RECEIVE: { label: 'Purchase Receive', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: IconArrowDownLeft },
-    PURCHASE_RETURN: { label: 'Purchase Return', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: IconArrowUpRight },
-    SALE: { label: 'Sale', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: IconArrowUpRight },
-    SALE_EDIT_DEDUCT: { label: 'Sale Edit (-)', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', icon: IconArrowUpRight },
-    SALE_EDIT_RESTOCK: { label: 'Sale Edit (+)', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: IconArrowDownLeft },
-    SALE_CANCELLATION: { label: 'Sale Cancelled', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: IconArrowDownLeft },
-    ADJUSTMENT_DAMAGE: { label: 'Damage', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: IconAdjustments },
-    ADJUSTMENT_FOUND: { label: 'Found', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: IconAdjustments },
-    ADJUSTMENT_STOCK_TAKE: { label: 'Stock Take', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: IconAdjustments },
-    ADJUSTMENT_OTHER: { label: 'Adjustment', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', icon: IconAdjustments },
-    TRANSFER_OUT: { label: 'Transfer Out', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', icon: IconArrowsExchange },
-    TRANSFER_IN: { label: 'Transfer In', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400', icon: IconArrowsExchange },
-    STOCK_IN_MANUAL: { label: 'Manual In', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400', icon: IconArrowDownLeft },
-    STOCK_OUT_MANUAL: { label: 'Manual Out', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400', icon: IconArrowUpRight },
+    JOB_CARD_CONSUMPTION: { label: 'Job Card', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: IconArrowUpRight },
+    ADJUSTMENT: { label: 'Adjustment', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: IconAdjustments },
+    MANUAL: { label: 'Manual', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', icon: IconHistory },
 };
 
-const REASON_LABELS: Record<string, string> = {
-    'ADJUSTMENT_DAMAGE': 'Damage',
-    'ADJUSTMENT_FOUND': 'Found',
-    'ADJUSTMENT_STOCK_TAKE_CORRECTION': 'Stock Take Correction',
-    'ADJUSTMENT_OTHER': 'Other',
-    'STOCK_IN_MANUAL': 'Manual Stock In',
-    'STOCK_OUT_MANUAL': 'Manual Stock Out',
-};
-
-const formatReason = (reason: string | null) => {
-    if (!reason) return null;
-    return REASON_LABELS[reason] || reason.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-};
-
-import { useStockMovements, useInventoryLocations } from '@/hooks/useInventoryData';
-
-const StockMovementsIndex = () => {
+const SerialMovementsIndex = () => {
     const dispatch = useDispatch();
     const { formatDateTime } = useFormatDate();
 
@@ -104,7 +83,7 @@ const StockMovementsIndex = () => {
 
     // TanStack Query Hooks
     const { data: locations = [] } = useInventoryLocations();
-    const { data: movements = [], isLoading: loading, refetch: fetchMovements } = useStockMovements({
+    const { data: movements = [], isLoading: loading, refetch } = useSerialMovements({
         search,
         location_id: locationId !== 'all' ? locationId : undefined,
         movement_type: movementType !== 'all' ? movementType : undefined,
@@ -113,22 +92,22 @@ const StockMovementsIndex = () => {
     });
 
     useEffect(() => {
-        dispatch(setPageTitle('Stock Movements'));
+        dispatch(setPageTitle('Serial Movements'));
     }, [dispatch]);
 
     const filteredAndSortedMovements = useMemo(() => {
         let result = [...movements];
 
         result.sort((a, b) => {
-            let valA: any = a[sortBy as keyof StockMovement] || '';
-            let valB: any = b[sortBy as keyof StockMovement] || '';
+            let valA: any = a[sortBy as keyof SerialMovement] || '';
+            let valB: any = b[sortBy as keyof SerialMovement] || '';
 
             if (sortBy === 'product') {
                 valA = a.product?.name || '';
                 valB = b.product?.name || '';
-            } else if (sortBy === 'location') {
-                valA = a.location?.name || '';
-                valB = b.location?.name || '';
+            } else if (sortBy === 'serial') {
+                valA = a.serial?.serial_number || '';
+                valB = b.serial?.serial_number || '';
             }
 
             if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
@@ -152,10 +131,10 @@ const StockMovementsIndex = () => {
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-                placeholder="Search products or reasons..."
-                title="Stock Movement History"
-                description="View and manage stock movements."
-                onRefresh={fetchMovements}
+                placeholder="Search serials, products or reasons..."
+                title="Serial Movement History"
+                description="View and manage roll serial history."
+                onRefresh={refetch}
                 icon={<IconHistory className="w-6 h-6 text-primary" />}
                 hasActiveFilters={!!((locationId && locationId !== 'all') || (movementType && movementType !== 'all') || dateRange)}
                 onClearFilters={() => {
@@ -166,11 +145,7 @@ const StockMovementsIndex = () => {
             >
                 <div className="space-y-1.5 flex flex-col w-full">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
-                    <DateRangePicker
-                        value={dateRange}
-                        onChange={setDateRange}
-                        placeholder="All Dates"
-                    />
+                    <DateRangePicker value={dateRange} onChange={setDateRange} placeholder="All Dates" />
                 </div>
                 
                 <div className="space-y-1.5 flex flex-col w-full">
@@ -193,9 +168,9 @@ const StockMovementsIndex = () => {
                             <SelectValue placeholder="All Types" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all" className="font-medium">All Types</SelectItem>
+                            <SelectItem value="all">All Types</SelectItem>
                             {Object.entries(TYPE_CONFIG).map(([key, config]) => (
-                                <SelectItem key={key} value={key} className="font-medium">{config.label}</SelectItem>
+                                <SelectItem key={key} value={key}>{config.label}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -204,25 +179,24 @@ const StockMovementsIndex = () => {
 
             {loading ? (
                 <TableSkeleton columns={7} rows={10} />
-            ) : movements.length === 0 ? (
+            ) : filteredAndSortedMovements.length === 0 ? (
                 <EmptyState
-                    title="No movements recorded"
-                    description="Stock movements will appear here once products are received, sold, or adjusted."
+                    title="No serial movements recorded"
+                    description="Serial movements will appear here when roll serials are consumed or adjusted."
                     isSearch={!!search}
                 />
             ) : (
-                <div className="panel p-0 border shadow-sm overflow-hidden rounded-lg">
+                <div className="panel p-0 border shadow-sm overflow-hidden rounded-lg mt-6">
                     <div className="table-responsive">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                                    <SortableHeader label="Date & Time" value="created_at" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                    <SortableHeader label="Product" value="product" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                    <SortableHeader label="Location" value="location" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                    <SortableHeader label="Type" value="movement_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                    <th className="px-4 py-4 text-right">In/Out</th>
-                                    <th className="px-4 py-4 text-right">Balance</th>
-                                    <th className="px-4 py-4 text-left">Reason / Reference</th>
+                                <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                                    <th className="px-4 py-4 text-left">Date</th>
+                                    <th className="px-4 py-4 text-left">Serial Number</th>
+                                    <th className="px-4 py-4 text-left">Product</th>
+                                    <th className="px-4 py-4 text-left text-center">Dimensions</th>
+                                    <th className="px-4 py-4 text-right">Qty (SQM)</th>
+                                    <th className="px-4 py-4 text-right">Remaining</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -233,35 +207,29 @@ const StockMovementsIndex = () => {
 
                                     return (
                                         <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                            <td className="px-4 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400 font-mono text-xs">
+                                            <td className="px-4 py-4 whitespace-nowrap text-gray-400 font-mono text-[10px]">
                                                 {formatDateTime(m.created_at)}
                                             </td>
                                             <td className="px-4 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-primary/10 rounded-lg shrink-0">
-                                                        <IconPackage className="w-4 h-4 text-primary" />
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                                        <IconBarcode className="w-3.5 h-3.5 text-blue-500" />
                                                     </div>
-                                                    <div>
-                                                        <p className="font-semibold text-gray-900 dark:text-white leading-none">
-                                                            {m.product?.name}
-                                                            {m.product?.baseUom && (
-                                                                <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 rounded lowercase font-medium">
-                                                                    {m.product.baseUom.short_name || m.product.baseUom.name}
-                                                                </span>
-                                                            )}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500 mt-1 font-mono">{m.product?.code}</p>
-                                                    </div>
+                                                    <span className="font-bold text-gray-900 dark:text-gray-100">{m.serial?.serial_number}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-4 text-gray-600 dark:text-gray-300 font-medium">
-                                                {m.location?.name}
-                                            </td>
                                             <td className="px-4 py-4">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${config.color}`}>
-                                                    <Icon className="w-3.5 h-3.5" />
-                                                    {config.label}
-                                                </span>
+                                                <div>
+                                                    <p className="font-semibold text-gray-700 dark:text-gray-300 leading-none">{m.product?.name}</p>
+                                                    <p className="text-[10px] text-gray-400 font-mono mt-1">{m.product?.code}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                {m.width && m.height ? (
+                                                    <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded font-black text-slate-500">
+                                                        {parseFloat(m.width)} x {parseFloat(m.height)}
+                                                    </span>
+                                                ) : <span className="text-gray-300">—</span>}
                                             </td>
                                             <td className="px-4 py-4 text-right font-bold whitespace-nowrap">
                                                 <span className={isPositive ? 'text-green-600' : 'text-red-500'}>
@@ -270,12 +238,9 @@ const StockMovementsIndex = () => {
                                             </td>
                                             <td className="px-4 py-4 text-right whitespace-nowrap">
                                                 <div className="flex flex-col items-end">
-                                                    <span className="font-bold text-gray-900 dark:text-white">{parseFloat(m.current_quantity)}</span>
+                                                    <span className="font-bold text-gray-900 dark:text-white underline decoration-gray-200">{parseFloat(m.current_quantity)}</span>
                                                     <span className="text-[10px] text-gray-400 font-mono">from {parseFloat(m.previous_quantity)}</span>
                                                 </div>
-                                            </td>
-                                            <td className="px-4 py-4 text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                                                {formatReason(m.reason) || '—'}
                                             </td>
                                         </tr>
                                     );
@@ -283,7 +248,6 @@ const StockMovementsIndex = () => {
                             </tbody>
                         </table>
                     </div>
-                    
                     <div className="border-t border-gray-100 dark:border-gray-800">
                         <Pagination
                             currentPage={currentPage}
@@ -299,4 +263,4 @@ const StockMovementsIndex = () => {
     );
 };
 
-export default StockMovementsIndex;
+export default SerialMovementsIndex;

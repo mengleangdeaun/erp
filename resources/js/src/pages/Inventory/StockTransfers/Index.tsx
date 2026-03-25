@@ -78,11 +78,11 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
         credentials: 'include',
     });
 
+import { useStockTransfers, useDeleteStockTransfer, useApproveStockTransfer, useRejectStockTransfer } from '@/hooks/useInventoryData';
+
 export default function StockTransfersPage() {
     const dispatch = useDispatch();
     const { formatDate } = useFormatDate();
-    const [transfers, setTransfers] = useState<StockTransfer[]>([]);
-    const [loading, setLoading] = useState(true);
 
     // Filter, sort, pagination state
     const [search, setSearch] = useState('');
@@ -91,47 +91,33 @@ export default function StockTransfersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
+    // TanStack Query Hooks
+    const { data, isLoading: loading, refetch: fetchData } = useStockTransfers({
+        search,
+        limit: itemsPerPage,
+        page: currentPage,
+    });
+    const transfers = data?.data || [];
+    const totalItems = data?.total || 0;
+    const totalPages = data?.last_page || 1;
+
+    const deleteMutation = useDeleteStockTransfer();
+    const approveMutation = useApproveStockTransfer();
+    const rejectMutation = useRejectStockTransfer();
+
     // Delete modal state
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     // Detail, Approve, Reject state
     const [detailOpen, setDetailOpen] = useState(false);
     const [selectedTransferId, setSelectedTransferId] = useState<number | null>(null);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
-    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
         dispatch(setPageTitle('Stock Transfers'));
     }, [dispatch]);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams({
-                search: search,
-                limit: String(itemsPerPage),
-                page: String(currentPage),
-            });
-            const res = await apiFetch(`/api/inventory/stock-transfers?${params.toString()}`);
-            if (res.status === 401) {
-                window.location.href = '/auth/login';
-                return;
-            }
-            const data = await res.json();
-            setTransfers(data.data || []);
-        } catch {
-            toast.error('Failed to load data');
-        } finally {
-            setLoading(false);
-        }
-    }, [search, currentPage, itemsPerPage]);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
 
     const confirmDelete = (id: number) => {
         setItemToDelete(id);
@@ -140,64 +126,30 @@ export default function StockTransfersPage() {
 
     const handleApprove = async () => {
         if (!selectedTransferId) return;
-        setIsProcessing(true);
-        try {
-            const res = await apiFetch(`/api/inventory/stock-transfers/${selectedTransferId}/approve`, { method: 'POST' });
-            if (res.ok) {
-                toast.success('Transfer approved successfully');
-                fetchData();
-            } else {
-                toast.error('Failed to approve transfer');
+        approveMutation.mutate(selectedTransferId, {
+            onSuccess: () => {
+                setConfirmModalOpen(false);
             }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setIsProcessing(false);
-            setConfirmModalOpen(false);
-        }
+        });
     };
 
     const handleReject = async (reason: string) => {
         if (!selectedTransferId) return;
-        setIsProcessing(true);
-        try {
-            const res = await apiFetch(`/api/inventory/stock-transfers/${selectedTransferId}/reject`, {
-                method: 'POST',
-                body: JSON.stringify({ reason })
-            });
-            if (res.ok) {
-                toast.success('Transfer rejected');
-                fetchData();
-            } else {
-                toast.error('Failed to reject transfer');
+        rejectMutation.mutate({ id: selectedTransferId, reason }, {
+            onSuccess: () => {
+                setRejectModalOpen(false);
             }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setIsProcessing(false);
-            setRejectModalOpen(false);
-        }
+        });
     };
 
     const executeDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true);
-        try {
-            const res = await apiFetch(`/api/inventory/stock-transfers/${itemToDelete}`, { method: 'DELETE' });
-            if (res.ok) {
-                toast.success('Transfer deleted');
-                fetchData();
-            } else {
-                const err = await res.json();
-                toast.error(err.message || 'Failed to delete');
+        deleteMutation.mutate(itemToDelete, {
+            onSuccess: () => {
+                setDeleteModalOpen(false);
+                setItemToDelete(null);
             }
-        } catch {
-            toast.error('An error occurred');
-        } finally {
-            setIsDeleting(false);
-            setDeleteModalOpen(false);
-            setItemToDelete(null);
-        }
+        });
     };
 
     const filteredAndSorted = useMemo(() => {
@@ -228,7 +180,7 @@ export default function StockTransfersPage() {
                 setItemsPerPage={setItemsPerPage}
                 onAdd={() => window.location.href = '/inventory/stock-transfers/create'}
                 addLabel="New Transfer"
-                onRefresh={fetchData}
+                onRefresh={() => { fetchData(); }}
             />
 
             {loading ? (
@@ -331,8 +283,8 @@ export default function StockTransfersPage() {
                     <div className="border-t border-gray-100 dark:border-gray-800">
                         <Pagination
                             currentPage={currentPage}
-                            totalPages={1}
-                            totalItems={filteredAndSorted.length}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
                             itemsPerPage={itemsPerPage}
                             onPageChange={setCurrentPage}
                         />
@@ -344,7 +296,7 @@ export default function StockTransfersPage() {
                 isOpen={deleteModalOpen}
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
-                isLoading={isDeleting}
+                isLoading={deleteMutation.isPending}
                 title="Delete Transfer"
                 message="Are you sure you want to delete this draft transfer? This action cannot be undone."
             />
@@ -359,7 +311,7 @@ export default function StockTransfersPage() {
                 isOpen={confirmModalOpen}
                 setIsOpen={setConfirmModalOpen}
                 onConfirm={handleApprove}
-                loading={isProcessing}
+                loading={approveMutation.isPending}
                 title="Approve Stock Transfer"
                 description="Are you sure you want to approve this transfer? This will immediately move the items from the source to the destination location."
                 confirmText="Yes, Approve Transfer"
@@ -369,7 +321,7 @@ export default function StockTransfersPage() {
                 isOpen={rejectModalOpen}
                 setIsOpen={setRejectModalOpen}
                 onConfirm={handleReject}
-                loading={isProcessing}
+                loading={rejectMutation.isPending}
                 title="Reject Stock Transfer"
                 description="Please provide a reason for rejecting this stock transfer."
             />

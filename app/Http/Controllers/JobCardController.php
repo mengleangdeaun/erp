@@ -49,9 +49,23 @@ class JobCardController extends Controller
     {
         $item = JobCardItem::findOrFail($itemId);
         
+        // Normalize status strings
+        if ($request->has('status')) {
+            $status = $request->status;
+            $normalized = match(strtolower(str_replace(['_', '-'], ' ', $status))) {
+                'pending' => 'Pending',
+                'in progress' => 'In Progress',
+                'completed' => 'Completed',
+                'on hold' => 'On Hold',
+                'cancelled' => 'Cancelled',
+                default => $status
+            };
+            $request->merge(['status' => $normalized]);
+        }
+
         $validated = $request->validate([
             'technician_id' => 'sometimes|nullable|exists:employees,id',
-            'status' => 'sometimes|in:Pending,In Progress,Completed,On Hold,Cancelled',
+            'status' => ['sometimes', \Illuminate\Validation\Rule::in(['Pending', 'In Progress', 'Completed', 'On Hold', 'Cancelled'])],
             'notes' => 'nullable|string',
             'completion_percentage' => 'nullable|integer|min:0|max:100',
             'started_at' => 'nullable|date',
@@ -128,31 +142,67 @@ class JobCardController extends Controller
 
                 // 1. Deduct from Serial if present
                 if ($usage->serial) {
-                    $usage->serial->decrement('current_quantity', $qty);
-                    if ($usage->serial->current_quantity <= 0) {
-                        $usage->serial->update(['status' => 'Empty']);
+                    $serial = $usage->serial;
+                    $prevSerialQty = (float)$serial->current_quantity;
+                    $serial->decrement('current_quantity', $qty);
+                    
+                    if ($serial->current_quantity <= 0) {
+                        $serial->update(['status' => 'Empty']);
                     }
+
+                    // Record Serial Movement
+                    \App\Models\Inventory\InventorySerialMovement::create([
+                        'serial_id' => $serial->id,
+                        'product_id' => $usage->product_id,
+                        'location_id' => $serial->location_id,
+                        'user_id' => auth()->id(),
+                        'movement_type' => 'JOB_CARD_CONSUMPTION',
+                        'quantity' => -$qty,
+                        'width' => $usage->width_cut,
+                        'height' => $usage->height_cut,
+                        'previous_quantity' => $prevSerialQty,
+                        'current_quantity' => (float)$serial->current_quantity,
+                        'reference_type' => 'Job Card',
+                        'reference_id' => $jobCard->id,
+                        'reason' => 'Consumed in Job Card #' . $jobCard->job_no
+                    ]);
                 }
 
                 // 2. Deduct from General Stock
-                $stock = \App\Models\Inventory\InventoryStock::where('product_id', $usage->product_id)
-                    ->where('branch_id', $jobCard->branch_id ?? $jobCard->order->branch_id)
-                    ->first();
-                
-                if ($stock) {
-                    $stock->decrement('quantity', $qty);
+                // Find the primary location for the branch
+                $branchId = $jobCard->branch_id ?? $jobCard->order->branch_id;
+                $location = \App\Models\Inventory\InventoryLocation::where('branch_id', $branchId)
+                    ->where('is_primary', true)
+                    ->first() ?? \App\Models\Inventory\InventoryLocation::where('branch_id', $branchId)->first();
+
+                if (!$location) {
+                    \Log::warning("No location found for branch ID: {$branchId}. Skipping stock deduction for product: {$usage->product_id}");
+                    continue;
                 }
 
-                // 3. Record Stock Movement
-                \App\Models\Inventory\InventoryStockMovement::create([
-                    'product_id' => $usage->product_id,
-                    'location_id' => $stock ? $stock->location_id : null,
-                    'reference_type' => 'Job Card',
-                    'reference_id' => $jobCard->id,
-                    'type' => 'Out',
-                    'quantity' => $qty,
-                    'notes' => 'Consumed in Job Card #' . $jobCard->job_no
-                ]);
+                $stock = \App\Models\Inventory\InventoryStock::firstOrCreate(
+                    ['product_id' => $usage->product_id, 'location_id' => $location->id],
+                    ['quantity' => 0]
+                );
+                
+                if ($stock) {
+                    $prevStockQty = (float)$stock->quantity;
+                    $stock->decrement('quantity', $qty);
+
+                    // 3. Record Stock Movement
+                    \App\Models\Inventory\InventoryStockMovement::create([
+                        'product_id' => $usage->product_id,
+                        'location_id' => $location ? $location->id : null,
+                        'user_id' => auth()->id(),
+                        'movement_type' => 'JOB_CARD_CONSUMPTION',
+                        'quantity' => -$qty,
+                        'previous_quantity' => $prevStockQty,
+                        'current_quantity' => (float)$stock->quantity,
+                        'reference_type' => 'Job Card',
+                        'reference_id' => $jobCard->id,
+                        'reason' => 'Consumed in Job Card #' . $jobCard->job_no
+                    ]);
+                }
             }
 
             // Update associated Sales Order if needed

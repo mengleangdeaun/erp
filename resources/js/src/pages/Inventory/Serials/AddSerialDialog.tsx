@@ -41,8 +41,18 @@ const AddSerialDialog = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v
 
     const displayProducts = useMemo(() => {
         if (!form.branch_id) return products;
-        return branchProductsRaw.filter((p: any) => p.is_assigned);
-    }, [form.branch_id, products, branchProductsRaw]);
+        let filtered = branchProductsRaw.filter((p: any) => p.is_assigned);
+        
+        // Filter by location stock if location is selected
+        if (form.location_id) {
+            filtered = filtered.filter((p: any) => {
+                const stock = p.location_stocks?.[form.location_id] || 0;
+                return stock > 0;
+            });
+        }
+        
+        return filtered;
+    }, [form.branch_id, form.location_id, products, branchProductsRaw]);
 
     const productOptions = useMemo(() => 
         displayProducts.map((p: any) => ({
@@ -109,7 +119,7 @@ const AddSerialDialog = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v
                             <SearchableSelect 
                                 options={locationOptions}
                                 value={form.location_id}
-                                onChange={(val) => setForm({ ...form, location_id: val as string })}
+                                onChange={(val) => setForm({ ...form, location_id: val as string, product_id: '' })}
                                 placeholder="Select Location..."
                                 disabled={!form.branch_id}
                                 loading={loadingLocations || (!!form.branch_id && loadingBranches)} // Branches check for completeness
@@ -127,7 +137,12 @@ const AddSerialDialog = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v
                             value={form.product_id}
                             onChange={(val) => {
                                 const prod = displayProducts.find((p: any) => p.id === val);
-                                setForm({ ...form, product_id: val as string, width: prod?.width?.toString() || '' });
+                                setForm({ 
+                                    ...form, 
+                                    product_id: val as string, 
+                                    width: prod?.width ? prod.width.toString() : '',
+                                    length: prod?.length ? prod.length.toString() : ''
+                                });
                             }}
                             placeholder="Select Product..."
                             disabled={!form.branch_id}
@@ -172,7 +187,7 @@ const AddSerialDialog = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v
                     </div>
 
                     {form.length && form.width && (
-                        <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300">
                             <div className="flex items-center gap-2">
                                 <IconRuler2 size={16} className="text-primary" />
                                 <span className="text-[10px] font-black text-primary uppercase tracking-widest">Initial Area</span>

@@ -336,7 +336,7 @@ const EmployeeConfigIndex = () => {
                 </div>
             </FilterBar>
 
-            <div className="rounded-lg border overflow-hidden">
+            <div>
                 <div className="overflow-x-auto">
                     {loading ? (
                         <TableSkeleton columns={8} rows={itemsPerPage} />
@@ -345,7 +345,7 @@ const EmployeeConfigIndex = () => {
                     ) : filteredAndSortedEmployees.length === 0 ? (
                         <EmptyState isSearch searchTerm={search} onClearFilter={() => { setSearch(''); setStatusFilter('all'); setSelectedEmployeeId(null); }} />
                     ) : (
-                        <div className="table-responsive">
+                        <div className="table-responsive rounded-lg border overflow-hidden">
                             <table className="table-hover table-striped w-full table">
                                 <thead>
                                     <tr>

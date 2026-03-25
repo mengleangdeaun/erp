@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('sales_orders', function (Blueprint $table) {
+            $table->string('status')->default('DRAFT')->change();
+            $table->string('payment_status')->default('UNPAID')->change();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('sales_orders', function (Blueprint $table) {
+            $table->enum('status', ['DRAFT', 'CONFIRMED', 'COMPLETED', 'CANCELLED'])->default('DRAFT')->change();
+            $table->enum('payment_status', ['UNPAID', 'PARTIAL', 'PAID'])->default('UNPAID')->change();
+        });
+    }
+};

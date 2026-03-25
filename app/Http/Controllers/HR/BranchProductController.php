@@ -17,7 +17,7 @@ class BranchProductController extends Controller
         $branch = Branch::findOrFail($branchId);
         
         // Return all products with their assignment status and branch-specific stock
-        $products = InventoryProduct::select('id', 'name', 'sku', 'code', 'price')
+        $products = InventoryProduct::select('id', 'name', 'sku', 'code', 'price', 'length', 'width')
             ->addSelect([
                 'bulk_stock_qty' => \App\Models\Inventory\InventoryStock::select(\Illuminate\Support\Facades\DB::raw('COALESCE(SUM(quantity), 0)'))
                     ->join('inventory_locations', 'inventory_locations.id', '=', 'inventory_stocks.location_id')
@@ -45,6 +45,11 @@ class BranchProductController extends Controller
                     $query->where('branch_id', $branchId)
                           ->where('status', 'Available')
                           ->select('id', 'product_id', 'serial_number', 'current_quantity', 'initial_quantity', 'width', 'length');
+                },
+                'stocks' => function ($query) use ($branchId) {
+                    $query->join('inventory_locations', 'inventory_locations.id', '=', 'inventory_stocks.location_id')
+                          ->where('inventory_locations.branch_id', $branchId)
+                          ->select('inventory_stocks.*');
                 }
             ])
             ->get()
@@ -63,6 +68,9 @@ class BranchProductController extends Controller
                     'serial_stock_count' => (int)($product->serial_stock_count ?? 0),
                     'serial_total_sqm' => (float)($product->serial_total_sqm ?? 0),
                     'serial_initial_sqm' => (float)($product->serial_initial_sqm ?? 0),
+                    'length' => (float)($product->length ?? 0),
+                    'width' => (float)($product->width ?? 0),
+                    'location_stocks' => $product->stocks->pluck('quantity', 'location_id'),
                     'available_serials' => $product->serials->map(function ($serial) {
                         return [
                             'id' => $serial->id,

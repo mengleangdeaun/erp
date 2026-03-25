@@ -223,7 +223,7 @@ const ServiceDialog = ({ isOpen, setIsOpen, service, onSave }: ServiceDialogProp
               required
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-0">
             <Label className="text-xs font-bold uppercase text-gray-500">Category</Label>
             <SearchableSelect 
               options={categories.map(c => ({ value: c.id, label: c.name }))}
@@ -232,7 +232,7 @@ const ServiceDialog = ({ isOpen, setIsOpen, service, onSave }: ServiceDialogProp
               placeholder="Select category"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label className="text-xs font-bold uppercase text-gray-500">Base Price ($)</Label>
             <Input 
               type="number"

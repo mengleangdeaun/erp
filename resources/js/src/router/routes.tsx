@@ -86,6 +86,8 @@ const InventoryStockTransferForm = lazy(() => import('../pages/Inventory/StockTr
 const InventoryBranchProductIndex = lazy(() => import('../pages/Inventory/BranchProducts/Index'));
 const InventoryBranchServiceIndex = lazy(() => import('../pages/Inventory/BranchServices/Index'));
 const InventorySerialIndex = lazy(() => import('../pages/Inventory/Serials/Index'));
+const InventoryStockBalanceIndex = lazy(() => import('../pages/Inventory/StockBalance/Index'));
+const InventorySerialMovementIndex = lazy(() => import('../pages/Inventory/SerialMovements/Index'));
 
 // CRM Module
 const CRM_CustomerTypeIndex = lazy(() => import('../pages/Customers/Types/Index'));
@@ -428,9 +430,11 @@ const routes = [
     { path: '/inventory/products', element: <InventoryProductIndex />, layout: 'default' },
     { path: '/inventory/stocks', element: <InventoryStockIndex />, layout: 'default' },
     { path: '/inventory/stock-movements', element: <InventoryStockMovementIndex />, layout: 'default' },
+    { path: '/inventory/serial-movements', element: <InventorySerialMovementIndex />, layout: 'default' },
     { path: '/inventory/branch-products', element: <InventoryBranchProductIndex />, layout: 'default' },
     { path: '/inventory/branch-services', element: <InventoryBranchServiceIndex />, layout: 'default' },
     { path: '/inventory/serials', element: <InventorySerialIndex />, layout: 'default' },
+    { path: '/inventory/stock-balance', element: <InventoryStockBalanceIndex />, layout: 'default' },
     // Procurement
     { path: '/inventory/suppliers', element: <InventorySupplierIndex />, layout: 'default' },
     { path: '/inventory/purchase-orders', element: <InventoryPurchaseOrderIndex />, layout: 'default' },

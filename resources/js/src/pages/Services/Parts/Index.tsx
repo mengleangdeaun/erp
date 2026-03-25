@@ -98,7 +98,8 @@ const JobPartIndex: React.FC = () => {
         return parts.filter(p => 
             p.name.toLowerCase().includes(search.toLowerCase()) || 
             (p.code && p.code.toLowerCase().includes(search.toLowerCase())) ||
-            (p.type && p.type.toLowerCase().includes(search.toLowerCase()))
+            (p.type && p.type.toLowerCase().includes(search.toLowerCase())) ||
+            (p.side && p.side.toLowerCase().includes(search.toLowerCase()))
         );
     }, [parts, search]);
 
@@ -145,6 +146,7 @@ const JobPartIndex: React.FC = () => {
                                     <th>{t('part_name', 'Part Name')}</th>
                                     <th>{t('code', 'Code')}</th>
                                     <th>{t('type', 'Type')}</th>
+                                    <th>{t('side', 'Side')}</th>
                                     <th className="text-center">{t('status', 'Status')}</th>
                                     <th className="text-right">{t('actions', 'Actions')}</th>
                                 </tr>
@@ -179,6 +181,17 @@ const JobPartIndex: React.FC = () => {
                                                 </Badge>
                                             ) : (
                                                 <span className="text-gray-300">---</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            {part.side ? (
+                                                <Badge variant="secondary" className="font-bold text-[10px] uppercase tracking-widest bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+                                                    {part.side}
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="secondary" className="font-bold text-[10px] uppercase tracking-widest opacity-40">
+                                                    Main
+                                                </Badge>
                                             )}
                                         </td>
                                         <td className="text-center">

@@ -14,15 +14,12 @@ import { IconPackages } from '@tabler/icons-react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
 
+import { useInventoryStocks, useAdjustStock, useInventoryProducts, useInventoryLocations } from '@/hooks/useInventoryData';
+
 const StockIndex = () => {
     const dispatch = useDispatch();
-    const [stocks, setStocks] = useState<any[]>([]);
-    const [products, setProducts] = useState<any[]>([]);
-    const [locations, setLocations] = useState<any[]>([]);
     
-    const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
 
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('product_name');
@@ -38,40 +35,15 @@ const StockIndex = () => {
     
     const [formData, setFormData] = useState(initialFormState);
 
-    const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-    };
+    // TanStack Query Hooks
+    const { data: stocks = [], isLoading: loading, refetch } = useInventoryStocks();
+    const { data: products = [] } = useInventoryProducts();
+    const { data: locations = [] } = useInventoryLocations();
+    const adjustStockMutation = useAdjustStock();
 
     useEffect(() => {
         dispatch(setPageTitle('Stocks'));
     }, [dispatch]);
-
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const [stockRes, prodRes, locRes] = await Promise.all([
-                fetch('/api/inventory/stocks', { headers: { 'Accept': 'application/json' }, credentials: 'include' }),
-                fetch('/api/inventory/products?all=true', { headers: { 'Accept': 'application/json' }, credentials: 'include' }),
-                fetch('/api/inventory/locations', { headers: { 'Accept': 'application/json' }, credentials: 'include' })
-            ]);
-
-            if (stockRes.status === 401) { window.location.href = 'auth/login'; return; }
-
-            const [s, p, l] = await Promise.all([stockRes.json(), prodRes.json(), locRes.json()]);
-
-            setStocks(Array.isArray(s) ? s : []);
-            setProducts(Array.isArray(p) ? p : (p.data || []));
-            setLocations(Array.isArray(l) ? l : []);
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => { fetchData(); }, []);
 
     const handleStockAdjustment = () => { setFormData(initialFormState); setModalOpen(true); };
 
@@ -80,17 +52,11 @@ const StockIndex = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSaving(true);
-        try {
-            await fetch('/sanctum/csrf-cookie');
-            const response = await fetch('/api/inventory/stocks', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' }, credentials: 'include',
-                body: JSON.stringify(formData),
-            });
-            if (response.ok) { toast.success(`Stock operations tracked correctly!`); setModalOpen(false); fetchData(); } else {
-                const data = await response.json(); toast.error(data.message || 'Failed to update ledger records');
+        adjustStockMutation.mutate(formData, {
+            onSuccess: () => {
+                setModalOpen(false);
             }
-        } catch (error) { console.error(error); toast.error('An error occurred'); } finally { setIsSaving(false); }
+        });
     };
 
     const filteredAndSorted = useMemo(() => {
@@ -110,7 +76,7 @@ const StockIndex = () => {
 
     return (
         <div>
-            <FilterBar icon={<IconPackages className="w-6 h-6 text-primary" />} title="Stock Valuations & Adjustments" description="Live audit counts mapped physically" search={search} setSearch={setSearch} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} onAdd={handleStockAdjustment} addLabel="System Adjust Stock" onRefresh={fetchData} hasActiveFilters={sortBy !== 'product_name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('product_name'); setSortDirection('asc'); }} />
+            <FilterBar icon={<IconPackages className="w-6 h-6 text-primary" />} title="Stock Valuations & Adjustments" description="Live audit counts mapped physically" search={search} setSearch={setSearch} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} onAdd={handleStockAdjustment} addLabel="System Adjust Stock" onRefresh={() => refetch()} hasActiveFilters={sortBy !== 'product_name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('product_name'); setSortDirection('asc'); }} />
 {loading ? (
   <TableSkeleton columns={5} rows={5} />
 ) : stocks.length === 0 ? (
@@ -181,7 +147,7 @@ const StockIndex = () => {
                     </ScrollArea>
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
                         <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Abort Modification</Button>
-                        <Button type="submit" form="stock-form" disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20">{isSaving ? 'Processing Compute...' : 'Perform Database Append'}</Button>
+                        <Button type="submit" form="stock-form" disabled={adjustStockMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20">{adjustStockMutation.isPending ? 'Processing Compute...' : 'Perform Database Append'}</Button>
                     </div>
                 </DialogContent>
             </Dialog>

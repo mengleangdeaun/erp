@@ -235,7 +235,7 @@ const SystemLogsIndex = () => {
                 </div>
             </FilterBar>
 
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
+            <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-xl border shadow-sm">
                 <div className="overflow-x-auto">
                     {loading ? (
                         <TableSkeleton columns={6} rows={10} />
