@@ -57,7 +57,7 @@ class SalesOrderController extends Controller
         return $query->latest()->paginate($request->per_page ?? 15);
     }
 
-    public function store(Request $request, DocumentNumberService $documentNumberService)
+    public function store(Request $request, DocumentNumberService $documentNumberService, \App\Services\Inventory\StockService $stockService)
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
@@ -91,7 +91,7 @@ class SalesOrderController extends Controller
 
         $order = null;
 
-        DB::transaction(function () use ($request, $validated, $documentNumberService, &$order) {
+        DB::transaction(function () use ($request, $validated, $documentNumberService, $stockService, &$order) {
             $orderNo = $documentNumberService->generate('sales_order');
 
             $totalPaid = collect($validated['deposits'] ?? [])->sum('amount');
@@ -200,27 +200,14 @@ class SalesOrderController extends Controller
 
                 // Deduct Stock for DIRECT product sales ONLY
                 if ($location && !empty($itemData['product_id']) && empty($itemData['job_part_id'])) {
-                    $stock = InventoryStock::firstOrCreate(
-                        ['product_id' => $itemData['product_id'], 'location_id' => $location->id],
-                        ['quantity' => 0]
+                    $stockService->updateStock(
+                        $itemData['product_id'],
+                        $location->id,
+                        -$itemData['qty'],
+                        'OUT',
+                        $order,
+                        "Sales Order #{$order->order_no} direct sale"
                     );
-
-                    $previousQty = $stock->quantity;
-                    $stock->decrement('quantity', $itemData['qty']);
-                    $stock->touch(); // Manually update timestamps if needed, though decrement might do it
-
-                    InventoryStockMovement::create([
-                        'product_id' => $itemData['product_id'],
-                        'location_id' => $location->id,
-                        'user_id' => Auth::id() ?? 1,
-                        'movement_type' => 'OUT',
-                        'quantity' => $itemData['qty'],
-                        'previous_quantity' => $previousQty,
-                        'current_quantity' => $previousQty - $itemData['qty'],
-                        'reference_type' => SalesOrder::class,
-                        'reference_id' => $order->id,
-                        'reason' => "Sales Order #{$order->order_no} direct sale",
-                    ]);
                 }
             }
 
@@ -444,14 +431,14 @@ class SalesOrderController extends Controller
         return SalesOrder::with(['customer', 'vehicle.brand', 'vehicle.model', 'items.itemable', 'jobCard.items.part', 'jobCard.materialUsage.product', 'deposits.paymentAccount', 'deposits.creator', 'creator'])->findOrFail($id);
     }
 
-    public function cancel($id)
+    public function cancel($id, \App\Services\Inventory\StockService $stockService)
     {
         $order = SalesOrder::findOrFail($id);
         if ($order->status === 'Completed') {
             return response()->json(['message' => 'Cannot cancel a completed order'], 422);
         }
         
-        DB::transaction(function() use ($order) {
+        DB::transaction(function() use ($order, $stockService) {
             if ($order->status === 'Cancelled') return;
 
             $order->update(['status' => 'Cancelled']);
@@ -470,27 +457,14 @@ class SalesOrderController extends Controller
                 foreach ($order->items as $item) {
                     // Only restock direct product sales (mimics the logic in store())
                     if ($item->itemable_type === \App\Models\Inventory\InventoryProduct::class && empty($item->job_part_id)) {
-                        $stock = InventoryStock::where('product_id', $item->itemable_id)
-                            ->where('location_id', $location->id)
-                            ->first();
-
-                        if ($stock) {
-                            $previousQty = $stock->quantity;
-                            $stock->increment('quantity', $item->quantity);
-                            
-                            InventoryStockMovement::create([
-                                'product_id' => $item->itemable_id,
-                                'location_id' => $location->id,
-                                'user_id' => Auth::id() ?? 1,
-                                'movement_type' => 'IN',
-                                'quantity' => $item->quantity,
-                                'previous_quantity' => $previousQty,
-                                'current_quantity' => $previousQty + $item->quantity,
-                                'reference_type' => SalesOrder::class,
-                                'reference_id' => $order->id,
-                                'reason' => "Sales Order #{$order->order_no} cancellation restock",
-                            ]);
-                        }
+                        $stockService->updateStock(
+                            $item->itemable_id,
+                            $location->id,
+                            $item->quantity,
+                            'IN',
+                            $order,
+                            "Sales Order #{$order->order_no} cancellation restock"
+                        );
                     }
                 }
             }
@@ -498,7 +472,7 @@ class SalesOrderController extends Controller
 
         return response()->json(['message' => 'Order cancelled successfully']);
     }
-    public function update(Request $request, $id, DocumentNumberService $documentNumberService)
+    public function update(Request $request, $id, DocumentNumberService $documentNumberService, \App\Services\Inventory\StockService $stockService)
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
@@ -526,7 +500,7 @@ class SalesOrderController extends Controller
 
         $order = SalesOrder::with('items')->findOrFail($id);
 
-        DB::transaction(function () use ($request, $validated, $documentNumberService, $order) {
+        DB::transaction(function () use ($request, $validated, $documentNumberService, $order, $stockService) {
             // 1. RESTOCK OLD ITEMS
             $location = \App\Models\Inventory\InventoryLocation::where('branch_id', $order->branch_id)
                 ->where('is_active', true)
@@ -536,25 +510,14 @@ class SalesOrderController extends Controller
             if ($location) {
                 foreach ($order->items as $item) {
                     if ($item->itemable_type === \App\Models\Inventory\InventoryProduct::class && empty($item->job_part_id)) {
-                        $stock = \App\Models\Inventory\InventoryStock::firstOrCreate(
-                            ['product_id' => $item->itemable_id, 'location_id' => $location->id],
-                            ['quantity' => 0]
+                        $stockService->updateStock(
+                            $item->itemable_id,
+                            $location->id,
+                            $item->quantity,
+                            'IN',
+                            $order,
+                            "Sales Order #{$order->order_no} update reversal"
                         );
-                        $previousQty = $stock->quantity;
-                        $stock->increment('quantity', $item->quantity);
-
-                        \App\Models\Inventory\InventoryStockMovement::create([
-                            'product_id' => $item->itemable_id,
-                            'location_id' => $location->id,
-                            'user_id' => Auth::id() ?? 1,
-                            'movement_type' => 'IN',
-                            'quantity' => $item->quantity,
-                            'previous_quantity' => $previousQty,
-                            'current_quantity' => $previousQty + $item->quantity,
-                            'reference_type' => SalesOrder::class,
-                            'reference_id' => $order->id,
-                            'reason' => "Sales Order #{$order->order_no} update reversal",
-                        ]);
                     }
                 }
             }
@@ -636,25 +599,14 @@ class SalesOrderController extends Controller
                 }
 
                 if ($newLocation && !empty($itemData['product_id']) && empty($itemData['job_part_id'])) {
-                    $stock = \App\Models\Inventory\InventoryStock::firstOrCreate(
-                        ['product_id' => $itemData['product_id'], 'location_id' => $newLocation->id],
-                        ['quantity' => 0]
+                    $stockService->updateStock(
+                        $itemData['product_id'],
+                        $newLocation->id,
+                        -$itemData['qty'],
+                        'OUT',
+                        $order,
+                        "Sales Order #{$order->order_no} update deduction"
                     );
-                    $previousQty = $stock->quantity;
-                    $stock->decrement('quantity', $itemData['qty']);
-
-                    \App\Models\Inventory\InventoryStockMovement::create([
-                        'product_id' => $itemData['product_id'],
-                        'location_id' => $newLocation->id,
-                        'user_id' => Auth::id() ?? 1,
-                        'movement_type' => 'OUT',
-                        'quantity' => $itemData['qty'],
-                        'previous_quantity' => $previousQty,
-                        'current_quantity' => $previousQty - $itemData['qty'],
-                        'reference_type' => SalesOrder::class,
-                        'reference_id' => $order->id,
-                        'reason' => "Sales Order #{$order->order_no} update deduction",
-                    ]);
                 }
             }
 

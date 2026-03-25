@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Badge } from '../../../components/ui/badge';
@@ -22,6 +23,7 @@ import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
+import HighlightText from '../../../components/ui/HighlightText';
 
 interface Supplier {
     id: number;
@@ -43,6 +45,7 @@ const emptyForm = {
     address: '',
     note: '',
     is_active: true,
+    attachment_file: '',
 };
 
 const getCookie = (name: string) => {
@@ -52,6 +55,7 @@ const getCookie = (name: string) => {
 };
 
 const SuppliersPage = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [loading, setLoading] = useState(true);
@@ -72,8 +76,8 @@ const SuppliersPage = () => {
     const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
-        dispatch(setPageTitle('Suppliers'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('suppliers')));
+    }, [dispatch, t]);
 
     const fetchSuppliers = async () => {
         setLoading(true);
@@ -89,7 +93,7 @@ const SuppliersPage = () => {
             const data = await res.json();
             setSuppliers(Array.isArray(data) ? data : []);
         } catch {
-            toast.error('Failed to load suppliers');
+            toast.error(t('error_msg'));
         } finally {
             setLoading(false);
         }
@@ -119,6 +123,7 @@ const SuppliersPage = () => {
             address: s.address || '',
             note: s.note || '',
             is_active: s.is_active,
+            attachment_file: s.attachment_file || '',
         });
         setAttachmentFile(null);
         setModalOpen(true);
@@ -140,13 +145,13 @@ const SuppliersPage = () => {
                 credentials: 'include',
             });
             if (res.ok) {
-                toast.success('Supplier deleted');
+                toast.success(t('supplier_deleted'));
                 fetchSuppliers();
             } else {
-                toast.error('Failed to delete supplier');
+                toast.error(t('error_msg'));
             }
         } catch {
-            toast.error('An error occurred');
+            toast.error(t('error_msg'));
         } finally {
             setIsDeleting(false);
             setDeleteModalOpen(false);
@@ -181,14 +186,14 @@ const SuppliersPage = () => {
             });
             const data = await res.json();
             if (res.ok) {
-                toast.success(editId ? 'Supplier updated' : 'Supplier created');
+                toast.success(editId ? t('supplier_updated') : t('supplier_created'));
                 setModalOpen(false);
                 fetchSuppliers();
             } else {
-                toast.error(data.message || 'Failed to save supplier');
+                toast.error(data.message || t('error_msg'));
             }
         } catch {
-            toast.error('An error occurred');
+            toast.error(t('error_msg'));
         } finally {
             setSubmitting(false);
         }
@@ -246,14 +251,14 @@ const SuppliersPage = () => {
         <div>
             <FilterBar
                 icon={<Building2 className="w-6 h-6 text-primary" />}
-                title="Suppliers"
-                description="Manage your vendor and supplier directory"
+                title={t('suppliers')}
+                description={t('manage_vendor_supplier_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={openCreate}
-                addLabel="Add Supplier"
+                addLabel={t('add_supplier')}
                 onRefresh={fetchSuppliers}
                 hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc' || search !== ''}
                 onClearFilters={clearFilters}
@@ -263,9 +268,9 @@ const SuppliersPage = () => {
                 <TableSkeleton columns={6} rows={5} />
             ) : suppliers.length === 0 ? (
                 <EmptyState
-                    title="No Suppliers Found"
-                    description="Start by adding your first supplier."
-                    actionLabel="Add Supplier"
+                    title={t('no_suppliers_found_title')}
+                    description={t('start_adding_first_supplier')}
+                    actionLabel={t('add_supplier')}
                     onAction={openCreate}
                 />
             ) : filteredAndSortedSuppliers.length === 0 ? (
@@ -280,29 +285,29 @@ const SuppliersPage = () => {
                         <thead>
                             <tr>
                                 <SortableHeader
-                                    label="Supplier Name"
+                                    label={t('supplier_name')}
                                     value="name"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Contact Person"
+                                    label={t('contact_person')}
                                     value="contact_person"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Phone / Email"
+                                    label={t('phone_email')}
                                     value="phone"      // we'll sort by phone, but you could change to email
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
-                                <th className="text-left">Attachment</th>
+                                <th className="text-left">{t('attachment')}</th>
                                 <SortableHeader
-                                    label="Status"
+                                    label={t('status')}
                                     value="is_active"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
@@ -315,21 +320,23 @@ const SuppliersPage = () => {
                             {paginatedSuppliers.map((s, idx) => (
                                 <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                     <td className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
-                                        {s.name}
+                                        <HighlightText text={s.name} highlight={search} />
                                     </td>
                                     <td className="text-gray-600 dark:text-gray-300">
-                                        {s.contact_person || '—'}
+                                        <HighlightText text={s.contact_person || '—'} highlight={search} />
                                     </td>
                                     <td className="text-gray-600 dark:text-gray-300">
                                         <div className="flex flex-col gap-0.5">
                                             {s.phone && (
                                                 <span className="flex items-center gap-1 text-xs">
-                                                    <Phone className="h-3 w-3" /> {s.phone}
+                                                    <Phone className="h-3 w-3" /> 
+                                                    <HighlightText text={s.phone} highlight={search} />
                                                 </span>
                                             )}
                                             {s.email && (
                                                 <span className="flex items-center gap-1 text-xs">
-                                                    <Mail className="h-3 w-3" /> {s.email}
+                                                    <Mail className="h-3 w-3" /> 
+                                                    <HighlightText text={s.email} highlight={search} />
                                                 </span>
                                             )}
                                             {!s.phone && !s.email && '—'}
@@ -343,13 +350,13 @@ const SuppliersPage = () => {
                                                 rel="noopener noreferrer"
                                                 className="flex items-center gap-1 text-primary hover:underline text-xs"
                                             >
-                                                <Paperclip className="h-3 w-3" /> View File
+                                                <Paperclip className="h-3 w-3" /> {t('view_file')}
                                             </a>
                                         ) : '—'}
                                     </td>
                                     <td>
                                         <Badge variant={s.is_active ? 'success' : 'destructive'}>
-                                            {s.is_active ? 'Active' : 'Inactive'}
+                                            {s.is_active ? t('active') : t('inactive')}
                                         </Badge>
                                     </td>
                                     <td className="text-right">
@@ -385,10 +392,10 @@ const SuppliersPage = () => {
                         </div>
                         <div>
                             <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                                {editId ? 'Edit Supplier' : 'Add New Supplier'}
+                                {editId ? t('edit_supplier') : t('add_new_supplier')}
                             </DialogTitle>
                             <p className="text-sm text-gray-500 mt-1">
-                                {editId ? 'Update the supplier details below.' : 'Enter the supplier information.'}
+                                {editId ? t('update_supplier_details_desc') : t('enter_supplier_info_desc')}
                             </p>
                         </div>
                     </div>
@@ -398,7 +405,7 @@ const SuppliersPage = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2 space-y-1">
                                     <Label className="text-sm font-medium">
-                                        Supplier Name <span className="text-red-500">*</span>
+                                        {t('supplier_name')} <span className="text-red-500">*</span>
                                     </Label>
                                     <Input
                                         name="name"
@@ -409,7 +416,7 @@ const SuppliersPage = () => {
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-sm font-medium">Contact Person</Label>
+                                    <Label className="text-sm font-medium">{t('contact_person')}</Label>
                                     <Input
                                         name="contact_person"
                                         value={formData.contact_person}
@@ -418,7 +425,7 @@ const SuppliersPage = () => {
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label className="text-sm font-medium">Phone</Label>
+                                    <Label className="text-sm font-medium">{t('phone')}</Label>
                                     <Input
                                         name="phone"
                                         value={formData.phone}
@@ -427,7 +434,7 @@ const SuppliersPage = () => {
                                     />
                                 </div>
                                 <div className="col-span-2 space-y-1">
-                                    <Label className="text-sm font-medium">Email</Label>
+                                    <Label className="text-sm font-medium">{t('email')}</Label>
                                     <Input
                                         type="email"
                                         name="email"
@@ -437,7 +444,7 @@ const SuppliersPage = () => {
                                     />
                                 </div>
                                 <div className="col-span-2 space-y-1">
-                                    <Label className="text-sm font-medium">Address</Label>
+                                    <Label className="text-sm font-medium">{t('address')}</Label>
                                     <Textarea
                                         name="address"
                                         value={formData.address}
@@ -447,7 +454,7 @@ const SuppliersPage = () => {
                                     />
                                 </div>
                                 <div className="col-span-2 space-y-1">
-                                    <Label className="text-sm font-medium">Note</Label>
+                                    <Label className="text-sm font-medium">{t('note')}</Label>
                                     <Textarea
                                         name="note"
                                         value={formData.note}
@@ -457,14 +464,14 @@ const SuppliersPage = () => {
                                     />
                                 </div>
                                 <div className="col-span-2 space-y-1">
-                                    <Label className="text-sm font-medium">Attachment File</Label>
+                                    <Label className="text-sm font-medium">{t('attachment_file')}</Label>
                                     <Input
                                         type="file"
                                         onChange={e => setAttachmentFile(e.target.files?.[0] || null)}
                                     />
                                     {editId && formData.attachment_file && (
                                         <p className="text-xs text-gray-500 mt-1">
-                                            Current file: {formData.attachment_file}
+                                            {t('current_file')}: {formData.attachment_file}
                                         </p>
                                     )}
                                 </div>
@@ -474,7 +481,7 @@ const SuppliersPage = () => {
                                         checked={formData.is_active}
                                         onCheckedChange={v => setFormData(p => ({ ...p, is_active: v }))}
                                     />
-                                    <Label htmlFor="is_active" className="text-sm font-medium">Active</Label>
+                                    <Label htmlFor="is_active" className="text-sm font-medium">{t('active')}</Label>
                                 </div>
                             </div>
                         </form>
@@ -482,7 +489,7 @@ const SuppliersPage = () => {
 
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
                         <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
-                            Cancel
+                            {t('cancel')}
                         </Button>
                         <Button
                             type="submit"
@@ -490,7 +497,7 @@ const SuppliersPage = () => {
                             disabled={submitting}
                             className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
                         >
-                            {submitting ? 'Saving...' : (editId ? 'Update' : 'Create Supplier')}
+                            {submitting ? t('processing') : (editId ? t('update') : t('add_new_supplier'))}
                         </Button>
                     </div>
                 </DialogContent>
@@ -502,8 +509,8 @@ const SuppliersPage = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Supplier"
-                message="Are you sure you want to delete this supplier? This action cannot be undone."
+                title={t('delete_supplier')}
+                message={t('delete_adj_confirm')}
             />
         </div>
     );

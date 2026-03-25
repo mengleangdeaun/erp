@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
 import { 
@@ -21,6 +22,7 @@ import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { DateRange } from 'react-day-picker';
 import { useSerialMovements, useInventoryLocations } from '@/hooks/useInventoryData';
+import HighlightText from '../../../components/ui/HighlightText';
 
 interface SerialMovement {
     id: number;
@@ -68,9 +70,10 @@ const TYPE_CONFIG: Record<string, { label: string; color: string; icon: any }> =
 const SerialMovementsIndex = () => {
     const dispatch = useDispatch();
     const { formatDateTime } = useFormatDate();
+    const [searchParams] = useSearchParams();
 
     // Filter & Sort States
-    const [search, setSearch] = useState('');
+    const [search, setSearch] = useState(searchParams.get('search') || '');
     const [sortBy, setSortBy] = useState('created_at');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
     const [currentPage, setCurrentPage] = useState(1);
@@ -134,7 +137,7 @@ const SerialMovementsIndex = () => {
                 placeholder="Search serials, products or reasons..."
                 title="Serial Movement History"
                 description="View and manage roll serial history."
-                onRefresh={refetch}
+                onRefresh={() => { refetch(); }}
                 icon={<IconHistory className="w-6 h-6 text-primary" />}
                 hasActiveFilters={!!((locationId && locationId !== 'all') || (movementType && movementType !== 'all') || dateRange)}
                 onClearFilters={() => {
@@ -153,7 +156,7 @@ const SerialMovementsIndex = () => {
                     <SearchableSelect
                         options={[
                             { value: 'all', label: 'All Locations' },
-                            ...locations.map(l => ({ value: l.id, label: l.name }))
+                            ...locations.map((l: any) => ({ value: l.id, label: l.name }))
                         ]}
                         value={locationId || 'all'}
                         onChange={setLocationId}
@@ -215,13 +218,25 @@ const SerialMovementsIndex = () => {
                                                     <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded">
                                                         <IconBarcode className="w-3.5 h-3.5 text-blue-500" />
                                                     </div>
-                                                    <span className="font-bold text-gray-900 dark:text-gray-100">{m.serial?.serial_number}</span>
+                                                    <HighlightText 
+                                                        text={m.serial?.serial_number} 
+                                                        highlight={search} 
+                                                        className="font-bold text-gray-900 dark:text-gray-100" 
+                                                    />
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4">
                                                 <div>
-                                                    <p className="font-semibold text-gray-700 dark:text-gray-300 leading-none">{m.product?.name}</p>
-                                                    <p className="text-[10px] text-gray-400 font-mono mt-1">{m.product?.code}</p>
+                                                    <HighlightText 
+                                                        text={m.product?.name} 
+                                                        highlight={search} 
+                                                        className="font-semibold text-gray-700 dark:text-gray-300 leading-none" 
+                                                    />
+                                                    <HighlightText 
+                                                        text={m.product?.code} 
+                                                        highlight={search} 
+                                                        className="text-[10px] text-gray-400 font-mono mt-1 block" 
+                                                    />
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4 text-center">

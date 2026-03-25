@@ -12,6 +12,7 @@ import { IconUser, IconDeviceFloppy, IconPhone, IconMail, IconMapPin, IconBrandT
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useCRMCreateCustomer, useCRMUpdateCustomer, useCRMCustomerNextCode } from '@/hooks/useCRMData';
+import { useTranslation } from 'react-i18next';
 
 interface CustomerType {
     id: number;
@@ -42,6 +43,7 @@ interface CustomerDialogProps {
 }
 
 const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: CustomerDialogProps) => {
+    const { t } = useTranslation();
     const createMutation = useCRMCreateCustomer();
     const updateMutation = useCRMUpdateCustomer();
     const { data: nextCodeData, refetch: fetchNextCode, isFetching: isFetchingNextCode } = useCRMCustomerNextCode();
@@ -121,10 +123,10 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
         try {
             if (customer) {
                 await updateMutation.mutateAsync({ id: customer.id, data: payload });
-                toast.success('Customer updated successfully');
+                toast.success(t('success_update_customer'));
             } else {
                 await createMutation.mutateAsync(payload);
-                toast.success('Customer created successfully');
+                toast.success(t('success_create_customer'));
             }
 
             onSave();
@@ -149,7 +151,7 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
                 setIsOpen(false);
             }
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to save customer');
+            toast.error(error?.response?.data?.message || t('failed_save_customer'));
         }
     };
 
@@ -164,10 +166,10 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
         </div>
         <div>
           <DialogTitle className="text-xl font-bold">
-            {customer ? 'Edit Customer' : 'New Customer'}
+            {customer ? t('edit_customer') : t('new_customer')}
           </DialogTitle>
           <DialogDescription>
-            {customer ? `Update details for ${customer.customer_no}` : 'Enter personal and contact information.'}
+            {customer ? t('update_details_for', { no: customer.customer_no }) : t('enter_personal_info')}
           </DialogDescription>
         </div>
       </div>
@@ -179,16 +181,16 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Primary Info */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Basic Information</h3>
+            <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">{t('basic_info')}</h3>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Customer Code <span className="text-danger">*</span></Label>
+              <Label className="text-sm font-semibold">{t('customer_code')} <span className="text-danger">*</span></Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-xs">#</span>
                 <Input 
                   value={form.customer_code} 
                   onChange={e => setForm({ ...form, customer_code: e.target.value.toUpperCase() })}
-                  placeholder={isFetchingNextCode ? "Fetching code..." : "Auto Increment"}
+                  placeholder={isFetchingNextCode ? t('fetching_code') : t('auto_increment')}
                   required
                   className={`pl-10 h-11 font-black ${isFetchingNextCode ? 'animate-pulse bg-gray-100 dark:bg-gray-800' : ''}`}
                   disabled={isFetchingNextCode}
@@ -202,7 +204,7 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Full Name</Label>
+              <Label className="text-sm font-semibold">{t('full_name')}</Label>
               <div className="relative">
                 <IconUser size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <Input 
@@ -215,10 +217,10 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Customer Type <span className="text-danger">*</span></Label>
+              <Label className="text-sm font-semibold">{t('customer_type')} <span className="text-danger">*</span></Label>
               <Select value={form.customer_type_id} onValueChange={v => setForm({ ...form, customer_type_id: v })}>
                 <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t('select_type')} />
                 </SelectTrigger>
                 <SelectContent>
                   {customerTypes.map(type => (
@@ -231,7 +233,7 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-semibold mb-0 flex items-center gap-2">
-                  <IconCalendar size={14} /> Join Date
+                  <IconCalendar size={14} /> {t('join_date')}
                 </Label>
                 <DatePicker
                   className="h-11"
@@ -241,7 +243,7 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-semibold mb-0 flex items-center gap-2">
-                  <IconClock size={14} /> Join Time
+                  <IconClock size={14} /> {t('join_time')}
                 </Label>
                 <TimePicker
                   className="h-11"
@@ -252,14 +254,14 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Status</Label>
+              <Label className="text-sm font-semibold">{t('status')}</Label>
               <Select value={form.status} onValueChange={v => setForm({ ...form, status: v as any })}>
                 <SelectTrigger className="h-11">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="ACTIVE">{t('active')}</SelectItem>
+                  <SelectItem value="INACTIVE">{t('inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -267,9 +269,9 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
 
           {/* Contact & Social */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Contact Details</h3>
+            <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">{t('contact_details')}</h3>
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Phone Number <span className="text-danger">*</span></Label>
+              <Label className="text-sm font-semibold">{t('phone_number')} <span className="text-danger">*</span></Label>
               <div className="relative">
                 <IconPhone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <Input 
@@ -283,14 +285,14 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Email Address</Label>
+              <Label className="text-sm font-semibold">{t('email_address')}</Label>
               <div className="relative">
                 <IconMail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <Input 
                   type="email"
                   value={form.email} 
                   onChange={e => setForm({ ...form, email: e.target.value })}
-                  placeholder="[EMAIL_ADDRESS]"
+                  placeholder={t('email_address')}
                   className="pl-10 h-11"
                 />
               </div>
@@ -298,7 +300,7 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
 
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-primary flex items-center gap-2">
-                <IconBrandTelegram size={16} /> Telegram User ID
+                <IconBrandTelegram size={16} /> {t('telegram_id')}
               </Label>
               <Input 
                 value={form.telegram_user_id} 
@@ -306,34 +308,34 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
                 placeholder="e.g. 123456789"
                 className="h-11"
               />
-              <p className="text-[10px] text-gray-500">For loyalty notifications and automated alerts.</p>
+              <p className="text-[10px] text-gray-500">{t('telegram_desc')}</p>
             </div>
           </div>
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Additional Information</h3>
+          <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">{t('additional_info')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Address</Label>
+              <Label className="text-sm font-semibold">{t('address_label')}</Label>
               <div className="relative">
                 <IconMapPin size={18} className="absolute left-3 top-3 text-gray-400" />
                 <Textarea 
                   value={form.address} 
                   onChange={e => setForm({ ...form, address: e.target.value })}
-                  placeholder="Enter full address..."
+                  placeholder={t('enter_full_address')}
                   className="pl-10 min-h-[100px]"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Notes</Label>
+              <Label className="text-sm font-semibold">{t('notes_label')}</Label>
               <div className="relative">
                 <IconNotes size={18} className="absolute left-3 top-3 text-gray-400" />
                 <Textarea 
                   value={form.notes} 
                   onChange={e => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Internal notes about this customer..."
+                  placeholder={t('internal_notes_placeholder')}
                   className="pl-10 min-h-[100px]"
                 />
               </div>
@@ -347,10 +349,10 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
 
     {/* Sticky Footer */}
     <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4 p-6 pt-4 border-t border-gray-100 dark:border-gray-800 bg-background">
-      <p className="text-[11px] text-gray-400 italic order-3 sm:order-1">* Required fields must be completed</p>
+      <p className="text-[11px] text-gray-400 italic order-3 sm:order-1">{t('required_fields_msg')}</p>
       <div className="flex gap-2 order-2">
         <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="h-11 px-6 hover:bg-gray-100 dark:hover:bg-gray-800">
-          Cancel
+          {t('cancel')}
         </Button>
         
         {!customer && (
@@ -361,7 +363,7 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
             onClick={(e) => handleSubmit(e as any, true)}
             className="h-11 px-6 border-primary/20 text-primary hover:bg-primary/5 shadow-sm"
           >
-            Save & Create New
+            {t('save_create_new')}
           </Button>
         )}
 
@@ -372,7 +374,7 @@ const CustomerDialog = ({ isOpen, setIsOpen, customer, customerTypes, onSave }: 
           className="h-11 gap-2 px-8 shadow-lg shadow-primary/20"
         >
           {saving ? <IconLoader2 className="animate-spin" size={18} /> : <IconDeviceFloppy size={18} />}
-          {customer ? 'Update' : 'Create'} Customer
+          {customer ? t('update_customer_btn') : t('create_customer_btn')}
         </Button>
       </div>
     </div>

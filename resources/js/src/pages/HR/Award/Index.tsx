@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -6,7 +7,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { DatePicker } from '../../../components/ui/date-picker';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -17,10 +18,12 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import MediaSelector, { MediaFile } from '../../../components/MediaSelector';
 import { IconTrophy, IconCertificate, IconPhoto, IconX, IconExternalLink } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 
 const toDateStr = (d: Date | undefined) => d ? d.toISOString().split('T')[0] : '';
 
 const AwardIndex = () => {
+    const { t } = useTranslation();
     const [awards, setAwards] = useState<any[]>([]);
     const [awardTypes, setAwardTypes] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
@@ -119,10 +122,10 @@ const AwardIndex = () => {
                 credentials: 'include',
             });
             if (response.ok) {
-                toast.success('Award deleted');
+                toast.success(t('award_deleted_msg'));
                 fetchData();
             } else {
-                toast.error('Failed to delete award');
+                toast.error(t('failed_delete_award_msg'));
             }
         } catch (error) {
             toast.error('An error occurred');
@@ -161,11 +164,11 @@ const AwardIndex = () => {
             });
             const data = await response.json();
             if (response.ok) {
-                toast.success(`Award ${editingItem ? 'updated' : 'created'}`);
+                toast.success(`${t('awards_title')} ${editingItem ? t('update') : t('create')}`);
                 setModalOpen(false);
                 fetchData();
             } else {
-                toast.error(data.message || 'Error saving award');
+                toast.error(data.message || t('failed_save_award_msg'));
             }
         } catch (error) {
             toast.error('An error occurred');
@@ -230,14 +233,14 @@ const AwardIndex = () => {
         <div>
             <FilterBar
                 icon={<IconTrophy className="w-6 h-6 text-primary" />}
-                title="Employee Awards"
-                description="Manage awards given to employees"
+                title={t('awards_title')}
+                description={t('awards_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
                 onAdd={handleCreate}
-                addLabel="Give Award"
+                addLabel={t('awards_give')}
                 onRefresh={fetchData}
             />
 
@@ -250,21 +253,21 @@ const AwardIndex = () => {
                             isSearch={!!search}
                             searchTerm={search}
                             onClearFilter={() => setSearch('')}
-                            title="No Awards found"
-                            description="Assign an award to an employee to get started."
-                            actionLabel="Give Award"
+                            title={t('no_awards_found_title')}
+                            description={t('assign_award_desc')}
+                            actionLabel={t('awards_give')}
                             onAction={handleCreate}
                         />
                     ) : (
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700">
                                 <tr>
-                                    <SortableHeader label="Employee" value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Award Type" value="award_type.name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Date" value="date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Gift" value="gift" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <th className="px-6 py-4">Media</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <SortableHeader label={t('employee_label')} value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('award_type_label')} value="award_type.name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('date_label')} value="date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('gift_label')} value="gift" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <th className="px-6 py-4">{t('media_label')}</th>
+                                    <th className="px-6 py-4 text-right">{t('actions_label')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -280,27 +283,33 @@ const AwardIndex = () => {
                                                     </div>
                                                 )}
                                                 <div>
-                                                    <div className="font-semibold">{item.employee?.full_name}</div>
-                                                    <div className="text-xs text-gray-500">{item.employee?.employee_id}</div>
+                                                    <div className="font-semibold">
+                                                        <HighlightText text={item.employee?.full_name} highlight={search} />
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        <HighlightText text={item.employee?.employee_id} highlight={search} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-700 dark:text-gray-300">
-                                            {item.award_type?.name || 'Unknown'}
+                                            <HighlightText text={item.award_type?.name || t('unknown_label')} highlight={search} />
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {new Date(item.date).toLocaleDateString()}
                                         </td>
-                                        <td className="px-6 py-4 text-gray-500 max-w-[150px] truncate">{item.gift || '-'}</td>
+                                        <td className="px-6 py-4 text-gray-500 max-w-[150px] truncate">
+                                            <HighlightText text={item.gift} highlight={search} />
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 {item.certificate ? (
-                                                    <a href={item.certificate} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 dark:bg-blue-900/30 dark:border-blue-800" title="View Certificate">
+                                                    <a href={item.certificate} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 dark:bg-blue-900/30 dark:border-blue-800" title={t('view_certificate_tooltip')}>
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                                                     </a>
                                                 ) : <span className="w-8 h-8 flex items-center justify-center text-gray-300">-</span>}
                                                 {item.photo ? (
-                                                    <a href={item.photo} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 dark:bg-emerald-900/30 dark:border-emerald-800" title="View Photo">
+                                                    <a href={item.photo} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 dark:bg-emerald-900/30 dark:border-emerald-800" title={t('view_photo_tooltip')}>
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                                                     </a>
                                                 ) : <span className="w-8 h-8 flex items-center justify-center text-gray-300">-</span>}
@@ -327,46 +336,46 @@ const AwardIndex = () => {
             </div>
 
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[700px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
                             <IconTrophy className="text-primary w-7 h-7" />
                         </div>
                         <div>
                             <DialogTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
-                                {editingItem ? 'Edit Award Details' : 'Grant New Award'}
+                                {editingItem ? t('edit_award_title') : t('grant_award_title')}
                             </DialogTitle>
                             <p className="text-sm text-gray-500 mt-1">
-                                {editingItem ? 'Update the details for this employee\'s award.' : 'Fill out the information below to recognize an employee.'}
+                                {editingItem ? t('update_award_detail_desc') : t('fill_award_detail_desc')}
                             </p>
                         </div>
                     </div>
 
-                    <ScrollArea className="flex-1 min-h-0">
+                    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
                         <form id="award-form" onSubmit={handleSubmit} className="p-6 space-y-6">
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Award Information</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('award_info_title')}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="space-y-1">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Employee <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('employee_label')} <span className="text-red-500">*</span></label>
                                         <SearchableSelect
                                             options={employeeOptions}
                                             value={formData.employee_id}
                                             onChange={(val) => handleSelectChange(val, 'employee_id')}
-                                            placeholder="Search employee..."
-                                            searchPlaceholder="Type name to search..."
-                                            emptyMessage="No employees found"
+                                            placeholder={t('search_employee_placeholder')}
+                                            searchPlaceholder={t('type_name_search_placeholder')}
+                                            emptyMessage={t('no_employees_found_title')}
                                         />
                                     </div>
                                     <div className="space-y-2.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Award Type <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('award_type_label')} <span className="text-red-500">*</span></label>
                                         <Select onValueChange={(val) => handleSelectChange(val, 'award_type_id')} value={String(formData.award_type_id)}>
-                                            <SelectTrigger><SelectValue placeholder="Select Award Type" /></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder={t('select_award_type_placeholder')} /></SelectTrigger>
                                             <SelectContent>
                                                 {loading ? (
-                                                    <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                                    <SelectItem value="loading" disabled>{t('loading_label')}</SelectItem>
                                                 ) : awardTypes.length === 0 ? (
-                                                    <SelectItem value="empty" disabled>No award types available</SelectItem>
+                                                    <SelectItem value="empty" disabled>{t('no_award_types_available_msg')}</SelectItem>
                                                 ) : (
                                                     awardTypes.map(type => <SelectItem key={type.id} value={String(type.id)}>{type.name}</SelectItem>)
                                                 )}
@@ -377,27 +386,27 @@ const AwardIndex = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="space-y-1">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date Selected <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('date_selected_label')} <span className="text-red-500">*</span></label>
                                         <DatePicker
                                             value={formData.date}
                                             onChange={(d) => setFormData((prev: any) => ({ ...prev, date: toDateStr(d) }))}
-                                            placeholder="Select award date"
+                                            placeholder={t('select_award_date_placeholder')}
                                         />
                                     </div>
                                     <div className="space-y-2.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Gift / Item</label>
-                                        <Input name="gift" value={formData.gift} onChange={handleChange} placeholder="e.g., $100 Bonus, Trophy" className="bg-gray-50 dark:bg-gray-800/50" />
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('gift_item_label')}</label>
+                                        <Input name="gift" value={formData.gift} onChange={handleChange} placeholder={t('gift_placeholder')} className="bg-gray-50 dark:bg-gray-800/50" />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2.5">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Citation & Description</label>
-                                    <Textarea name="description" value={formData.description} onChange={handleChange} placeholder="Why is this employee receiving this award?..." rows={3} className="bg-gray-50 dark:bg-gray-800/50 resize-none" />
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('citation_description_label')}</label>
+                                    <Textarea name="description" value={formData.description} onChange={handleChange} placeholder={t('award_reason_placeholder')} rows={3} className="bg-gray-50 dark:bg-gray-800/50 resize-none" />
                                 </div>
                             </div>
 
                             <div className="space-y-4 pt-2">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Media & Attachments</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('media_attachments_title')}</h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     {/* Certificate Upload Box */}
@@ -410,9 +419,9 @@ const AwardIndex = () => {
                                                 <IconCertificate stroke={1.5} size={28} />
                                             </div>
                                             <div>
-                                                <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">Certificate Document</p>
+                                                <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{t('certificate_document_label')}</p>
                                                 <p className="text-xs text-gray-500 mt-1">
-                                                    {formData.certificate ? 'Click to change document' : 'Upload or select PDF/Image'}
+                                                    {formData.certificate ? t('click_change_document_label') : t('upload_select_pdf_image_label')}
                                                 </p>
                                             </div>
                                         </div>
@@ -444,9 +453,9 @@ const AwardIndex = () => {
                                                 <IconPhoto stroke={1.5} size={28} />
                                             </div>
                                             <div>
-                                                <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">Event Photo</p>
+                                                <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{t('event_photo_label')}</p>
                                                 <p className="text-xs text-gray-500 mt-1">
-                                                    {formData.photo ? 'Click to change photo' : 'Upload or select Image'}
+                                                    {formData.photo ? t('click_change_photo_label') : t('upload_select_image_label')}
                                                 </p>
                                             </div>
                                         </div>
@@ -464,13 +473,12 @@ const AwardIndex = () => {
                                 </div>
                             </div>
                         </form>
-                    </ScrollArea>
+                    </PerfectScrollbar>
 
-                    {/* Sticky Footer */}
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
-                        <Button type="button" variant="ghost" className="px-5" onClick={() => setModalOpen(false)}>Cancel</Button>
+                        <Button type="button" variant="ghost" className="px-5" onClick={() => setModalOpen(false)}>{t('cancel_btn_label')}</Button>
                         <Button type="submit" form="award-form" disabled={isSaving} className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20">
-                            {isSaving ? 'Processing...' : (editingItem ? 'Save Changes' : 'Grant Award')}
+                            {isSaving ? t('processing_label') : (editingItem ? t('save_changes_btn_label') : t('grant_award_btn'))}
                         </Button>
                     </div>
                 </DialogContent>
@@ -481,8 +489,8 @@ const AwardIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Award"
-                message="Are you sure you want to delete this award record? This action cannot be undone."
+                title={t('delete_award_title')}
+                message={t('delete_award_confirm')}
             />
 
             <MediaSelector

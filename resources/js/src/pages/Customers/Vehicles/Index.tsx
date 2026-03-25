@@ -18,6 +18,7 @@ import { setPageTitle } from '@/store/themeConfigSlice';
 import { useCRMCustomerVehicles, useCRMVehicleBrands, useCRMDeleteVehicle } from '@/hooks/useCRMData';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
+import HighlightText from '@/components/ui/HighlightText';
 
 
 const CustomerVehicleIndex = () => {
@@ -53,8 +54,8 @@ const CustomerVehicleIndex = () => {
     const loading = useDelayedLoading(vehiclesLoading);
 
     useEffect(() => {
-        dispatch(setPageTitle('Customer Vehicles'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('customer_vehicles')));
+    }, [dispatch, t]);
 
     const handleEdit = (vehicle: any) => {
         setSelectedVehicle(vehicle);
@@ -70,9 +71,9 @@ const CustomerVehicleIndex = () => {
         if (!deleteId) return;
         try {
             await deleteMutation.mutateAsync(deleteId);
-            toast.success('Vehicle deleted successfully');
+            toast.success(t('success_delete_vehicle'));
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to delete vehicle');
+            toast.error(error?.response?.data?.message || t('failed_delete_vehicle'));
         } finally {
             setIsDeleteModalOpen(false);
             setDeleteId(null);
@@ -83,12 +84,12 @@ const CustomerVehicleIndex = () => {
         <div className="space-y-6 pb-12">
             <FilterBar
                 icon={<IconCar className="w-6 h-6 text-primary" />}
-                title="Customer Vehicles"
-                description="Manage and track all customer-owned vehicles in your system."
+                title={t('customer_vehicles')}
+                description={t('manage_vehicles_desc')}
                 search={search}
                 setSearch={setSearch}
                 onAdd={() => { setSelectedVehicle(null); setDialogOpen(true); }}
-                addLabel="Register Vehicle"
+                addLabel={t('register_vehicle')}
                 onRefresh={() => queryClient.invalidateQueries({ queryKey: ['crm_customer_vehicles'] })}
                 itemsPerPage={perPage}
                 setItemsPerPage={setPerPage}
@@ -99,13 +100,13 @@ const CustomerVehicleIndex = () => {
                 }}
             >
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Brand Matrix</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('brand_matrix')}</span>
                     <Select value={brandFilter} onValueChange={setBrandFilter}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
-                            <SelectValue placeholder="All Brands" />
+                            <SelectValue placeholder={t('all_brands')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all" className="font-medium">All Brands</SelectItem>
+                            <SelectItem value="all" className="font-medium">{t('all_brands')}</SelectItem>
                             {brands.map((b: any) => (
                                 <SelectItem key={b.id} value={String(b.id)} className="font-medium">{b.name}</SelectItem>
                             ))}
@@ -120,13 +121,13 @@ const CustomerVehicleIndex = () => {
                 <EmptyState
                     isSearch={!!search || brandFilter !== 'all'}
                     searchTerm={search}
-                    title={search || brandFilter !== 'all' ? "No Matches Found" : "No Vehicles Registered"}
+                    title={search || brandFilter !== 'all' ? t('no_matches_found') : t('no_vehicles_found')}
                     description={search || brandFilter !== 'all' 
-                        ? "We couldn't find any vehicles matching your current filters. Try adjusting your search or clearing filters." 
-                        : "Your customer vehicle registry is currently empty. Start by adding your first vehicle."
+                        ? t('no_matches_desc')
+                        : t('no_vehicles_desc')
                     }
                     onAction={() => { setSelectedVehicle(null); setDialogOpen(true); }}
-                    actionLabel="Register Vehicle"
+                    actionLabel={t('register_vehicle')}
                     onClearFilter={() => {
                         setSearch('');
                         setBrandFilter('all');
@@ -138,13 +139,13 @@ const CustomerVehicleIndex = () => {
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50 dark:bg-white-dark/5 text-gray-500 uppercase text-[10px] font-bold tracking-wider border-b dark:border-gray-800">
                                 <tr>
-                                    <th className="px-6 py-4 text-left">Plate & Info</th>
-                                    <th className="px-6 py-4 text-left">Brand & Model</th>
-                                    <th className="px-6 py-4 text-left">Owner</th>
-                                    <th className="px-6 py-4 text-center">Color & Year</th>
-                                    <th className="px-6 py-4 text-center">Mileage</th>
-                                    <th className="px-6 py-4 text-left">Created</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <th className="px-6 py-4 text-left">{t('plate_info')}</th>
+                                    <th className="px-6 py-4 text-left">{t('brand_model')}</th>
+                                    <th className="px-6 py-4 text-left">{t('owner')}</th>
+                                    <th className="px-6 py-4 text-center">{t('color_year')}</th>
+                                    <th className="px-6 py-4 text-center">{t('mileage')}</th>
+                                    <th className="px-6 py-4 text-left">{t('created_at')}</th>
+                                    <th className="px-6 py-4 text-right">{t('actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -152,8 +153,12 @@ const CustomerVehicleIndex = () => {
                                     <tr key={v.id} className="hover:bg-gray-50/50 dark:hover:bg-white-dark/5 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
-                                                <span className="font-black text-gray-900 dark:text-gray-100 text-sm tracking-tight">{v.plate_number}</span>
-                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">VIN: {v.vin_last_4 || '----'}</span>
+                                                <span className="font-black text-gray-900 dark:text-gray-100 text-sm tracking-tight">
+                                                    <HighlightText text={v.plate_number} highlight={search} />
+                                                </span>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                                    {t('vin_label')}: <HighlightText text={v.vin_last_4 || '----'} highlight={search} />
+                                                </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -162,8 +167,12 @@ const CustomerVehicleIndex = () => {
                                                     <IconCar size={18} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-gray-900 dark:text-gray-100">{v.brand?.name}</p>
-                                                    <p className="text-xs text-gray-500 font-medium">{v.model?.name}</p>
+                                                    <p className="font-bold text-gray-900 dark:text-gray-100">
+                                                        <HighlightText text={v.brand?.name || ''} highlight={search} />
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 font-medium">
+                                                        <HighlightText text={v.model?.name || ''} highlight={search} />
+                                                    </p>
                                                 </div>
                                             </div>
                                         </td>
@@ -171,8 +180,12 @@ const CustomerVehicleIndex = () => {
                                             <div className="flex items-center gap-2">
                                                 <IconUser size={14} className="text-primary" />
                                                 <div>
-                                                    <p className="font-bold text-gray-900 dark:text-gray-100 text-xs">{v.customer?.name}</p>
-                                                    <p className="text-[10px] text-gray-500 font-mono tracking-tighter">{v.customer?.customer_code}</p>
+                                                    <p className="font-bold text-gray-900 dark:text-gray-100 text-xs">
+                                                        <HighlightText text={v.customer?.name || ''} highlight={search} />
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-500 font-mono tracking-tighter">
+                                                        <HighlightText text={v.customer?.customer_code || ''} highlight={search} />
+                                                    </p>
                                                 </div>
                                             </div>
                                         </td>
@@ -225,8 +238,8 @@ const CustomerVehicleIndex = () => {
                 isOpen={isDeleteModalOpen}
                 setIsOpen={setIsDeleteModalOpen}
                 onConfirm={confirmDelete}
-                title="Delete Customer Vehicle"
-                message="Are you sure you want to delete this vehicle? This action cannot be undone if there are no linked records."
+                title={t('delete_vehicle')}
+                message={t('delete_vehicle_confirm')}
             />
         </div>
     );

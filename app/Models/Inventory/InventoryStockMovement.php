@@ -13,6 +13,7 @@ class InventoryStockMovement extends Model
     protected $fillable = [
         'product_id',
         'location_id',
+        'serial_id',
         'user_id',
         'movement_type',
         'quantity',
@@ -21,6 +22,12 @@ class InventoryStockMovement extends Model
         'reference_type',
         'reference_id',
         'reason',
+    ];
+
+    protected $casts = [
+        'quantity' => 'decimal:4',
+        'previous_quantity' => 'decimal:4',
+        'current_quantity' => 'decimal:4',
     ];
 
     public function product()
@@ -41,5 +48,10 @@ class InventoryStockMovement extends Model
     public function reference()
     {
         return $this->morphTo();
+    }
+
+    public function serial()
+    {
+        return $this->belongsTo(InventoryProductSerial::class, 'serial_id');
     }
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -6,7 +7,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { DatePicker } from '../../../components/ui/date-picker';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -17,6 +18,7 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import MediaSelector, { MediaFile } from '../../../components/MediaSelector';
 import { IconAlertTriangle, IconFileText, IconX, IconExternalLink, IconPaperclip } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 
 const toDateStr = (d: Date | undefined) => d ? d.toISOString().split('T')[0] : '';
 
@@ -29,6 +31,7 @@ const severityConfig: Record<string, { label: string; className: string }> = {
 };
 
 const WarningIndex = () => {
+    const { t } = useTranslation();
     const [warnings, setWarnings] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
 
@@ -123,8 +126,8 @@ const WarningIndex = () => {
                 headers: { Accept: 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
                 credentials: 'include',
             });
-            if (res.ok) { toast.success('Warning deleted'); fetchData(); }
-            else toast.error('Failed to delete');
+            if (res.ok) { toast.success(t('warning_deleted_msg')); fetchData(); }
+            else toast.error(t('failed_delete_msg'));
         } catch { toast.error('An error occurred'); }
         finally { setIsDeleting(false); setDeleteModalOpen(false); setItemToDelete(null); }
     };
@@ -153,12 +156,12 @@ const WarningIndex = () => {
             });
             const data = await res.json();
             if (res.ok) {
-                toast.success(`Warning ${editingItem ? 'updated' : 'issued'} successfully`);
+                toast.success(`${t('warnings_title')} ${editingItem ? t('updated') : t('issued')} ${t('successfully')}`);
                 setModalOpen(false);
                 fetchData();
             } else {
                 const firstError = data.errors ? Object.values(data.errors)[0] : data.message;
-                toast.error(Array.isArray(firstError) ? firstError[0] : firstError || 'Error saving');
+                toast.error(Array.isArray(firstError) ? firstError[0] : firstError || t('failed_save_msg'));
             }
         } catch { toast.error('An error occurred'); }
         finally { setIsSaving(false); }
@@ -205,14 +208,14 @@ const WarningIndex = () => {
         <div>
             <FilterBar
                 icon={<IconAlertTriangle className="w-6 h-6 text-primary" />}
-                title="Employee Warnings"
-                description="Issue and track formal employee warnings"
+                title={t('warnings_title')}
+                description={t('warnings_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
                 onAdd={handleCreate}
-                addLabel="Issue Warning"
+                addLabel={t('issue_warning_add')}
                 onRefresh={fetchData}
             />
 
@@ -225,24 +228,24 @@ const WarningIndex = () => {
                             isSearch={!!search}
                             searchTerm={search}
                             onClearFilter={() => setSearch('')}
-                            title="No warnings issued"
-                            description="Issue a formal warning to an employee to begin tracking."
-                            actionLabel="Issue Warning"
+                            title={t('no_warnings_found_title')}
+                            description={t('issue_warning_desc')}
+                            actionLabel={t('issue_warning_add')}
                             onAction={handleCreate}
                         />
                     ) : (
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700">
                                 <tr>
-                                    <SortableHeader label="Employee" value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Subject" value="subject" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Type" value="warning_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Severity" value="severity" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Warning Date" value="warning_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Expiry Date" value="expiry_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <th className="px-6 py-4">IMP</th>
-                                    <th className="px-6 py-4">Document</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <SortableHeader label={t('employee_label')} value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('subject_label')} value="subject" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('type_label')} value="warning_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('severity_label')} value="severity" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('warning_date_label')} value="warning_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('expiry_date_label')} value="expiry_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <th className="px-6 py-4">{t('imp_short')}</th>
+                                    <th className="px-6 py-4">{t('media_label')}</th>
+                                    <th className="px-6 py-4 text-right">{t('actions_label')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -259,23 +262,29 @@ const WarningIndex = () => {
                                                     </div>
                                                 )}
                                                 <div>
-                                                    <div className="font-semibold">{item.employee?.full_name}</div>
-                                                    <div className="text-xs text-gray-500">{item.employee?.employee_code}</div>
+                                                    <div className="font-semibold">
+                                                        <HighlightText text={item.employee?.full_name} highlight={search} />
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        <HighlightText text={item.employee?.employee_code} highlight={search} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
                                         {/* Subject */}
-                                        <td className="px-6 py-4 max-w-[180px] truncate" title={item.subject}>{item.subject}</td>
+                                        <td className="px-6 py-4 max-w-[180px] truncate" title={item.subject}>
+                                            <HighlightText text={item.subject} highlight={search} />
+                                        </td>
                                         {/* Type */}
                                         <td className="px-6 py-4">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                                {item.warning_type}
+                                                {t(item.warning_type.toLowerCase().replace(/ /g, '_'))}
                                             </span>
                                         </td>
                                         {/* Severity */}
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${severityConfig[item.severity]?.className}`}>
-                                                {severityConfig[item.severity]?.label ?? item.severity}
+                                                {t(item.severity)}
                                             </span>
                                         </td>
                                         {/* Warning Date */}
@@ -289,7 +298,7 @@ const WarningIndex = () => {
                                         {/* Improvement Plan */}
                                         <td className="px-6 py-4">
                                             {item.has_improvement_plan ? (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">Yes</span>
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">{t('yes_label')}</span>
                                             ) : (
                                                 <span className="text-gray-400 text-xs">—</span>
                                             )}
@@ -301,7 +310,7 @@ const WarningIndex = () => {
                                                     href={item.document}
                                                     target="_blank"
                                                     rel="noreferrer"
-                                                    title="View Document"
+                                                    title={t('view_document_tooltip')}
                                                     className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-100 transition-colors dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-900/40"
                                                 >
                                                     <IconPaperclip size={15} />
@@ -333,7 +342,7 @@ const WarningIndex = () => {
 
             {/* Create / Edit Dialog */}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[750px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                <DialogContent className="sm:max-w-[750px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     {/* Sticky Header */}
                     <div className="shrink-0 bg-gradient-to-r from-amber-500/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-amber-500/20 p-3 rounded-2xl shadow-sm">
@@ -341,86 +350,86 @@ const WarningIndex = () => {
                         </div>
                         <div>
                             <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                                {editingItem ? 'Edit Warning' : 'Issue Warning'}
+                                {editingItem ? t('edit_warning_title') : t('issue_warning_add')}
                             </DialogTitle>
                             <p className="text-sm text-gray-500 mt-0.5">
-                                {editingItem ? 'Update the warning details below.' : 'Fill in the details to issue a formal warning.'}
+                                {editingItem ? t('update_warning_detail_desc') : t('fill_warning_detail_desc')}
                             </p>
                         </div>
                     </div>
 
                     {/* Scrollable Body */}
-                    <ScrollArea className="flex-1 min-h-0">
+                    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
                         <form id="warning-form" onSubmit={handleSubmit} className="p-6 space-y-6">
 
                             {/* Employee & Warning By */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Warning Details</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('warning_details_title')}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="space-y-1">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Employee <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('employee_label')} <span className="text-red-500">*</span></label>
                                         <SearchableSelect
                                             options={employeeOptions}
                                             value={formData.employee_id}
                                             onChange={(val) => handleSelectChange(val, 'employee_id')}
-                                            placeholder="Search employee..."
-                                            searchPlaceholder="Type name to search..."
-                                            emptyMessage="No employees found"
+                                            placeholder={t('search_employee_placeholder')}
+                                            searchPlaceholder={t('type_name_search_placeholder')}
+                                            emptyMessage={t('no_employees_found_title')}
                                         />
                                     </div>
                                     <div className="space-y-2.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Warning By <span className="text-red-500">*</span></label>
-                                        <Input name="warning_by" value={formData.warning_by} onChange={handleChange} placeholder="e.g. HR Manager, John Smith" />
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('warning_by_label')} <span className="text-red-500">*</span></label>
+                                        <Input name="warning_by" value={formData.warning_by} onChange={handleChange} placeholder={t('warning_by_placeholder')} />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Warning Type <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('warning_type_label')} <span className="text-red-500">*</span></label>
                                         <Select onValueChange={(val) => handleSelectChange(val, 'warning_type')} value={formData.warning_type}>
-                                            <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder={t('select_type_placeholder')} /></SelectTrigger>
                                             <SelectContent>
-                                                {WARNING_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                                {WARNING_TYPES.map(t_val => <SelectItem key={t_val} value={t_val}>{t(t_val.toLowerCase().replace(/ /g, '_'))}</SelectItem>)}
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Severity <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('severity_label')} <span className="text-red-500">*</span></label>
                                         <Select onValueChange={(val) => handleSelectChange(val, 'severity')} value={formData.severity}>
-                                            <SelectTrigger><SelectValue placeholder="Select severity" /></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder={t('select_severity_placeholder')} /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="low">Low</SelectItem>
-                                                <SelectItem value="medium">Medium</SelectItem>
-                                                <SelectItem value="high">High</SelectItem>
+                                                <SelectItem value="low">{t('low')}</SelectItem>
+                                                <SelectItem value="medium">{t('medium')}</SelectItem>
+                                                <SelectItem value="high">{t('high')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Subject <span className="text-red-500">*</span></label>
-                                    <Input name="subject" value={formData.subject} onChange={handleChange} placeholder="e.g. Repeated Tardiness, Policy Violation" />
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('subject_label')} <span className="text-red-500">*</span></label>
+                                    <Input name="subject" value={formData.subject} onChange={handleChange} placeholder={t('warning_subject_placeholder')} />
                                 </div>
                             </div>
 
                             {/* Dates */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Dates</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('dates_title')}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="space-y-1">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Warning Date <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('warning_date_label')} <span className="text-red-500">*</span></label>
                                         <DatePicker
                                             value={formData.warning_date}
                                             onChange={(d) => setFormData((prev: any) => ({ ...prev, warning_date: toDateStr(d) }))}
-                                            placeholder="Select warning date"
+                                            placeholder={t('select_warning_date_placeholder')}
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Expiry Date</label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('expiry_date_label')}</label>
                                         <DatePicker
                                             value={formData.expiry_date}
                                             onChange={(d) => setFormData((prev: any) => ({ ...prev, expiry_date: toDateStr(d) }))}
-                                            placeholder="Select expiry date"
+                                            placeholder={t('select_expiry_date_placeholder')}
                                         />
                                     </div>
                                 </div>
@@ -428,13 +437,13 @@ const WarningIndex = () => {
 
                             {/* Description */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Description</h3>
-                                <Textarea name="description" value={formData.description} onChange={handleChange} placeholder="Describe the reason for this warning in detail..." rows={3} className="resize-none" />
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('description_label')}</h3>
+                                <Textarea name="description" value={formData.description} onChange={handleChange} placeholder={t('warning_description_placeholder')} rows={3} className="resize-none" />
                             </div>
 
                             {/* Document */}
                             <div className="space-y-3">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Supporting Document</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('supporting_document_title')}</h3>
                                 <div
                                     className={`relative group border-2 border-dashed rounded-xl p-5 transition-all duration-200 cursor-pointer ${formData.document ? 'border-primary/50 bg-primary/5' : 'border-gray-200 dark:border-gray-700 hover:border-primary/40 hover:bg-primary/5'}`}
                                     onClick={() => setMediaSelectorOpen(true)}
@@ -444,8 +453,8 @@ const WarningIndex = () => {
                                             <IconFileText stroke={1.5} size={28} />
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">Warning Document</p>
-                                            <p className="text-xs text-gray-500 mt-1">{formData.document ? 'Click to change document' : 'Upload or select PDF/Image'}</p>
+                                            <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{t('warning_document_label')}</p>
+                                            <p className="text-xs text-gray-500 mt-1">{formData.document ? t('click_change_document_label') : t('upload_select_pdf_image_label')}</p>
                                         </div>
                                     </div>
                                     {formData.document && (
@@ -463,7 +472,7 @@ const WarningIndex = () => {
 
                             {/* Improvement Plan */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Improvement Plan</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('improvement_plan_title')}</h3>
                                 <label className="flex items-center gap-3 cursor-pointer w-fit">
                                     <div className="relative">
                                         <input
@@ -476,30 +485,30 @@ const WarningIndex = () => {
                                         <div className="w-10 h-6 bg-gray-200 dark:bg-gray-700 peer-checked:bg-primary rounded-full transition-colors" />
                                         <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
                                     </div>
-                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Has Improvement Plan</span>
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('has_improvement_plan_label')}</span>
                                 </label>
 
                                 {formData.has_improvement_plan && (
                                     <div className="space-y-4 pl-1">
                                         <div className="space-y-1.5">
-                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Goal</label>
-                                            <Textarea name="ip_goal" value={formData.ip_goal} onChange={handleChange} placeholder="Describe the improvement goals for this employee..." rows={3} className="resize-none" />
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('goal_label')}</label>
+                                            <Textarea name="ip_goal" value={formData.ip_goal} onChange={handleChange} placeholder={t('improvement_goal_placeholder')} rows={3} className="resize-none" />
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                             <div className="space-y-1.5">
-                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('start_date_label')}</label>
                                                 <DatePicker
                                                     value={formData.ip_start_date}
                                                     onChange={(d) => setFormData((prev: any) => ({ ...prev, ip_start_date: toDateStr(d) }))}
-                                                    placeholder="Select start date"
+                                                    placeholder={t('select_start_date_placeholder')}
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+                                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('end_date_label')}</label>
                                                 <DatePicker
                                                     value={formData.ip_end_date}
                                                     onChange={(d) => setFormData((prev: any) => ({ ...prev, ip_end_date: toDateStr(d) }))}
-                                                    placeholder="Select end date"
+                                                    placeholder={t('select_end_date_placeholder')}
                                                 />
                                             </div>
                                         </div>
@@ -507,18 +516,18 @@ const WarningIndex = () => {
                                 )}
                             </div>
                         </form>
-                    </ScrollArea>
+                    </PerfectScrollbar>
 
                     {/* Sticky Footer */}
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
-                        <Button type="button" variant="ghost" className="px-5" onClick={() => setModalOpen(false)}>Cancel</Button>
+                        <Button type="button" variant="ghost" className="px-5" onClick={() => setModalOpen(false)}>{t('cancel_btn_label')}</Button>
                         <Button
                             type="submit"
                             form="warning-form"
                             disabled={isSaving}
                             className="px-7 bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20"
                         >
-                            {isSaving ? 'Processing...' : (editingItem ? 'Save Changes' : 'Issue Warning')}
+                            {isSaving ? t('processing_label') : (editingItem ? t('save_changes_btn_label') : t('issue_warning_add'))}
                         </Button>
                     </div>
                 </DialogContent>
@@ -529,8 +538,8 @@ const WarningIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Warning"
-                message="Are you sure you want to delete this warning record? This action cannot be undone."
+                title={t('delete_warning_title')}
+                message={t('delete_warning_confirm')}
             />
 
             <MediaSelector

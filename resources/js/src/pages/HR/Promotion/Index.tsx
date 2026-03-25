@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -6,7 +7,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { Badge } from '../../../components/ui/badge';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { DatePicker } from '../../../components/ui/date-picker';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
@@ -18,6 +19,7 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import MediaSelector, { MediaFile } from '../../../components/MediaSelector';
 import { IconArrowUpRight, IconBriefcase, IconFileText, IconX, IconExternalLink } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 
 const toDateStr = (d: Date | undefined) => d ? d.toISOString().split('T')[0] : '';
 
@@ -28,6 +30,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 const PromotionIndex = () => {
+    const { t } = useTranslation();
     const [promotions, setPromotions] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
     const [designations, setDesignations] = useState<any[]>([]);
@@ -136,10 +139,10 @@ const PromotionIndex = () => {
                 credentials: 'include',
             });
             if (response.ok) {
-                toast.success('Promotion record deleted');
+                toast.success(t('promotion_deleted_msg'));
                 fetchData();
             } else {
-                toast.error('Failed to delete promotion');
+                toast.error(t('failed_delete_promotion_msg'));
             }
         } catch {
             toast.error('An error occurred');
@@ -173,12 +176,12 @@ const PromotionIndex = () => {
             });
             const data = await response.json();
             if (response.ok) {
-                toast.success(`Promotion ${editingItem ? 'updated' : 'created'} successfully`);
+                toast.success(`${t('promotions_title')} ${editingItem ? t('update') : t('create')} ${t('successfully')}`);
                 setModalOpen(false);
                 fetchData();
             } else {
                 const firstError = data.errors ? Object.values(data.errors)[0] : data.message;
-                toast.error(Array.isArray(firstError) ? firstError[0] : firstError || 'Error saving promotion');
+                toast.error(Array.isArray(firstError) ? firstError[0] : firstError || t('failed_save_promotion_msg'));
             }
         } catch {
             toast.error('An error occurred');
@@ -237,14 +240,14 @@ const PromotionIndex = () => {
         <div>
             <FilterBar
                 icon={<IconBriefcase className="w-6 h-6 text-primary" />}
-                title="Employee Promotions"
-                description="Track and manage employee promotions"
+                title={t('promotions_title')}
+                description={t('promotions_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
                 onAdd={handleCreate}
-                addLabel="Add Promotion"
+                addLabel={t('promotions_add')}
                 onRefresh={fetchData}
             />
 
@@ -257,23 +260,23 @@ const PromotionIndex = () => {
                             isSearch={!!search}
                             searchTerm={search}
                             onClearFilter={() => setSearch('')}
-                            title="No Promotions found"
-                            description="Add a promotion to start tracking employee career growth."
-                            actionLabel="Add Promotion"
+                            title={t('no_promotions_found_title')}
+                            description={t('add_promotion_desc')}
+                            actionLabel={t('promotions_add')}
                             onAction={handleCreate}
                         />
                     ) : (
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700">
                                 <tr>
-                                    <SortableHeader label="Employee" value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <th className="px-6 py-4">Previous Role</th>
-                                    <th className="px-6 py-4">New Role</th>
-                                    <SortableHeader label="Promotion Date" value="promotion_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Effective Date" value="effective_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <th className="px-6 py-4">Salary Adj.</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <SortableHeader label={t('employee_label')} value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <th className="px-6 py-4">{t('previous_role_label')}</th>
+                                    <th className="px-6 py-4">{t('new_role_label')}</th>
+                                    <SortableHeader label={t('promotion_date_label')} value="promotion_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('effective_date_label')} value="effective_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <th className="px-6 py-4">{t('salary_adjustment_short_label')}</th>
+                                    <th className="px-6 py-4">{t('status_label')}</th>
+                                    <th className="px-6 py-4 text-right">{t('actions_label')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -289,16 +292,22 @@ const PromotionIndex = () => {
                                                     </div>
                                                 )}
                                                 <div>
-                                                    <div className="font-semibold">{item.employee?.full_name}</div>
-                                                    <div className="text-xs text-gray-500">{item.employee?.employee_id}</div>
+                                                    <div className="font-semibold">
+                                                        <HighlightText text={item.employee?.full_name} highlight={search} />
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        <HighlightText text={item.employee?.employee_id} highlight={search} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-500">{item.previous_designation?.name || '-'}</td>
+                                        <td className="px-6 py-4 text-gray-500">
+                                            <HighlightText text={item.previous_designation?.name} highlight={search} />
+                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-1.5 text-primary font-medium">
                                                 <IconArrowUpRight size={15} />
-                                                {item.new_designation?.name || '-'}
+                                                <HighlightText text={item.new_designation?.name} highlight={search} />
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">{new Date(item.promotion_date).toLocaleDateString()}</td>
@@ -311,7 +320,7 @@ const PromotionIndex = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[item.status]?.className}`}>
-                                                {statusConfig[item.status]?.label ?? item.status}
+                                                {t(item.status)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -336,7 +345,7 @@ const PromotionIndex = () => {
 
             {/* Create/Edit Dialog */}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[700px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     {/* Header */}
                     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -344,39 +353,39 @@ const PromotionIndex = () => {
                         </div>
                         <div>
                             <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                                {editingItem ? 'Edit Promotion' : 'Record New Promotion'}
+                                {editingItem ? t('edit_promotion_title') : t('record_promotion_title')}
                             </DialogTitle>
                             <p className="text-sm text-gray-500 mt-1">
-                                {editingItem ? 'Update the promotion details below.' : 'Fill in the details to record an employee promotion.'}
+                                {editingItem ? t('update_promotion_detail_desc') : t('fill_promotion_detail_desc')}
                             </p>
                         </div>
                     </div>
 
-                    <ScrollArea className="flex-1 min-h-0">
+                    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
                         <form id="promotion-form" onSubmit={handleSubmit} className="p-6 space-y-6">
                             {/* Employee & Status */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Employee Information</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('employee_info_title')}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Employee <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('employee_label')} <span className="text-red-500">*</span></label>
                                         <SearchableSelect
                                             options={employeeOptions}
                                             value={formData.employee_id}
                                             onChange={(val) => handleSelectChange(val, 'employee_id')}
-                                            placeholder="Search employee..."
-                                            searchPlaceholder="Type name to search..."
-                                            emptyMessage="No employees found"
+                                            placeholder={t('search_employee_placeholder')}
+                                            searchPlaceholder={t('type_name_search_placeholder')}
+                                            emptyMessage={t('no_employees_found_title')}
                                         />
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('status_label')} <span className="text-red-500">*</span></label>
                                         <Select onValueChange={(val) => handleSelectChange(val, 'status')} value={formData.status}>
-                                            <SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder={t('select_status_placeholder')} /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="pending">Pending</SelectItem>
-                                                <SelectItem value="approved">Approved</SelectItem>
-                                                <SelectItem value="rejected">Rejected</SelectItem>
+                                                <SelectItem value="pending">{t('pending')}</SelectItem>
+                                                <SelectItem value="approved">{t('approved')}</SelectItem>
+                                                <SelectItem value="rejected">{t('rejected')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -385,13 +394,13 @@ const PromotionIndex = () => {
 
                             {/* Designations */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Designation Change</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('designation_change_title')}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Previous Designation <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('previous_designation_label')} <span className="text-red-500">*</span></label>
                                         <Select onValueChange={(val) => handleSelectChange(val, 'previous_designation_id')} value={String(formData.previous_designation_id)}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder={loading ? 'Loading...' : 'Select designation'} />
+                                                <SelectValue placeholder={loading ? t('loading_label') : t('select_designation_placeholder')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {loading ? (
@@ -405,16 +414,16 @@ const PromotionIndex = () => {
                                         </Select>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">New Designation <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('new_designation_label')} <span className="text-red-500">*</span></label>
                                         <Select onValueChange={(val) => handleSelectChange(val, 'new_designation_id')} value={String(formData.new_designation_id)}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder={loading ? 'Loading...' : 'Select new designation'} />
+                                                <SelectValue placeholder={loading ? t('loading_label') : t('select_new_designation_placeholder')} />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {loading ? (
-                                                    <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                                    <SelectItem value="loading" disabled>{t('loading_label')}</SelectItem>
                                                 ) : designations.length === 0 ? (
-                                                    <SelectItem value="empty" disabled>No designations available</SelectItem>
+                                                    <SelectItem value="empty" disabled>{t('no_designations_available_msg')}</SelectItem>
                                                 ) : (
                                                     designations.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)
                                                 )}
@@ -426,40 +435,40 @@ const PromotionIndex = () => {
 
                             {/* Dates & Salary */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Schedule & Compensation</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('schedule_compensation_title')}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Promotion Date <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('promotion_date_label')} <span className="text-red-500">*</span></label>
                                         <DatePicker
                                             value={formData.promotion_date}
                                             onChange={(d) => setFormData((prev: any) => ({ ...prev, promotion_date: toDateStr(d) }))}
-                                            placeholder="Select promotion date"
+                                            placeholder={t('select_promotion_date_placeholder')}
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Effective Date <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('effective_date_label')} <span className="text-red-500">*</span></label>
                                         <DatePicker
                                             value={formData.effective_date}
                                             onChange={(d) => setFormData((prev: any) => ({ ...prev, effective_date: toDateStr(d) }))}
-                                            placeholder="Select effective date"
+                                            placeholder={t('select_effective_date_placeholder')}
                                         />
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Salary Adjustment</label>
-                                        <Input type="number" name="salary_adjustment" value={formData.salary_adjustment} onChange={handleChange} placeholder="e.g. 500.00" className="bg-gray-50 dark:bg-gray-800/50" />
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('salary_adjustment_label')}</label>
+                                        <Input type="number" name="salary_adjustment" value={formData.salary_adjustment} onChange={handleChange} placeholder={t('salary_adjustment_placeholder')} className="bg-gray-50 dark:bg-gray-800/50" />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Reason */}
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Reason for Promotion</label>
-                                <Textarea name="reason" value={formData.reason} onChange={handleChange} placeholder="Describe why this employee is being promoted..." rows={3} className="bg-gray-50 dark:bg-gray-800/50 resize-none" />
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('promotion_reason_label')}</label>
+                                <Textarea name="reason" value={formData.reason} onChange={handleChange} placeholder={t('promotion_reason_placeholder')} rows={3} className="bg-gray-50 dark:bg-gray-800/50 resize-none" />
                             </div>
 
                             {/* Document */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Supporting Document</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('supporting_document_title')}</h3>
                                 <div
                                     className={`relative group border-2 border-dashed rounded-xl p-5 transition-all duration-200 cursor-pointer ${formData.document ? 'border-primary/50 bg-primary/5' : 'border-gray-200 dark:border-gray-700 hover:border-primary/40 hover:bg-primary/5'}`}
                                     onClick={() => setMediaSelectorOpen(true)}
@@ -469,8 +478,8 @@ const PromotionIndex = () => {
                                             <IconFileText stroke={1.5} size={28} />
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">Promotion Document</p>
-                                            <p className="text-xs text-gray-500 mt-1">{formData.document ? 'Click to change document' : 'Upload or select PDF/Image'}</p>
+                                            <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{t('promotion_document_label')}</p>
+                                            <p className="text-xs text-gray-500 mt-1">{formData.document ? t('click_change_document_label') : t('upload_select_pdf_image_label')}</p>
                                         </div>
                                     </div>
                                     {formData.document && (
@@ -486,13 +495,12 @@ const PromotionIndex = () => {
                                 </div>
                             </div>
                         </form>
-                    </ScrollArea>
+                    </PerfectScrollbar>
 
-                    {/* Sticky Footer */}
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
-                        <Button type="button" variant="ghost" className="px-5" onClick={() => setModalOpen(false)}>Cancel</Button>
+                        <Button type="button" variant="ghost" className="px-5" onClick={() => setModalOpen(false)}>{t('cancel_btn_label')}</Button>
                         <Button type="submit" form="promotion-form" disabled={isSaving} className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20">
-                            {isSaving ? 'Processing...' : (editingItem ? 'Save Changes' : 'Record Promotion')}
+                            {isSaving ? t('processing_label') : (editingItem ? t('save_changes_btn_label') : t('record_promotion_btn'))}
                         </Button>
                     </div>
                 </DialogContent>
@@ -503,8 +511,8 @@ const PromotionIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Promotion"
-                message="Are you sure you want to delete this promotion record? This action cannot be undone."
+                title={t('delete_promotion_title')}
+                message={t('delete_promotion_confirm')}
             />
 
             <MediaSelector

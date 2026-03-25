@@ -1,4 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '../../../store/themeConfigSlice';
 import { 
@@ -9,7 +11,8 @@ import {
     IconAdjustments,
     IconSearch,
     IconFilter,
-    IconPackage
+    IconPackage,
+    IconFingerprint
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { useFormatDate } from '@/hooks/useFormatDate';
@@ -22,6 +25,7 @@ import DateRangePicker from '../../../components/ui/date-range-picker';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { DateRange } from 'react-day-picker';
+import HighlightText from '../../../components/ui/HighlightText';
 
 interface StockMovement {
     id: number;
@@ -43,6 +47,11 @@ interface StockMovement {
         category?: { name: string };
         baseUom?: { name: string; short_name: string };
     };
+    serial?: {
+        id: number;
+        serial_number: string;
+        current_quantity: string;
+    };
     location?: {
         id: number;
         name: string;
@@ -54,39 +63,27 @@ interface StockMovement {
 }
 
 const TYPE_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-    PURCHASE_RECEIVE: { label: 'Purchase Receive', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: IconArrowDownLeft },
-    PURCHASE_RETURN: { label: 'Purchase Return', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: IconArrowUpRight },
-    SALE: { label: 'Sale', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: IconArrowUpRight },
-    SALE_EDIT_DEDUCT: { label: 'Sale Edit (-)', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', icon: IconArrowUpRight },
-    SALE_EDIT_RESTOCK: { label: 'Sale Edit (+)', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: IconArrowDownLeft },
-    SALE_CANCELLATION: { label: 'Sale Cancelled', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: IconArrowDownLeft },
-    ADJUSTMENT_DAMAGE: { label: 'Damage', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: IconAdjustments },
-    ADJUSTMENT_FOUND: { label: 'Found', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: IconAdjustments },
-    ADJUSTMENT_STOCK_TAKE: { label: 'Stock Take', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: IconAdjustments },
-    ADJUSTMENT_OTHER: { label: 'Adjustment', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', icon: IconAdjustments },
-    TRANSFER_OUT: { label: 'Transfer Out', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', icon: IconArrowsExchange },
-    TRANSFER_IN: { label: 'Transfer In', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400', icon: IconArrowsExchange },
-    STOCK_IN_MANUAL: { label: 'Manual In', color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400', icon: IconArrowDownLeft },
-    STOCK_OUT_MANUAL: { label: 'Manual Out', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400', icon: IconArrowUpRight },
+    JOB_CARD_CONSUMPTION: { label: 'job_card', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: IconArrowUpRight },
 };
 
 const REASON_LABELS: Record<string, string> = {
-    'ADJUSTMENT_DAMAGE': 'Damage',
-    'ADJUSTMENT_FOUND': 'Found',
-    'ADJUSTMENT_STOCK_TAKE_CORRECTION': 'Stock Take Correction',
-    'ADJUSTMENT_OTHER': 'Other',
-    'STOCK_IN_MANUAL': 'Manual Stock In',
-    'STOCK_OUT_MANUAL': 'Manual Stock Out',
+    'ADJUSTMENT_DAMAGE': 'damage',
+    'ADJUSTMENT_FOUND': 'found',
+    'ADJUSTMENT_STOCK_TAKE_CORRECTION': 'stock_take',
+    'ADJUSTMENT_OTHER': 'adjustment',
+    'STOCK_IN_MANUAL': 'manual_in',
+    'STOCK_OUT_MANUAL': 'manual_out',
 };
 
-const formatReason = (reason: string | null) => {
+const formatReason = (reason: string | null, t: any) => {
     if (!reason) return null;
-    return REASON_LABELS[reason] || reason.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+    return REASON_LABELS[reason] ? t(REASON_LABELS[reason]) : reason.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1).toString()).join(' ');
 };
 
 import { useStockMovements, useInventoryLocations } from '@/hooks/useInventoryData';
 
 const StockMovementsIndex = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const { formatDateTime } = useFormatDate();
 
@@ -113,8 +110,8 @@ const StockMovementsIndex = () => {
     });
 
     useEffect(() => {
-        dispatch(setPageTitle('Stock Movements'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('stock_movements')));
+    }, [dispatch, t]);
 
     const filteredAndSortedMovements = useMemo(() => {
         let result = [...movements];
@@ -152,10 +149,10 @@ const StockMovementsIndex = () => {
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-                placeholder="Search products or reasons..."
-                title="Stock Movement History"
-                description="View and manage stock movements."
-                onRefresh={fetchMovements}
+                placeholder={t('search_products_reasons')}
+                title={t('stock_movement_history')}
+                description={t('view_manage_movements_desc')}
+                onRefresh={() => { fetchMovements(); }}
                 icon={<IconHistory className="w-6 h-6 text-primary" />}
                 hasActiveFilters={!!((locationId && locationId !== 'all') || (movementType && movementType !== 'all') || dateRange)}
                 onClearFilters={() => {
@@ -165,37 +162,37 @@ const StockMovementsIndex = () => {
                 }}
             >
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('date_range')}</span>
                     <DateRangePicker
                         value={dateRange}
                         onChange={setDateRange}
-                        placeholder="All Dates"
+                        placeholder={t('all_dates')}
                     />
                 </div>
                 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Location</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('location')}</span>
                     <SearchableSelect
                         options={[
-                            { value: 'all', label: 'All Locations' },
-                            ...locations.map(l => ({ value: l.id, label: l.name }))
+                            { value: 'all', label: t('all_locations') },
+                            ...locations.map((l: any) => ({ value: l.id, label: l.name }))
                         ]}
                         value={locationId || 'all'}
                         onChange={setLocationId}
-                        placeholder="All Locations"
+                        placeholder={t('all_locations')}
                     />
                 </div>
 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Movement Type</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('type')}</span>
                     <Select value={movementType || 'all'} onValueChange={setMovementType}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                            <SelectValue placeholder="All Types" />
+                            <SelectValue placeholder={t('all_types')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all" className="font-medium">All Types</SelectItem>
+                            <SelectItem value="all" className="font-medium">{t('all_types')}</SelectItem>
                             {Object.entries(TYPE_CONFIG).map(([key, config]) => (
-                                <SelectItem key={key} value={key} className="font-medium">{config.label}</SelectItem>
+                                <SelectItem key={key} value={key} className="font-medium">{t(config.label)}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -206,8 +203,8 @@ const StockMovementsIndex = () => {
                 <TableSkeleton columns={7} rows={10} />
             ) : movements.length === 0 ? (
                 <EmptyState
-                    title="No movements recorded"
-                    description="Stock movements will appear here once products are received, sold, or adjusted."
+                    title={t('no_movements_recorded')}
+                    description={t('stock_movements_appear_here_desc')}
                     isSearch={!!search}
                 />
             ) : (
@@ -216,13 +213,13 @@ const StockMovementsIndex = () => {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                                    <SortableHeader label="Date & Time" value="created_at" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                    <SortableHeader label="Product" value="product" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                    <SortableHeader label="Location" value="location" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                    <SortableHeader label="Type" value="movement_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                    <th className="px-4 py-4 text-right">In/Out</th>
-                                    <th className="px-4 py-4 text-right">Balance</th>
-                                    <th className="px-4 py-4 text-left">Reason / Reference</th>
+                                    <SortableHeader label={t('date_time')} value="created_at" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                    <SortableHeader label={t('product')} value="product" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                    <SortableHeader label={t('location')} value="location" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                    <SortableHeader label={t('type')} value="movement_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                    <th className="px-4 py-4 text-right">{t('in_out')}</th>
+                                    <th className="px-4 py-4 text-right">{t('balance')}</th>
+                                    <th className="px-4 py-4 text-left">{t('reason_note')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -241,16 +238,28 @@ const StockMovementsIndex = () => {
                                                     <div className="p-2 bg-primary/10 rounded-lg shrink-0">
                                                         <IconPackage className="w-4 h-4 text-primary" />
                                                     </div>
-                                                    <div>
-                                                        <p className="font-semibold text-gray-900 dark:text-white leading-none">
-                                                            {m.product?.name}
-                                                            {m.product?.baseUom && (
-                                                                <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 rounded lowercase font-medium">
-                                                                    {m.product.baseUom.short_name || m.product.baseUom.name}
-                                                                </span>
-                                                            )}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500 mt-1 font-mono">{m.product?.code}</p>
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <HighlightText 
+                                                                text={m.product.name} 
+                                                                highlight={search} 
+                                                                className="font-semibold text-gray-900 dark:text-gray-100" 
+                                                            />
+                                                            <HighlightText 
+                                                                text={m.product.code} 
+                                                                highlight={search} 
+                                                                className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider" 
+                                                            />
+                                                        </div>
+                                                        {m.serial && (
+                                                            <Link 
+                                                                to={`/inventory/serial-movements?search=${m.serial.serial_number}`}
+                                                                className="text-[10px] flex items-center gap-1 text-blue-500 hover:text-blue-600 font-medium group transition-colors"
+                                                            >
+                                                                <IconFingerprint size={12} className="group-hover:scale-110 transition-transform" />
+                                                                <HighlightText text={`${t('serial_label')}: ${m.serial.serial_number}`} highlight={search} />
+                                                            </Link>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>
@@ -260,7 +269,7 @@ const StockMovementsIndex = () => {
                                             <td className="px-4 py-4">
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${config.color}`}>
                                                     <Icon className="w-3.5 h-3.5" />
-                                                    {config.label}
+                                                    {t(config.label)}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-4 text-right font-bold whitespace-nowrap">
@@ -271,11 +280,13 @@ const StockMovementsIndex = () => {
                                             <td className="px-4 py-4 text-right whitespace-nowrap">
                                                 <div className="flex flex-col items-end">
                                                     <span className="font-bold text-gray-900 dark:text-white">{parseFloat(m.current_quantity)}</span>
-                                                    <span className="text-[10px] text-gray-400 font-mono">from {parseFloat(m.previous_quantity)}</span>
+                                                    <span className="text-[10px] text-gray-400 font-mono">{t('from')} {parseFloat(m.previous_quantity)}</span>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4 text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                                                {formatReason(m.reason) || '—'}
+                                                <div className="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={m.reason || ''}>
+                                                    <HighlightText text={formatReason(m.reason, t)} highlight={search} />
+                                                </div>
                                             </td>
                                         </tr>
                                     );

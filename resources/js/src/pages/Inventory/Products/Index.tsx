@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import { ScrollArea } from '../../../components/ui/scroll-area';
 import { Button } from '../../../components/ui/button';
@@ -27,6 +28,7 @@ import { setPageTitle } from '@/store/themeConfigSlice';
 
 const ProductIndex = () => {
     const dispatch = useDispatch();
+    const { t } = useTranslation();
     // TanStack Query Hooks
     const { data: products = [], isLoading: loadingProducts, refetch: refetchProducts } = useInventoryProducts();
     const { data: categories = [], isLoading: loadingCategories } = useInventoryCategories();
@@ -243,14 +245,14 @@ const ProductIndex = () => {
         <div>
             <FilterBar 
                 icon={<IconBoxSeam className="w-6 h-6 text-primary" />} 
-                title="Products Catalog" 
-                description="Master material and product registry" 
+                title={t('products_catalog')} 
+                description={t('products_catalog_desc')} 
                 search={search} 
                 setSearch={setSearch} 
                 itemsPerPage={itemsPerPage} 
                 setItemsPerPage={setItemsPerPage} 
                 onAdd={handleCreate} 
-                addLabel="Add Product" 
+                addLabel={t('add_product')} 
                 onRefresh={refetchProducts} 
                 hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc' || categoryFilter !== 'all' || statusFilter !== 'all'} 
                 onClearFilters={() => { 
@@ -261,13 +263,13 @@ const ProductIndex = () => {
                 }} 
             >
                 <div className="space-y-1.5">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Category</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('category')}</span>
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                            <SelectValue placeholder="All Categories" />
+                            <SelectValue placeholder={t('all_categories')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Categories</SelectItem>
+                            <SelectItem value="all">{t('all_categories')}</SelectItem>
                             {categories.map((c: any) => (
                                 <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
                             ))}
@@ -275,15 +277,15 @@ const ProductIndex = () => {
                     </Select>
                 </div>
                 <div className="space-y-1.5">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Lifecycle Status</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('item_status')}</span>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                            <SelectValue placeholder="All Status" />
+                            <SelectValue placeholder={t('all_status')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Status</SelectItem>
-                            <SelectItem value="1">Active Component</SelectItem>
-                            <SelectItem value="0">Discontinued / Inactive</SelectItem>
+                            <SelectItem value="all">{t('all_status')}</SelectItem>
+                            <SelectItem value="1">{t('active_component')}</SelectItem>
+                            <SelectItem value="0">{t('discontinued_inactive')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -293,9 +295,9 @@ const ProductIndex = () => {
                 <TableSkeleton columns={7} rows={5} />
             ) : products.length === 0 ? (
                 <EmptyState
-                    title="No Products Found"
-                    description="Start managing ERP parameters by establishing products."
-                    actionLabel="Create Product"
+                    title={t('no_products_found')}
+                    description={t('start_managing_erp')}
+                    actionLabel={t('add_product')}
                     onAction={handleCreate}
                 />
             ) : filteredAndSorted.length === 0 ? (
@@ -313,14 +315,14 @@ const ProductIndex = () => {
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
-                                <SortableHeader label="Internal Code" value="code" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="px-4 py-3 font-semibold text-left">Preview</th>
-                                <SortableHeader label="Product Name" value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-left font-semibold px-4 py-3">Category</th>
-                                <th className="text-left font-semibold px-4 py-3">Price</th>
-                                <SortableHeader label="Reorder Level" value="reorder_level" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Status" value="is_active" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-right">Action</th>
+                                <SortableHeader label={t('internal_code')} value="code" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="px-4 py-3 font-semibold text-left">{t('preview')}</th>
+                                <SortableHeader label={t('product_name')} value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="text-left font-semibold px-4 py-3">{t('category')}</th>
+                                <th className="text-left font-semibold px-4 py-3">{t('price')}</th>
+                                <SortableHeader label={t('reorder_level')} value="reorder_level" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('status')} value="is_active" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="text-right">{t('action')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -354,7 +356,7 @@ const ProductIndex = () => {
                                     <td className="text-center font-bold text-red-500">{row.reorder_level || 0}</td>
                                     <td>
                                         <Badge variant={row.is_active ? 'success' : 'destructive'}>
-                                            {row.is_active ? 'Active' : 'Inactive'}
+                                            {row.is_active ? t('active') : t('inactive')}
                                         </Badge>
                                     </td>
                                     <td><ActionButtons skipDeleteConfirm={true} onEdit={() => handleEdit(row)} onDelete={() => confirmDelete(row.id)} /></td>
@@ -369,15 +371,15 @@ const ProductIndex = () => {
                 <DialogContent className=" gap-0 sm:max-w-[1050px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-primary/20 p-3 rounded-2xl shadow-sm"><IconBoxSeam className="text-primary w-7 h-7" /></div>
-                        <div><DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">{editingProduct ? 'Edit Product Parameters' : 'Register New Product'}</DialogTitle></div>
+                        <div><DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">{editingProduct ? t('edit_product_params') : t('register_new_product')}</DialogTitle></div>
                     </div>
                     <form id="prod-form" onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
                             <div className="px-6 py-4 border-b bg-gray-50/50 dark:bg-gray-900/20">
                                 <TabsList className="grid w-full max-w-md grid-cols-3">
-                                    <TabsTrigger value="general">General Info</TabsTrigger>
-                                    <TabsTrigger value="inventory">Inventory & Pricing</TabsTrigger>
-                                    <TabsTrigger value="description">Description</TabsTrigger>
+                                    <TabsTrigger value="general">{t('general_info')}</TabsTrigger>
+                                    <TabsTrigger value="inventory">{t('inventory_pricing')}</TabsTrigger>
+                                    <TabsTrigger value="description">{t('description')}</TabsTrigger>
                                 </TabsList>
                             </div>
 
@@ -387,42 +389,42 @@ const ProductIndex = () => {
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                             <div className="lg:col-span-2 space-y-8">
                                                 <div className="space-y-4">
-                                                    <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">Core Identifiers</h3>
+                                                    <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">{t('core_identifiers')}</h3>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                                        <div className="space-y-1"><label className="text-sm font-medium">Internal Code <span className="text-red-500">*</span></label><Input name="code" value={formData.code} onChange={handleChange} required className="uppercase font-mono" /></div>
-                                                        <div className="space-y-1"><label className="text-sm font-medium">Product Name <span className="text-red-500">*</span></label><Input name="name" value={formData.name} onChange={handleChange} required /></div>
+                                                        <div className="space-y-1"><label className="text-sm font-medium">{t('internal_code')} <span className="text-red-500">*</span></label><Input name="code" value={formData.code} onChange={handleChange} required className="uppercase font-mono" /></div>
+                                                        <div className="space-y-1"><label className="text-sm font-medium">{t('product_name')} <span className="text-red-500">*</span></label><Input name="name" value={formData.name} onChange={handleChange} required /></div>
                                                     </div>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                                        <div className="space-y-1"><label className="text-sm font-medium">SKU</label><Input name="sku" value={formData.sku} onChange={handleChange} /></div>
-                                                        <div className="space-y-1"><label className="text-sm font-medium">Barcode (GTIN/EAN)</label><Input name="barcode" value={formData.barcode} onChange={handleChange} /></div>
+                                                        <div className="space-y-1"><label className="text-sm font-medium">{t('sku')}</label><Input name="sku" value={formData.sku} onChange={handleChange} /></div>
+                                                        <div className="space-y-1"><label className="text-sm font-medium">{t('barcode')}</label><Input name="barcode" value={formData.barcode} onChange={handleChange} /></div>
                                                     </div>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                                        <div className="space-y-1"><label className="text-sm font-medium">Manufacturer / Brand</label><Input name="brand" value={formData.brand} onChange={handleChange} /></div>
-                                                        <div className="space-y-1"><label className="text-sm font-medium">Category</label>
+                                                        <div className="space-y-1"><label className="text-sm font-medium">{t('manufacturer_brand')}</label><Input name="brand" value={formData.brand} onChange={handleChange} /></div>
+                                                        <div className="space-y-1"><label className="text-sm font-medium">{t('category')}</label>
                                                             <Select onValueChange={(value) => handleSelectChange(value, 'category_id')} value={formData.category_id}>
-                                                                <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
-                                                                <SelectContent><SelectItem value="none">-- Uncategorized --</SelectItem>
+                                                                <SelectTrigger><SelectValue placeholder={t('select_category')} /></SelectTrigger>
+                                                                <SelectContent><SelectItem value="none">{t('uncategorized')}</SelectItem>
                                                                     {categories.map((c: any) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                                                                 </SelectContent>
                                                             </Select>
                                                         </div>
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <label className="text-sm font-medium">Tags Attribute</label>
-                                                        <SearchableMultiSelect options={tags.map((t: any) => ({ value: String(t.id), label: t.name }))} value={formData.tags} onChange={(val) => handleSelectChange(val, 'tags')} placeholder="Select Tag Badges" />
+                                                        <label className="text-sm font-medium">{t('tags_attribute')}</label>
+                                                        <SearchableMultiSelect options={tags.map((t: any) => ({ value: String(t.id), label: t.name }))} value={formData.tags} onChange={(val) => handleSelectChange(val, 'tags')} placeholder={t('select_tag_badges')} />
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div className="lg:col-span-1 space-y-4">
-                                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">Product Image</h3>
+                                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">{t('product_image')}</h3>
                                                 <Tabs value={formData.image_mode} onValueChange={(val) => handleSelectChange(val, 'image_mode')} className="w-full">
                                                     <TabsList className="grid w-full grid-cols-2 shadow-sm">
                                                         <TabsTrigger value="upload" className="flex items-center gap-1.5 text-xs">
-                                                            <IconUpload size={14}/> Upload
+                                                            <IconUpload size={14}/> {t('upload')}
                                                         </TabsTrigger>
                                                         <TabsTrigger value="url" className="flex items-center gap-1.5 text-xs">
-                                                            <IconLink size={14}/> Link
+                                                            <IconLink size={14}/> {t('link')}
                                                         </TabsTrigger>
                                                     </TabsList>
                                                     <TabsContent value="upload" className="mt-4">
@@ -507,47 +509,47 @@ const ProductIndex = () => {
 
                                     <TabsContent value="inventory" className="mt-0 space-y-8 animate-in fade-in-50 duration-300">
                                         <div className="space-y-4">
-                                            <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">Dimensional & UOM Mapping</h3>
+                                            <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">{t('uom_mapping')}</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                                <div className="space-y-1"><label className="text-sm font-medium text-primary">Base Tracked UOM</label>
+                                                <div className="space-y-1"><label className="text-sm font-medium text-primary">{t('base_tracked_uom')}</label>
                                                     <Select onValueChange={(value) => handleSelectChange(value, 'base_uom_id')} value={formData.base_uom_id}>
                                                         <SelectTrigger><SelectValue placeholder="e.g. M2" /></SelectTrigger>
-                                                        <SelectContent><SelectItem value="none">-- Select Unit --</SelectItem>{uoms.map((u: any) => <SelectItem key={u.id} value={String(u.id)}>{u.code} - {u.name}</SelectItem>)}</SelectContent>
+                                                        <SelectContent><SelectItem value="none">{t('uncategorized')}</SelectItem>{uoms.map((u: any) => <SelectItem key={u.id} value={String(u.id)}>{u.code} - {u.name}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 </div>
-                                                <div className="space-y-1"><label className="text-sm font-medium text-emerald-600">Purchase Order UOM</label>
+                                                <div className="space-y-1"><label className="text-sm font-medium text-emerald-600">{t('purchase_order_uom')}</label>
                                                     <Select onValueChange={(value) => handleSelectChange(value, 'purchase_uom_id')} value={formData.purchase_uom_id}>
                                                         <SelectTrigger><SelectValue placeholder="e.g. ROLL" /></SelectTrigger>
-                                                        <SelectContent><SelectItem value="none">-- Identical to Base --</SelectItem>{uoms.map((u: any) => <SelectItem key={u.id} value={String(u.id)}>{u.code} - {u.name}</SelectItem>)}</SelectContent>
+                                                        <SelectContent><SelectItem value="none">{t('uncategorized')}</SelectItem>{uoms.map((u: any) => <SelectItem key={u.id} value={String(u.id)}>{u.code} - {u.name}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 </div>
-                                                <div className="space-y-1"><label className="text-sm font-medium">UOM Multiplier</label><Input name="uom_multiplier" type="number" step="0.0001" value={formData.uom_multiplier} onChange={handleChange} /></div>
+                                                <div className="space-y-1"><label className="text-sm font-medium">{t('uom_multiplier')}</label><Input name="uom_multiplier" type="number" step="0.0001" value={formData.uom_multiplier} onChange={handleChange} /></div>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                                <div className="space-y-1"><label className="text-sm font-medium">Length Mapping (Dimensional)</label><Input name="length" type="number" step="0.01" value={formData.length} onChange={handleChange} placeholder="e.g. 15.00" /></div>
-                                                <div className="space-y-1"><label className="text-sm font-medium">Width Mapping (Dimensional)</label><Input name="width" type="number" step="0.01" value={formData.width} onChange={handleChange} placeholder="e.g. 1.52" /></div>
+                                                <div className="space-y-1"><label className="text-sm font-medium">{t('length_mapping')}</label><Input name="length" type="number" step="0.01" value={formData.length} onChange={handleChange} placeholder="e.g. 15.00" /></div>
+                                                <div className="space-y-1"><label className="text-sm font-medium">{t('width_mapping')}</label><Input name="width" type="number" step="0.01" value={formData.width} onChange={handleChange} placeholder="e.g. 1.52" /></div>
                                             </div>
                                         </div>
 
                                         <div className="space-y-4">
-                                            <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">Financial Setup & Operations</h3>
+                                            <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">{t('inventory_pricing')}</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                                <div className="space-y-1"><label className="text-sm font-medium">Purchase Cost</label><div className="relative"><span className="absolute left-3 top-3 text-sm text-gray-500">$</span><Input name="cost" type="number" step="0.01" value={formData.cost} onChange={handleChange} className="pl-6" /></div></div>
-                                                <div className="space-y-1"><label className="text-sm font-medium">Selling Price</label><div className="relative"><span className="absolute left-3 top-3 text-sm text-emerald-500">$</span><Input name="price" type="number" step="0.01" value={formData.price} onChange={handleChange} className="pl-6 font-semibold" /></div></div>
-                                                <div className="space-y-1"><label className="text-sm font-medium text-red-500">Alert Reorder Level</label><Input name="reorder_level" type="number" value={formData.reorder_level} onChange={handleChange} /></div>
+                                                <div className="space-y-1"><label className="text-sm font-medium">{t('purchase_cost')}</label><div className="relative"><span className="absolute left-3 top-3 text-sm text-gray-500">$</span><Input name="cost" type="number" step="0.01" value={formData.cost} onChange={handleChange} className="pl-6" /></div></div>
+                                                <div className="space-y-1"><label className="text-sm font-medium">{t('selling_price')}</label><div className="relative"><span className="absolute left-3 top-3 text-sm text-emerald-500">$</span><Input name="price" type="number" step="0.01" value={formData.price} onChange={handleChange} className="pl-6 font-semibold" /></div></div>
+                                                <div className="space-y-1"><label className="text-sm font-medium text-red-500">{t('alert_reorder_level')}</label><Input name="reorder_level" type="number" value={formData.reorder_level} onChange={handleChange} /></div>
                                             </div>
-                                            <div className="space-y-1.5"><label className="text-sm font-medium">Lifecycle Status <span className="text-red-500">*</span></label><Select onValueChange={(value) => handleSelectChange(value, 'is_active')} value={formData.is_active}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">Active Component</SelectItem><SelectItem value="0">Discontinued / Inactive</SelectItem></SelectContent></Select></div>
+                                            <div className="space-y-1.5"><label className="text-sm font-medium">{t('item_status')} <span className="text-red-500">*</span></label><Select onValueChange={(value) => handleSelectChange(value, 'is_active')} value={formData.is_active}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">{t('active_component')}</SelectItem><SelectItem value="0">{t('discontinued_inactive')}</SelectItem></SelectContent></Select></div>
                                         </div>
                                     </TabsContent>
 
                                     <TabsContent value="description" className="mt-0 h-full animate-in fade-in-50 duration-300">
                                         <div className="space-y-4 min-h-[400px]">
-                                            <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">Technical Description</h3>
+                                            <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest border-b pb-2">{t('technical_description')}</h3>
                                             <CustomQuillEditor 
                                                 variant='default'
                                                 value={formData.description} 
                                                 onChange={(val) => setFormData(prev => ({ ...prev, description: val }))}
-                                                placeholder="Describe product specifications, usage guidelines, or technical parameters..."
+                                                placeholder={t('describe_product_specs')}
                                             />
                                         </div>
                                     </TabsContent>
@@ -556,12 +558,12 @@ const ProductIndex = () => {
                         </Tabs>
                     </form>
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
-                        <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Abort Configuration</Button>
-                        <Button type="submit" form="prod-form" disabled={isSaving} className="bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20">{isSaving ? 'Processing...' : 'Confirm Matrix Parameters'}</Button>
+                        <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>{t('abort_configuration')}</Button>
+                        <Button type="submit" form="prod-form" disabled={isSaving} className="bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20">{isSaving ? t('processing') : t('confirm_matrix_parameters')}</Button>
                     </div>
                 </DialogContent>
             </Dialog>
-            <DeleteModal isOpen={deleteModalOpen} setIsOpen={setDeleteModalOpen} onConfirm={executeDelete} isLoading={isDeleting} title="Wipe Core Entity" message="Removing a Product will destroy all hierarchical stock arrays. Proceed cautiously." />
+            <DeleteModal isOpen={deleteModalOpen} setIsOpen={setDeleteModalOpen} onConfirm={executeDelete} isLoading={isDeleting} title={t('wipe_core_entity')} message={t('removing_product_msg')} />
 
             <Dialog open={previewModalOpen} onOpenChange={setPreviewModalOpen}>
                 <DialogContent className="max-w-2xl p-0 overflow-hidden bg-transparent border-0 shadow-none [&>button]:hidden">

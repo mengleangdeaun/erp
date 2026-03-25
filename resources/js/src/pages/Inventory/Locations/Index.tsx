@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import FilterBar from '../../../components/ui/FilterBar';
@@ -244,12 +244,12 @@ const LocationIndex = () => {
                 </div>
             )}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[600px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-primary/20 p-3 rounded-2xl shadow-sm"><IconBuildingWarehouse className="text-primary w-7 h-7" /></div>
                         <div><DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">{editingLocation ? 'Edit Warehouse Location' : 'Create Location'}</DialogTitle></div>
                     </div>
-                    <ScrollArea className="flex-1 min-h-0">
+                    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
                         <form id="loc-form" onSubmit={handleSubmit} className="p-6 space-y-6">
                             <div className="space-y-4">
                                 <div className="space-y-1"><label className="text-sm font-medium">Name <span className="text-red-500">*</span></label><Input name="name" value={formData.name} onChange={handleChange} required /></div>
@@ -273,7 +273,7 @@ const LocationIndex = () => {
                                 </div>
                             </div>
                         </form>
-                    </ScrollArea>
+                    </PerfectScrollbar>
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
                         <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
                         <Button type="submit" form="loc-form" disabled={isSaving} className="bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20">{isSaving ? 'Saving...' : 'Save Storage'}</Button>

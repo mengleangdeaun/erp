@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { IconBell, IconStar, IconSpeakerphone, IconDotsVertical, IconEye, IconEyeOff, IconLoader2 } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -27,6 +29,7 @@ import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
 
 const AnnouncementIndex = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { formatDate, formatTime } = useFormatDate();
@@ -108,12 +111,12 @@ const AnnouncementIndex = () => {
         if (!itemToDelete) return;
         deleteMutation.mutate(itemToDelete, {
             onSuccess: () => {
-                toast.success('Announcement deleted');
+                toast.success(t('announcement_deleted_msg'));
                 setDeleteModalOpen(false);
                 setItemToDelete(null);
             },
             onError: () => {
-                toast.error('Failed to delete');
+                toast.error(t('failed_delete_msg'));
             }
         });
     };
@@ -121,10 +124,10 @@ const AnnouncementIndex = () => {
     const handleToggleStatus = async (id: number, currentStatus: boolean) => {
         updateStatusMutation.mutate({ id, is_published: !currentStatus }, {
             onSuccess: () => {
-                toast.success(`Announcement ${!currentStatus ? 'published' : 'hidden'}`);
+                toast.success(t(`announcement_${!currentStatus ? 'published' : 'hidden'}_msg`));
             },
             onError: () => {
-                toast.error('Failed to update status');
+                toast.error(t('failed_update_status_msg'));
             }
         });
     };
@@ -147,76 +150,76 @@ const AnnouncementIndex = () => {
     };
 
     const getStatusInfo = (a: any) => {
-        if (a.status === 'draft') return { label: 'Draft', color: statusColors.draft };
-        if (!a.is_published) return { label: 'Off', color: statusColors.off };
+        if (a.status === 'draft') return { label: t('draft_status'), color: statusColors.draft };
+        if (!a.is_published) return { label: t('off_status'), color: statusColors.off };
 
         const now = dayjs();
         const start = a.start_date ? dayjs(a.start_date) : null;
         const end = a.end_date ? dayjs(a.end_date) : null;
         const pub = a.published_at ? dayjs(a.published_at) : null;
 
-        if (end && now.isAfter(end)) return { label: 'Expired', color: statusColors.expired };
-        if (pub && pub.isAfter(now)) return { label: 'Scheduled', color: statusColors.scheduled };
-        if (start && start.isAfter(now)) return { label: 'Scheduled', color: statusColors.scheduled };
+        if (end && now.isAfter(end)) return { label: t('expired_status'), color: statusColors.expired };
+        if (pub && pub.isAfter(now)) return { label: t('scheduled_status'), color: statusColors.scheduled };
+        if (start && start.isAfter(now)) return { label: t('scheduled_status'), color: statusColors.scheduled };
         
-        return { label: 'Live', color: statusColors.published };
+        return { label: t('live_status'), color: statusColors.published };
     };
 
     return (
         <div>
             <FilterBar
                 icon={<IconSpeakerphone className="w-6 h-6 text-primary" />}
-                title="Announcements"
-                description="Manage and broadcast company announcements"
+                title={t('announcements_title')}
+                description={t('announcements_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
                 onRefresh={() => queryClient.invalidateQueries({ queryKey: ['hr-announcements'] })}
                 onAdd={() => navigate('/hr/announcements/create')}
-                addLabel="New Announcement"
+                addLabel={t('new_announcement_btn')}
                 hasActiveFilters={hasActiveFilters}
                 onClearFilters={() => { setStatusFilter(''); setTypeFilter(''); setDateRange(undefined); }}
             >
                 {/* Date Range */}
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('date_range_label')}</span>
                     <DateRangePicker
                         value={dateRange}
                         onChange={(range) => { setDateRange(range); setCurrentPage(1); }}
-                        placeholder="Published date..."
+                        placeholder={t('published_date_placeholder')}
                     />
                 </div>
 
                 {/* Status Filter */}
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('status_label')}</span>
                     <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val === 'ALL' ? '' : val); setCurrentPage(1); }}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
-                            <SelectValue placeholder="All Statuses" />
+                            <SelectValue placeholder={t('all_statuses_label')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL" className="font-medium">All Statuses</SelectItem>
-                            <SelectItem value="draft" className="font-medium">Draft</SelectItem>
-                            <SelectItem value="published" className="font-medium">Published</SelectItem>
-                            <SelectItem value="expired" className="font-medium">Expired</SelectItem>
+                            <SelectItem value="ALL" className="font-medium">{t('all_statuses_label')}</SelectItem>
+                            <SelectItem value="draft" className="font-medium">{t('draft_status')}</SelectItem>
+                            <SelectItem value="published" className="font-medium">{t('published_status')}</SelectItem>
+                            <SelectItem value="expired" className="font-medium">{t('expired_status')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
                 {/* Type Filter */}
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Type</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('type_label')}</span>
                     <Select value={typeFilter} onValueChange={(val) => { setTypeFilter(val === 'ALL' ? '' : val); setCurrentPage(1); }}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
-                            <SelectValue placeholder="All Types" />
+                            <SelectValue placeholder={t('all_types_label')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="ALL" className="font-medium">All Types</SelectItem>
-                            <SelectItem value="info" className="font-medium">Info</SelectItem>
-                            <SelectItem value="success" className="font-medium">Success</SelectItem>
-                            <SelectItem value="warning" className="font-medium">Warning</SelectItem>
-                            <SelectItem value="danger" className="font-medium">Danger</SelectItem>
+                            <SelectItem value="ALL" className="font-medium">{t('all_types_label')}</SelectItem>
+                            <SelectItem value="info" className="font-medium">{t('info_label')}</SelectItem>
+                            <SelectItem value="success" className="font-medium">{t('success_label')}</SelectItem>
+                            <SelectItem value="warning" className="font-medium">{t('warning_label')}</SelectItem>
+                            <SelectItem value="danger" className="font-medium">{t('danger_label')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -231,19 +234,19 @@ const AnnouncementIndex = () => {
                             isSearch={!!search || hasActiveFilters}
                             searchTerm={search}
                             onClearFilter={() => { setSearch(''); setStatusFilter(''); setTypeFilter(''); setDateRange(undefined); }}
-                            title="No Announcements Found"
-                            description="Create your first company announcement to get started."
+                            title={t('no_announcements_found_title')}
+                            description={t('no_announcements_found_desc')}
                         />
                     ) : (
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700">
                                 <tr>
-                                    <SortableHeader label="Title"        value="title"        currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
-                                    <SortableHeader label="Status"       value="status"       currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
-                                    <SortableHeader label="Targeting"    value="targeting_type" currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
-                                    <th className="px-6 py-4">Engagement</th>
-                                    <SortableHeader label="Published At" value="published_at" currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <SortableHeader label={t('title_label')}        value="title"        currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
+                                    <SortableHeader label={t('status_label')}       value="status"       currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
+                                    <SortableHeader label={t('targeting_label')}    value="targeting_type" currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
+                                    <th className="px-6 py-4">{t('engagement_label')}</th>
+                                    <SortableHeader label={t('published_at_label')} value="published_at" currentSortBy={sortBy} currentDirection={sortDir} onSort={handleSort} className="px-6 py-4" />
+                                    <th className="px-6 py-4 text-right">{t('actions_label')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -255,14 +258,18 @@ const AnnouncementIndex = () => {
                                                     {a.is_featured && (
                                                         <IconStar className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
                                                     )}
-                                                    <span className="font-bold text-gray-900 dark:text-white leading-tight">{a.title}</span>
+                                                    <span className="font-bold text-gray-900 dark:text-white leading-tight">
+                                                        <HighlightText text={a.title} highlight={search} />
+                                                    </span>
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-1.5">
                                                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase border ${typeColors[a.type] || ''}`}>
-                                                        {a.type}
+                                                        {t(a.type + '_label')}
                                                     </span>
                                                     {a.short_description && (
-                                                        <span className="text-[11px] text-gray-400 truncate max-w-[200px]">{a.short_description}</span>
+                                                        <span className="text-[11px] text-gray-400 truncate max-w-[200px]">
+                                                            <HighlightText text={a.short_description} highlight={search} />
+                                                        </span>
                                                     )}
                                                 </div>
                                             </div>
@@ -299,25 +306,25 @@ const AnnouncementIndex = () => {
                                                         </button>
                                                     </PopoverTrigger>
                                                     <PopoverContent className="p-1 bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 shadow-xl overflow-hidden">
-                                                        <div className="flex flex-col">
-                                                            <div className="px-2 py-1.5 border-b border-gray-50 dark:border-gray-800 mb-1">
-                                                                <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Visibility</span>
-                                                            </div>
+                                                         <div className="flex flex-col">
+                                                             <div className="px-2 py-1.5 border-b border-gray-50 dark:border-gray-800 mb-1">
+                                                                 <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">{t('visibility_label')}</span>
+                                                             </div>
                                                             <button 
                                                                 onClick={() => handleToggleStatus(a.id, !!a.is_published)}
                                                                 className={`flex items-center gap-2 px-2 py-2 rounded-md transition-colors text-sm font-medium ${a.is_published ? 'text-gray-600 hover:bg-rose-50 hover:text-rose-600' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-600'}`}
                                                             >
-                                                                {a.is_published ? (
-                                                                    <>
-                                                                        <IconEyeOff size={16} />
-                                                                        <span>Hide Announcement</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <IconEye size={16} />
-                                                                        <span>Live Now</span>
-                                                                    </>
-                                                                )}
+                                                                 {a.is_published ? (
+                                                                     <>
+                                                                         <IconEyeOff size={16} />
+                                                                         <span>{t('hide_announcement_btn')}</span>
+                                                                     </>
+                                                                 ) : (
+                                                                     <>
+                                                                         <IconEye size={16} />
+                                                                         <span>{t('live_now_btn')}</span>
+                                                                     </>
+                                                                 )}
                                                             </button>
                                                         </div>
                                                     </PopoverContent>
@@ -325,19 +332,19 @@ const AnnouncementIndex = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 capitalize">{a.targeting_type === 'all' ? 'All Employees' : a.targeting_type}</span>
-                                                {a.target_ids && a.target_ids.length > 0 && (
-                                                    <span className="text-[10px] text-gray-400">{a.target_ids.length} selected</span>
-                                                )}
-                                            </div>
+                                             <div className="flex flex-col">
+                                                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 capitalize">{a.targeting_type === 'all' ? t('all_employees_label') : a.targeting_type}</span>
+                                                 {a.target_ids && a.target_ids.length > 0 && (
+                                                     <span className="text-[10px] text-gray-400">{a.target_ids.length} {t('selected_label')}</span>
+                                                 )}
+                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-gray-900 dark:text-white">{a.views_count ?? 0}</span>
-                                                    <span className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter">Unique Views</span>
-                                                </div>
+                                                 <div className="flex flex-col">
+                                                     <span className="text-sm font-bold text-gray-900 dark:text-white">{a.views_count ?? 0}</span>
+                                                     <span className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter">{t('unique_views_label')}</span>
+                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-500 whitespace-nowrap font-medium">
@@ -381,14 +388,14 @@ const AnnouncementIndex = () => {
                 announcementTitle={selectedAnnouncement?.title}
             />
 
-            <DeleteModal
-                isOpen={deleteModalOpen}
-                setIsOpen={setDeleteModalOpen}
-                onConfirm={executeDelete}
-                isLoading={deleteMutation.isPending}
-                title="Delete Announcement"
-                message="Are you sure you want to delete this announcement? This action cannot be undone."
-            />
+             <DeleteModal
+                 isOpen={deleteModalOpen}
+                 setIsOpen={setDeleteModalOpen}
+                 onConfirm={executeDelete}
+                 isLoading={deleteMutation.isPending}
+                 title={t('delete_announcement_title')}
+                 message={t('delete_announcement_confirm')}
+             />
         </div>
     );
 };

@@ -32,7 +32,21 @@ function App({ children }: PropsWithChildren) {
             style={{ fontFamily: themeConfig.fontFamily }}
         >
             {children}
-            <Toaster richColors position="top-center" />
+            <Toaster 
+  richColors 
+  position="top-center" 
+theme={themeConfig.theme as 'light' | 'dark' | 'system'} 
+  toastOptions={{
+    // This applies the class directly to the toast card
+    className: 'font-google_sans', 
+    // Or more specifically for nested elements
+    classNames: {
+      toast: 'font-google_sans',
+      title: 'font-google_sans',
+      description: 'font-google_sans',
+    }
+  }} 
+/>
         </div>
     );
 }

@@ -18,6 +18,7 @@ import { DateRangePicker } from '../../../components/ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { IconScale } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 import dayjs from 'dayjs';
 import { 
     useHRLeaveBalances, 
@@ -296,8 +297,12 @@ const LeaveBalanceIndex = () => {
                                                 </div>
                                             )}
                                             <div>
-                                                <div className="font-semibold text-gray-800 dark:text-gray-200">{balance.employee?.full_name}</div>
-                                                <div className="text-xs text-gray-500">{balance.employee?.employee_id}</div>
+                                                <div className="font-semibold text-gray-800 dark:text-gray-200">
+                                                    <HighlightText text={balance.employee?.full_name} highlight={search} />
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    <HighlightText text={balance.employee?.employee_id} highlight={search} />
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -306,7 +311,7 @@ const LeaveBalanceIndex = () => {
                                             {balance.leave_type && (
                                                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: balance.leave_type?.color || '#000000' }}></div>
                                             )}
-                                            {balance.leave_type?.name || 'N/A'}
+                                            <HighlightText text={balance.leave_type?.name || 'N/A'} highlight={search} />
                                         </div>
                                     </td>
                                     <td><span className="font-semibold text-emerald-600 dark:text-emerald-400">{parseFloat(balance.total_accrued)}</span> <span className="text-xs text-gray-400">days</span></td>

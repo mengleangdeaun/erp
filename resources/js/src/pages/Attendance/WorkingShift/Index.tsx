@@ -16,7 +16,7 @@ import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import { TimePicker } from '../../../components/ui/time-picker';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { IconClock, IconCalendarPlus, IconCoffee, IconRepeat, IconSeparator, IconTransferVertical } from '@tabler/icons-react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
@@ -298,7 +298,7 @@ const WorkingShiftIndex = () => {
             </div>
 
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[1050px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                <DialogContent className="sm:max-w-[1050px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     {/* Header */}
                     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -314,7 +314,7 @@ const WorkingShiftIndex = () => {
                         </div>
                     </div>
 
-                    <ScrollArea className="flex-1 min-h-0">
+                    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
                         <form id="shift-form" onSubmit={handleSubmit} className="p-6 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -523,7 +523,7 @@ const WorkingShiftIndex = () => {
                                 </div>
                             </div>
                         </form>
-                    </ScrollArea>
+                    </PerfectScrollbar>
 
                     {/* Sticky Footer */}
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">

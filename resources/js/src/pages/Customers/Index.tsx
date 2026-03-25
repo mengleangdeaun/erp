@@ -11,6 +11,8 @@ import FilterBar from '@/components/ui/FilterBar';
 import TableSkeleton from '@/components/ui/TableSkeleton';
 import DeleteModal from '@/components/DeleteModal';
 import ActionButtons from '@/components/ui/ActionButtons';
+import EmptyState from '@/components/ui/EmptyState';
+import Pagination from '@/components/ui/Pagination';
 import { useTranslation } from 'react-i18next';
 import { useFormatDate } from '@/hooks/useFormatDate';
 import { useDispatch } from 'react-redux';
@@ -18,6 +20,7 @@ import { setPageTitle } from '@/store/themeConfigSlice';
 import { useCRMCustomers, useCRMCustomerTypes, useCRMDeleteCustomer } from '@/hooks/useCRMData';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
+import HighlightText from '@/components/ui/HighlightText';
 
 const CustomerIndex = () => {
     const dispatch = useDispatch();
@@ -60,8 +63,8 @@ const CustomerIndex = () => {
     const loading = useDelayedLoading(customersLoading);
 
     useEffect(() => {
-        dispatch(setPageTitle('Customers'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('customers_title')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -82,9 +85,9 @@ const CustomerIndex = () => {
         setIsDeleting(true);
         try {
             await deleteMutation.mutateAsync(customerToDelete);
-            toast.success('Customer deleted successfully');
+            toast.success(t('success_delete_customer', 'Customer deleted successfully'));
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to delete customer');
+            toast.error(error?.response?.data?.message || t('failed_delete_customer', 'Failed to delete customer'));
         } finally {
             setIsDeleting(false);
             setDeleteModalOpen(false);
@@ -96,12 +99,12 @@ const CustomerIndex = () => {
         <div className="space-y-6 pb-12">
             <FilterBar
                 icon={<IconUser className="w-6 h-6 text-primary" />}
-                title={t('customers', 'Customers')}
-                description="Manage your database of regular and VIP customers."
+                title={t('customers_title')}
+                description={t('manage_customers_desc')}
                 search={search}
                 setSearch={setSearch}
                 onAdd={() => { setSelectedCustomer(null); setDialogOpen(true); }}
-                addLabel="New Customer"
+                addLabel={t('new_customer')}
                 onRefresh={() => queryClient.invalidateQueries({ queryKey: ['crm_customers'] })}
                 itemsPerPage={perPage}
                 setItemsPerPage={setPerPage}
@@ -112,27 +115,27 @@ const CustomerIndex = () => {
                 }}
             >
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('status')}</span>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
-                            <SelectValue placeholder="All Status" />
+                            <SelectValue placeholder={t('all_status')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all" className="font-medium">All Status</SelectItem>
-                            <SelectItem value="ACTIVE" className="font-medium">Active</SelectItem>
-                            <SelectItem value="INACTIVE" className="font-medium">Inactive</SelectItem>
+                            <SelectItem value="all" className="font-medium">{t('all_status')}</SelectItem>
+                            <SelectItem value="ACTIVE" className="font-medium">{t('active')}</SelectItem>
+                            <SelectItem value="INACTIVE" className="font-medium">{t('inactive')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Customer Type</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('customer_type')}</span>
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
-                            <SelectValue placeholder="All Types" />
+                            <SelectValue placeholder={t('all_types')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all" className="font-medium">All Types</SelectItem>
+                            <SelectItem value="all" className="font-medium">{t('all_types')}</SelectItem>
                             {customerTypes.map((t: any) => (
                                 <SelectItem key={t.id} value={String(t.id)} className="font-medium">{t.name}</SelectItem>
                             ))}
@@ -146,10 +149,10 @@ const CustomerIndex = () => {
                 <TableSkeleton columns={6} rows={5} />
             ) : customers.length === 0 ? (
                 <EmptyState
-                    title="No Customers Found"
-                    description={search ? "Try adjusting your search or filters." : "Start by adding your first customer."}
+                    title={t('no_customers_found_title')}
+                    description={search ? t('adjust_search_filters') : t('start_adding_customer')}
                     onAction={() => { setSelectedCustomer(null); setDialogOpen(true); }}
-                    actionLabel="Add Customer"
+                    actionLabel={t('add_customer')}
                 />
             ) : (
                 <div className="panel bg-white dark:bg-gray-900 border-none shadow-sm overflow-hidden p-0">
@@ -157,20 +160,20 @@ const CustomerIndex = () => {
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50 dark:bg-white-dark/5 text-gray-500 uppercase text-[10px] font-bold tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4 text-left">Customer Code</th>
-                                    <th className="px-6 py-4 text-left">Customer</th>
-                                    <th className="px-6 py-4 text-left">Contact</th>
-                                    <th className="px-6 py-4 text-left">Type</th>
-                                    <th className="px-6 py-4 text-left">Join Date</th>
-                                    <th className="px-6 py-4 text-center">Status</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <th className="px-6 py-4 text-left">{t('customer_code')}</th>
+                                    <th className="px-6 py-4 text-left">{t('customer')}</th>
+                                    <th className="px-6 py-4 text-left">{t('contact')}</th>
+                                    <th className="px-6 py-4 text-left">{t('type_label')}</th>
+                                    <th className="px-6 py-4 text-left">{t('join_date')}</th>
+                                    <th className="px-6 py-4 text-center">{t('status')}</th>
+                                    <th className="px-6 py-4 text-right">{t('actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                                 {customers.map((c: any) => (
                                     <tr key={c.id} className=" transition-colors group">
                                         <td className="px-6 py-4 font-mono text-xs text-primary font-bold">
-                                            {c.customer_code}
+                                            <HighlightText text={c.customer_code} highlight={search} />
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -178,8 +181,12 @@ const CustomerIndex = () => {
                                                     {(c.name || c.customer_code).charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-gray-900 dark:text-gray-100">{c.name || 'N/A'}</p>
-                                                    <p className="text-xs text-gray-500">{c.customer_no}</p>
+                                                    <p className="font-bold text-gray-900 dark:text-gray-100">
+                                                        <HighlightText text={c.name || 'N/A'} highlight={search} />
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        <HighlightText text={c.customer_no || ''} highlight={search} />
+                                                    </p>
                                                 </div>
                                             </div>
                                         </td>
@@ -187,13 +194,13 @@ const CustomerIndex = () => {
                                             {c.phone && (
                                                 <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
                                                     <IconPhone size={14} className="text-gray-400" />
-                                                    <span>{c.phone}</span>
+                                                    <span><HighlightText text={c.phone} highlight={search} /></span>
                                                 </div>
                                             )}
                                             {c.telegram_user_id && (
                                                 <div className="flex items-center gap-1.5 text-primary">
                                                     <IconBrandTelegram size={14} />
-                                                    <span className="text-[11px] font-medium">{c.telegram_user_id}</span>
+                                                    <span className="text-[11px] font-medium"><HighlightText text={c.telegram_user_id} highlight={search} /></span>
                                                 </div>
                                             )}
                                         </td>
@@ -209,7 +216,7 @@ const CustomerIndex = () => {
                                             <Badge
                                                 size="sm"
                                                 variant={c.status === 'ACTIVE' ? 'success' : 'destructive'}>
-                                                {c.status}
+                                                {t(c.status.toLowerCase()) || c.status}
                                             </Badge>
                                         </td>
                                         <td className="px-6 py-4 text-right">
@@ -250,8 +257,8 @@ const CustomerIndex = () => {
                 setIsOpen={setDeleteModalOpen} 
                 onConfirm={executeDelete} 
                 isLoading={isDeleting} 
-                title="Delete Customer" 
-                message="Are you sure you want to permanently delete this customer record? This action cannot be undone." 
+                title={t('delete_customer')} 
+                message={t('delete_customer_confirm')} 
             />
         </div>
     );

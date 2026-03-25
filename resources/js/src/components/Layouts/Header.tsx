@@ -228,7 +228,7 @@ const Header = () => {
                                     <input
                                         type="text"
                                         className="form-input ltr:pl-9 rtl:pr-9 ltr:sm:pr-4 rtl:sm:pl-4 ltr:pr-9 rtl:pl-9 peer sm:bg-transparent bg-gray-100 placeholder:tracking-widest"
-                                        placeholder="Search..."
+                                        placeholder={t('search_placeholder')}
                                     />
                                     <button type="button" className="absolute w-9 h-9 inset-0 ltr:right-auto rtl:left-auto appearance-none peer-focus:text-primary">
                                         <svg className="mx-auto" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -382,7 +382,7 @@ const Header = () => {
                                                     height: '100%',
                                                 }}
                                             ></div>
-                                            <h4 className="font-semibold relative z-10 text-lg">Messages</h4>
+                                            <h4 className="font-semibold relative z-10 text-lg">{t('messages')}</h4>
                                         </div>
                                     </li>
                                     {messages.length > 0 ? (
@@ -411,7 +411,7 @@ const Header = () => {
                                             </li>
                                             <li className="border-t border-white-light text-center dark:border-white/10 mt-5">
                                                 <button type="button" className="text-primary font-semibold group dark:text-gray-400 justify-center !py-4 !h-[48px]">
-                                                    <span className="group-hover:underline ltr:mr-1 rtl:ml-1">VIEW ALL ACTIVITIES</span>
+                                                    <span className="group-hover:underline ltr:mr-1 rtl:ml-1">{t('view_all_activities')}</span>
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
                                                         className="w-4 h-4 group-hover:translate-x-1 transition duration-300 ltr:ml-1 rtl:mr-1"
@@ -445,7 +445,7 @@ const Header = () => {
                                                         <line x1="12" y1="8" x2="12.01" y2="8"></line>
                                                     </svg>
                                                 </div>
-                                                No data available.
+                                                {t('no_data')}
                                             </button>
                                         </li>
                                     )}
@@ -478,7 +478,7 @@ const Header = () => {
                                 <ul className="!py-0 text-dark dark:text-white-dark w-[300px] sm:w-[350px] divide-y dark:divide-white/10">
                                     <li onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center px-4 py-2 justify-between font-semibold">
-                                            <h4 className="text-lg">Notification</h4>
+                                            <h4 className="text-lg">{t('notification')}</h4>
                                             {notifications.length ? <span className="badge bg-primary/80">{notifications.length}New</span> : ''}
                                         </div>
                                     </li>
@@ -520,7 +520,7 @@ const Header = () => {
                                             })}
                                             <li>
                                                 <div className="p-4">
-                                                    <button className="btn btn-primary block w-full btn-small">Read All Notifications</button>
+                                                    <button className="btn btn-primary block w-full btn-small">{t('read_all_notifications')}</button>
                                                 </div>
                                             </li>
                                         </>
@@ -544,7 +544,7 @@ const Header = () => {
                                                         <line x1="12" y1="8" x2="12.01" y2="8"></line>
                                                     </svg>
                                                 </div>
-                                                No data available.
+                                                {t('no_data')}
                                             </button>
                                         </li>
                                     )}
@@ -594,7 +594,7 @@ const Header = () => {
                                                     strokeWidth="1.5"
                                                 />
                                             </svg>
-                                            Profile
+                                            {t('profile')}
                                         </Link>
                                     </li>
                                     <li>
@@ -605,7 +605,7 @@ const Header = () => {
 
 
                                             </svg>
-                                            Preferences
+                                            {t('preferences')}
                                         </Link>
                                     </li>
                                     <li>
@@ -624,7 +624,7 @@ const Header = () => {
                                                     strokeLinecap="round"
                                                 />
                                             </svg>
-                                            Inbox
+                                            {t('inbox')}
                                         </Link>
                                     </li>
                                     <li>
@@ -648,7 +648,7 @@ const Header = () => {
                                                     />
                                                 </g>
                                             </svg>
-                                            Lock Screen
+                                            {t('lock_screen')}
                                         </Link>
                                     </li>
                                     <li className="border-t border-white-light dark:border-white-light/10">
@@ -664,7 +664,7 @@ const Header = () => {
                                                 />
                                                 <path d="M12 15L12 2M12 2L15 5.5M12 2L9 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                             </svg>
-                                            Sign Out
+                                            {t('sign_out')}
                                             </div>
                                             <div>
                                                 {user?.roles?.length > 0 && (

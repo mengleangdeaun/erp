@@ -21,5 +21,14 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+
+        \Spatie\Health\Facades\Health::checks([
+            \Spatie\Health\Checks\Checks\DatabaseCheck::new(),
+            \Spatie\Health\Checks\Checks\PingCheck::new()
+                ->name('Network')
+                ->label('Network Status')
+                ->url('https://google.com')
+                ->timeout(2),
+        ]);
     }
 }

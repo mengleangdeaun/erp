@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { IconFileText } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 import { Button } from '../../../components/ui/button';
 import { Checkbox } from '../../../components/ui/checkbox';
 import { Input } from '../../../components/ui/input';
@@ -18,6 +20,7 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { Badge } from '../../../components/ui/badge';
 
 const DocumentTypeIndex = () => {
+    const { t } = useTranslation();
     const [documentTypes, setDocumentTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -126,10 +129,10 @@ const DocumentTypeIndex = () => {
             });
 
             if (response.ok) {
-                toast.success('Document Type deleted successfully');
+                toast.success(t('document_type_deleted_msg'));
                 fetchDocumentTypes();
             } else {
-                toast.error('Failed to delete document type');
+                toast.error(t('document_type_failed_delete_msg'));
             }
         } catch (error) {
             console.error(error);
@@ -181,14 +184,14 @@ const DocumentTypeIndex = () => {
             const data = await response.json();
 
             if (response.ok) {
-                toast.success(`Document Type ${editingDocumentType ? 'updated' : 'created'} successfully`);
+                toast.success(`${t('document_type_title')} ${editingDocumentType ? t('updated') : t('created')} ${t('successfully')}`);
                 setModalOpen(false);
                 fetchDocumentTypes();
             } else {
                 if (response.status === 401) {
                     window.location.href = '/login';
                 }
-                toast.error(data.message || `Failed to ${editingDocumentType ? 'update' : 'create'} document type`);
+                toast.error(data.message || `${t('failed_to_label')} ${editingDocumentType ? t('update') : t('create')} ${t('document_type_title')}`);
             }
         } catch (error) {
             console.error(error);
@@ -249,14 +252,14 @@ const DocumentTypeIndex = () => {
         <div>
             <FilterBar
                 icon={<IconFileText className="w-6 h-6 text-primary" />}
-                title="Document Types"
-                description="Manage the types of documents required for employees"
+                title={t('document_type_title')}
+                description={t('document_type_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={handleCreate}
-                addLabel="Add Document Type"
+                addLabel={t('document_type_add')}
                 onRefresh={fetchDocumentTypes}
                 hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'}
                 onClearFilters={() => {
@@ -269,9 +272,9 @@ const DocumentTypeIndex = () => {
                 <TableSkeleton columns={4} rows={5} />
             ) : documentTypes.length === 0 ? (
                 <EmptyState
-                    title="No Document Types Found"
-                    description="Get started by creating your first document type."
-                    actionLabel="Add Document Type"
+                    title={t('no_document_types_found_title')}
+                    description={t('create_first_document_type_desc')}
+                    actionLabel={t('document_type_add')}
                     onAction={handleCreate}
                 />
             ) : filteredAndSortedDocumentTypes.length === 0 ? (
@@ -289,23 +292,25 @@ const DocumentTypeIndex = () => {
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
-                                <SortableHeader label="Name" value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Description" value="description" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Required?" value="is_required" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-right">Action</th>
+                                <SortableHeader label={t('name_label')} value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('description_label')} value="description" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('required_q_label')} value="is_required" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('status_label')} value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="text-right">{t('actions_label')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {paginatedDocumentTypes.map((type: any) => (
                                 <tr key={type.id}>
-                                    <td className="whitespace-nowrap font-medium">{type.name}</td>
+                                    <td className="whitespace-nowrap font-medium">
+                                        <HighlightText text={type.name} highlight={search} />
+                                    </td>
                                     <td className="max-w-xs truncate">{type.description}</td>
                                     <td>
                                         <Badge 
                                         size='sm'
                                         variant={type.is_required ? 'warning' : 'secondary'}>
-                                            {type.is_required ? 'Yes' : 'No'}
+                                            {type.is_required ? t('yes_label') : t('no_label')}
                                         </Badge>
                                     </td>
                                     <td>
@@ -313,7 +318,7 @@ const DocumentTypeIndex = () => {
                                         dot={true}
                                         size='sm'
                                         variant={type.status === 'active' ? 'success' : 'destructive'}>
-                                            {type.status}
+                                            {t(type.status)}
                                         </Badge>
                                     </td>
                                     <td>
@@ -340,7 +345,7 @@ const DocumentTypeIndex = () => {
             )}
 
 <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+  <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
     {/* Header */}
     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
       <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -348,7 +353,7 @@ const DocumentTypeIndex = () => {
       </div>
       <div>
         <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-          {editingDocumentType ? 'Edit Document Type' : 'Create New Document Type'}
+          {editingDocumentType ? t('edit_document_type_title') : t('create_new_document_type_title')}
         </DialogTitle>
         <p className="text-sm text-gray-500 mt-1">
           {editingDocumentType 
@@ -358,7 +363,7 @@ const DocumentTypeIndex = () => {
       </div>
     </div>
 
-    <ScrollArea className="flex-1 min-h-0">
+    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
       <form id="document-type-form" onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
@@ -406,7 +411,7 @@ const DocumentTypeIndex = () => {
               id="is_required"
               name="is_required"
               checked={formData.is_required}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_required: checked })}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_required: !!checked })}
             />
             <label htmlFor="is_required" className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
               Required document?
@@ -438,7 +443,7 @@ const DocumentTypeIndex = () => {
           </div>
         </div>
       </form>
-    </ScrollArea>
+    </PerfectScrollbar>
 
     {/* Sticky Footer */}
     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
@@ -448,7 +453,7 @@ const DocumentTypeIndex = () => {
         className="px-5"
         onClick={() => setModalOpen(false)}
       >
-        Cancel
+        {t('cancel_btn_label')}
       </Button>
       <Button
         type="submit"
@@ -456,7 +461,7 @@ const DocumentTypeIndex = () => {
         disabled={isSaving}
         className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
       >
-        {isSaving ? 'Saving...' : (editingDocumentType ? 'Save Changes' : 'Create Document Type')}
+        {isSaving ? t('processing_label') : (editingDocumentType ? t('save_changes_btn_label') : t('create_document_type_btn'))}
       </Button>
     </div>
   </DialogContent>
@@ -467,8 +472,8 @@ const DocumentTypeIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Document Type"
-                message="Are you sure you want to delete this document type? This action cannot be undone."
+                title={t('document_type_delete_title')}
+                message={t('document_type_delete_confirm')}
             />
         </div>
     );

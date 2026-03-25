@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -6,7 +7,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { DatePicker } from '../../../components/ui/date-picker';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { Checkbox } from '../../../components/ui/checkbox';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
@@ -17,6 +18,7 @@ import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import SearchableMultiSelect from '../../../components/ui/SearchableMultiSelect';
 import { IconConfetti, IconCalendarEvent, IconInfoCircle, IconMapPin, IconClock } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 import { format, parseISO } from 'date-fns';
 
 const HOLIDAY_CATEGORIES = [
@@ -29,6 +31,7 @@ const HOLIDAY_CATEGORIES = [
 const toDateStr = (d: Date | undefined) => d ? format(d, 'yyyy-MM-dd') : '';
 
 const HolidayIndex = () => {
+    const { t } = useTranslation();
     const [holidays, setHolidays] = useState<any[]>([]);
     const [branches, setBranches] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -75,7 +78,7 @@ const HolidayIndex = () => {
             setLoading(false);
         }).catch(err => {
             console.error(err);
-            toast.error('Failed to load data');
+            toast.error(t('failed_load_data_msg'));
             setLoading(false);
         });
     };
@@ -118,9 +121,9 @@ const HolidayIndex = () => {
                 credentials: 'include',
             });
             if (res.ok) {
-                toast.success('Holiday deleted');
+                toast.success(t('holiday_deleted_msg'));
                 fetchData();
-            } else toast.error('Failed to delete');
+            } else toast.error(t('failed_delete_msg'));
         } catch { toast.error('An error occurred'); }
         finally { setIsDeleting(false); setDeleteModalOpen(false); setItemToDelete(null); }
     };
@@ -153,12 +156,12 @@ const HolidayIndex = () => {
             });
             const data = await res.json();
             if (res.ok) {
-                toast.success(`Holiday ${editingItem ? 'updated' : 'created'} successfully`);
+                toast.success(`${t('holidays')} ${editingItem ? t('updated') : t('created')} ${t('successfully')}`);
                 setModalOpen(false);
                 fetchData();
             } else {
                 const firstError = data.errors ? Object.values(data.errors)[0] : data.message;
-                toast.error(Array.isArray(firstError) ? firstError[0] : firstError || 'Error saving');
+                toast.error(Array.isArray(firstError) ? firstError[0] : firstError || t('failed_save_msg'));
             }
         } catch { toast.error('An error occurred'); }
         finally { setIsSaving(false); }
@@ -202,14 +205,14 @@ const HolidayIndex = () => {
         <div>
             <FilterBar
                 icon={<IconCalendarEvent className="w-6 h-6 text-primary" />}
-                title="Holiday Management"
-                description="Manage company and national holidays"
+                title={t('holiday_management_title')}
+                description={t('holiday_management_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
                 onAdd={handleCreate}
-                addLabel="Add Holiday"
+                addLabel={t('add_holiday_add')}
                 onRefresh={fetchData}
             />
 
@@ -222,22 +225,22 @@ const HolidayIndex = () => {
                             isSearch={!!search}
                             searchTerm={search}
                             onClearFilter={() => setSearch('')}
-                            title="No holidays found"
-                            description="Start by adding holidays to the calendar."
-                            actionLabel="Add Holiday"
+                            title={t('no_holidays_found_title')}
+                            description={t('add_holiday_calendar_desc')}
+                            actionLabel={t('add_holiday_add')}
                             onAction={handleCreate}
                         />
                     ) : (
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700">
                                 <tr>
-                                    <th className="px-6 py-4">Name</th>
-                                    <SortableHeader label="Category" value="category" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Start Date" value="start_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="End Date" value="end_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4">Branches</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <th className="px-6 py-4">{t('name_label')}</th>
+                                    <SortableHeader label={t('category_label')} value="category" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('start_date_label')} value="start_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('end_date_label')} value="end_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <th className="px-6 py-4">{t('status_label')}</th>
+                                    <th className="px-6 py-4">{t('branches_label')}</th>
+                                    <th className="px-6 py-4 text-right">{t('actions_label')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -248,12 +251,14 @@ const HolidayIndex = () => {
                                                 <div className="p-2 bg-primary/10 text-primary rounded-lg">
                                                     <IconConfetti size={18} />
                                                 </div>
-                                                <span className="font-semibold text-gray-900 dark:text-white">{item.name}</span>
+                                                <span className="font-semibold text-gray-900 dark:text-white">
+                                                    <HighlightText text={item.name} highlight={search} />
+                                                </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                                                {item.category}
+                                                {t(item.category.toLowerCase().replace(/ /g, '_'))}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -265,10 +270,10 @@ const HolidayIndex = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col gap-1">
                                                 {item.is_paid && (
-                                                    <span className="text-[10px] font-bold text-green-600 uppercase">Paid</span>
+                                                    <span className="text-[10px] font-bold text-green-600 uppercase">{t('paid_label')}</span>
                                                 )}
                                                 {item.is_half_day && (
-                                                    <span className="text-[10px] font-bold text-amber-600 uppercase">Half Day</span>
+                                                    <span className="text-[10px] font-bold text-amber-600 uppercase">{t('half_day_label')}</span>
                                                 )}
                                             </div>
                                         </td>
@@ -307,35 +312,35 @@ const HolidayIndex = () => {
             </div>
 
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[700px] p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     <div className="bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-primary/20 p-3 rounded-2xl">
                             <IconCalendarEvent className="text-primary w-7 h-7" />
                         </div>
                         <div>
                             <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                                {editingItem ? 'Edit Holiday' : 'Add New Holiday'}
+                                {editingItem ? t('edit_holiday_title') : t('add_holiday_title')}
                             </DialogTitle>
-                            <p className="text-sm text-gray-500 mt-0.5">Configuration for public or company holidays.</p>
+                            <p className="text-sm text-gray-500 mt-0.5">{t('holiday_config_desc')}</p>
                         </div>
                     </div>
 
-                    <ScrollArea className="max-h-[70vh]">
+                    <PerfectScrollbar options={{ suppressScrollX: true }} className="max-h-[70vh]">
                         <form id="holiday-form" onSubmit={handleSubmit} className="p-6 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Holiday Name <span className="text-red-500">*</span></label>
-                                    <Input name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Lunar New Year" required />
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('holiday_name_label')} <span className="text-red-500">*</span></label>
+                                    <Input name="name" value={formData.name} onChange={handleChange} placeholder={t('holiday_name_placeholder')} required />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Category <span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('category_label')} <span className="text-red-500">*</span></label>
                                     <Select
                                         onValueChange={(val) => handleSelectChange(val, 'category')}
                                         value={formData.category}
                                     >
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectTrigger><SelectValue placeholder={t('select_category_placeholder')} /></SelectTrigger>
                                         <SelectContent>
-                                            {HOLIDAY_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                            {HOLIDAY_CATEGORIES.map(c => <SelectItem key={c} value={c}>{t(c.toLowerCase().replace(/ /g, '_'))}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -343,36 +348,38 @@ const HolidayIndex = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date <span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('start_date_label')} <span className="text-red-500">*</span></label>
                                     <DatePicker
                                         value={formData.start_date}
                                         onChange={(d) => handleSelectChange(toDateStr(d), 'start_date')}
+                                        placeholder={t('select_start_date_placeholder')}
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">End Date <span className="text-red-500">*</span></label>
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('end_date_label')} <span className="text-red-500">*</span></label>
                                     <DatePicker
                                         value={formData.end_date}
                                         onChange={(d) => handleSelectChange(toDateStr(d), 'end_date')}
+                                        placeholder={t('select_end_date_placeholder')}
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Applicable Branches <span className="text-red-500">*</span></label>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('applicable_branches_label')} <span className="text-red-500">*</span></label>
                                 <SearchableMultiSelect
                                     options={branchOptions}
                                     value={formData.branch_ids}
                                     onChange={(val) => handleSelectChange(val, 'branch_ids')}
-                                    placeholder="Select branches..."
+                                    placeholder={t('select_branches_placeholder')}
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-5">
                                 <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl">
                                     <div className="flex-1">
-                                        <label className="text-sm font-bold text-gray-900 dark:text-white block">Paid Holiday</label>
-                                        <span className="text-[10px] text-gray-500">Employee gets paid for this day</span>
+                                        <label className="text-sm font-bold text-gray-900 dark:text-white block">{t('paid_holiday_label')}</label>
+                                        <span className="text-[10px] text-gray-500">{t('paid_holiday_desc')}</span>
                                     </div>
                                     <Checkbox
                                         name="is_paid"
@@ -382,8 +389,8 @@ const HolidayIndex = () => {
                                 </div>
                                 <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl">
                                     <div className="flex-1">
-                                        <label className="text-sm font-bold text-gray-900 dark:text-white block">Half Day</label>
-                                        <span className="text-[10px] text-gray-500">Only half workday is off</span>
+                                        <label className="text-sm font-bold text-gray-900 dark:text-white block">{t('half_day_label')}</label>
+                                        <span className="text-[10px] text-gray-500">{t('half_day_off_desc')}</span>
                                     </div>
                                     <Checkbox
                                         name="is_half_day"
@@ -394,27 +401,27 @@ const HolidayIndex = () => {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('description_label')}</label>
                                 <Textarea
                                     name="description"
                                     value={formData.description}
                                     onChange={handleChange}
-                                    placeholder="Enjoy your holiday break!"
+                                    placeholder={t('holiday_description_placeholder')}
                                     rows={3}
                                 />
                             </div>
                         </form>
-                    </ScrollArea>
+                    </PerfectScrollbar>
 
                     <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800">
-                        <Button variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
+                        <Button variant="ghost" onClick={() => setModalOpen(false)}>{t('cancel_btn_label')}</Button>
                         <Button
                             type="submit"
                             form="holiday-form"
                             disabled={isSaving}
                             className="bg-primary text-white"
                         >
-                            {isSaving ? 'Saving...' : (editingItem ? 'Update Holiday' : 'Save Holiday')}
+                            {isSaving ? t('saving_label') : (editingItem ? t('update_holiday_btn') : t('save_holiday_btn'))}
                         </Button>
                     </div>
                 </DialogContent>
@@ -425,8 +432,8 @@ const HolidayIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Holiday"
-                message="Are you sure you want to remove this holiday? This will affect the calendar of all linked employees."
+                title={t('delete_holiday_title')}
+                message={t('delete_holiday_confirm')}
             />
         </div>
     );

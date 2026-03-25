@@ -11,6 +11,10 @@ class InventoryStock extends Model
 
     protected $fillable = ['product_id', 'location_id', 'quantity', 'last_updated'];
 
+    protected $casts = [
+        'quantity' => 'decimal:2',
+    ];
+
     public function product()
     {
         return $this->belongsTo(InventoryProduct::class);

@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { IconAward } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
@@ -17,6 +19,7 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { Badge } from '../../../components/ui/badge';
 
 const AwardTypeIndex = () => {
+    const { t } = useTranslation();
     const [awardTypes, setAwardTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -106,10 +109,10 @@ const AwardTypeIndex = () => {
                 credentials: 'include',
             });
             if (response.ok) {
-                toast.success('Award Type deleted');
+                toast.success(t('award_type_deleted_msg'));
                 fetchAwardTypes();
             } else {
-                toast.error('Failed to delete award type');
+                toast.error(t('failed_delete_award_type_msg'));
             }
         } catch (error) {
             toast.error('An error occurred');
@@ -148,11 +151,11 @@ const AwardTypeIndex = () => {
             });
             const data = await response.json();
             if (response.ok) {
-                toast.success(`Award Type ${editingItem ? 'updated' : 'created'}`);
+                toast.success(`${t('award_types_title')} ${editingItem ? t('update') : t('create')}`);
                 setModalOpen(false);
                 fetchAwardTypes();
             } else {
-                toast.error(data.message || 'Error saving award type');
+                toast.error(data.message || t('failed_save_award_type_msg'));
             }
         } catch (error) {
             toast.error('An error occurred');
@@ -195,14 +198,14 @@ const AwardTypeIndex = () => {
         <div>
             <FilterBar
                 icon={<IconAward className="w-6 h-6 text-primary" />}
-                title="Award Types"
-                description="Manage metadata classifications for employee awards"
+                title={t('award_types_title')}
+                description={t('award_types_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
                 onAdd={handleCreate}
-                addLabel="Add Award Type"
+                addLabel={t('award_types_add')}
                 onRefresh={fetchAwardTypes}
             />
 
@@ -215,30 +218,32 @@ const AwardTypeIndex = () => {
                             isSearch={!!search}
                             searchTerm={search}
                             onClearFilter={() => setSearch('')}
-                            title="No Award Types found"
-                            description="Create an award type to get started."
-                            actionLabel="Add Award Type"
+                            title={t('no_award_types_found_title')}
+                            description={t('create_award_type_desc')}
+                            actionLabel={t('award_types_add')}
                             onAction={handleCreate}
                         />
                     ) : (
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs bg-gray-50 dark:bg-gray-950 text-gray-500 uppercase border-y">
                                 <tr>
-                                    <SortableHeader label="Name" value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4">Description</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <SortableHeader label={t('name_label')} value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <th className="px-6 py-4">{t('status_label')}</th>
+                                    <th className="px-6 py-4">{t('description_label')}</th>
+                                    <th className="px-6 py-4 text-right">{t('actions_label')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                 {paginatedItems.map(item => (
                                     <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{item.name}</td>
+                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                                            <HighlightText text={item.name} highlight={search} />
+                                        </td>
                                         <td className="px-6 py-4">
                                             <Badge 
                                             size='sm'
                                             variant={item.status === 'active' ? 'success' : 'destructive'}>
-                                                {item.status}
+                                                {item.status === 'active' ? t('active') : t('inactive')}
                                             </Badge>
                                         </td>
                                         <td className="px-6 py-4 text-gray-500 max-w-xs truncate">{item.description || '-'}</td>
@@ -263,7 +268,7 @@ const AwardTypeIndex = () => {
             </div>
 
 <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+  <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
     {/* Header */}
     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
       <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -271,26 +276,26 @@ const AwardTypeIndex = () => {
       </div>
       <div>
         <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-          {editingItem ? 'Edit Award Type' : 'Create New Award Type'}
+          {editingItem ? t('edit_award_type_title') : t('create_award_type_title')}
         </DialogTitle>
         <p className="text-sm text-gray-500 mt-1">
           {editingItem 
-            ? 'Update the award type details below.' 
-            : 'Fill in the details to add a new award type.'}
+            ? t('update_award_type_detail_desc') 
+            : t('fill_award_type_detail_desc')}
         </p>
       </div>
     </div>
 
-    <ScrollArea className="flex-1 min-h-0">
+    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
       <form id="award-type-form" onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Basic Information
+            {t('basic_info_title')}
           </h3>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Award Type Name <span className="text-red-500">*</span>
+              {t('award_type_name_label')} <span className="text-red-500">*</span>
             </label>
             <Input
               name="name"
@@ -305,17 +310,17 @@ const AwardTypeIndex = () => {
         {/* Additional Details */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Additional Details
+            {t('additional_details_title')}
           </h3>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
+              {t('description_label')}
             </label>
             <Textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Describe what this award recognizes and any criteria..."
+              placeholder={t('award_type_desc_placeholder')}
               rows={4}
               className="bg-gray-50 dark:bg-gray-800/50 resize-none"
             />
@@ -325,28 +330,28 @@ const AwardTypeIndex = () => {
         {/* Status */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Status
+            {t('status_label')}
           </h3>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Status
+              {t('status_label')}
             </label>
             <Select
               onValueChange={(val) => handleSelectChange(val, 'status')}
               value={formData.status}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select Status" />
+                <SelectValue placeholder={t('select_status_placeholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="active">{t('active')}</SelectItem>
+                <SelectItem value="inactive">{t('inactive')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
       </form>
-    </ScrollArea>
+    </PerfectScrollbar>
 
     {/* Sticky Footer */}
     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
@@ -356,7 +361,7 @@ const AwardTypeIndex = () => {
         className="px-5"
         onClick={() => setModalOpen(false)}
       >
-        Cancel
+        {t('cancel_btn_label')}
       </Button>
       <Button
         type="submit"
@@ -364,7 +369,7 @@ const AwardTypeIndex = () => {
         disabled={isSaving}
         className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
       >
-        {isSaving ? 'Saving...' : (editingItem ? 'Save Changes' : 'Create Award Type')}
+        {isSaving ? t('saving_label') : (editingItem ? t('save_changes_btn_label') : t('create_award_type_btn'))}
       </Button>
     </div>
   </DialogContent>
@@ -375,8 +380,8 @@ const AwardTypeIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Award Type"
-                message="Are you sure you want to delete this award type? This action cannot be undone."
+                title={t('delete_award_type_title')}
+                message={t('delete_award_type_confirm')}
             />
         </div>
     );

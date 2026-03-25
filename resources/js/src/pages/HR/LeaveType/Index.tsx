@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { ScrollArea } from '../../../components/ui/scroll-area';
 import { Checkbox } from '../../../components/ui/checkbox';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -17,6 +16,8 @@ import { Textarea } from '../../../components/ui/textarea';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { IconClipboardHeart } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 
 const LeaveTypeIndex = () => {
     const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
@@ -302,7 +303,9 @@ const LeaveTypeIndex = () => {
                         <tbody>
                             {paginatedLeaveTypes.map((type: any) => (
                                 <tr key={type.id}>
-                                    <td className="whitespace-nowrap font-medium">{type.name}</td>
+                                    <td className="whitespace-nowrap font-medium">
+                                        <HighlightText text={type.name} highlight={search} />
+                                    </td>
                                     <td>{type.max_per_year || '-'}</td>
                                     <td>
                                         <Badge 
@@ -349,7 +352,7 @@ const LeaveTypeIndex = () => {
             )}
 
 <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+  <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
     {/* Header */}
     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
       <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -367,7 +370,7 @@ const LeaveTypeIndex = () => {
       </div>
     </div>
 
-    <ScrollArea className="flex-1 min-h-0">
+    <PerfectScrollbar className="flex-1 min-h-0">
       <form id="leave-type-form" onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
@@ -454,7 +457,7 @@ const LeaveTypeIndex = () => {
               id="is_paid"
               name="is_paid"
               checked={formData.is_paid}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_paid: checked })}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_paid: !!checked })}
             />
             <Label htmlFor="is_paid" className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
               Is Paid Leave?
@@ -472,7 +475,7 @@ const LeaveTypeIndex = () => {
               id="status"
               name="status"
               checked={formData.status}
-              onCheckedChange={(checked) => setFormData({ ...formData, status: checked })}
+              onCheckedChange={(checked) => setFormData({ ...formData, status: !!checked })}
             />
             <Label htmlFor="status" className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
               Active?
@@ -480,7 +483,7 @@ const LeaveTypeIndex = () => {
           </div>
         </div>
       </form>
-    </ScrollArea>
+    </PerfectScrollbar>
 
     {/* Sticky Footer */}
     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">

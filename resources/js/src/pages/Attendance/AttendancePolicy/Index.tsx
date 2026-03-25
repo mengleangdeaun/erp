@@ -13,7 +13,7 @@ import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { IconShieldCheck } from '@tabler/icons-react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
@@ -263,7 +263,7 @@ const AttendancePolicyIndex = () => {
             </div>
 
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[600px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     {/* Header */}
                     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -279,7 +279,7 @@ const AttendancePolicyIndex = () => {
                         </div>
                     </div>
 
-                    <ScrollArea className="flex-1 min-h-0">
+                    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
                         <form id="policy-form" onSubmit={handleSubmit} className="p-6 space-y-6">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Policy Name <span className="text-red-500">*</span></label>
@@ -327,7 +327,7 @@ const AttendancePolicyIndex = () => {
                                 <Textarea name="description" value={formData.description} onChange={handleChange} placeholder="Details about this policy..." rows={3} className="bg-gray-50 dark:bg-gray-800/50 resize-none" />
                             </div>
                         </form>
-                    </ScrollArea>
+                    </PerfectScrollbar>
 
                     {/* Sticky Footer */}
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">

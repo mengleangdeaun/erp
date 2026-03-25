@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -22,6 +23,7 @@ interface StatsDialogProps {
 }
 
 const StatsDialog: React.FC<StatsDialogProps> = ({ open, onOpenChange, announcementId, announcementTitle }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [stats, setStats] = useState<any>(null);
     const [search, setSearch] = useState('');
@@ -39,7 +41,7 @@ const StatsDialog: React.FC<StatsDialogProps> = ({ open, onOpenChange, announcem
             const data = await res.json();
             setStats(data);
         } catch (error) {
-            toast.error('Failed to load statistics');
+            toast.error(t('failed_load_statistics_msg'));
         } finally {
             setLoading(false);
         }
@@ -79,7 +81,7 @@ const StatsDialog: React.FC<StatsDialogProps> = ({ open, onOpenChange, announcem
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[800px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+            <DialogContent className="sm:max-w-[800px] w-[95vw] max-h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                 {/* Header */}
                 <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                     <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -87,10 +89,10 @@ const StatsDialog: React.FC<StatsDialogProps> = ({ open, onOpenChange, announcem
                     </div>
                     <div>
                         <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                            Announcement Statistics
+                            {t('announcement_statistics_title')}
                         </DialogTitle>
                         <p className="text-sm text-gray-500 mt-1">
-                            Tracking engagement for: <span className="font-semibold text-gray-700 dark:text-gray-300">{announcementTitle}</span>
+                            {t('tracking_engagement_for_label')}: <span className="font-semibold text-gray-700 dark:text-gray-300">{announcementTitle}</span>
                         </p>
                     </div>
                 </div>
@@ -163,29 +165,29 @@ const StatsDialog: React.FC<StatsDialogProps> = ({ open, onOpenChange, announcem
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm transition-all hover:shadow-md hover:border-primary/20">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Targeted</span>
+                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('targeted_label')}</span>
                                         <IconUsers className="w-4 h-4 text-gray-400" />
                                     </div>
                                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
                                         {stats?.total_targeted || 0}
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-1">Potential viewers</p>
+                                    <p className="text-xs text-gray-500 mt-1">{t('potential_viewers_desc')}</p>
                                 </div>
 
                                 <div className="p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm transition-all hover:shadow-md hover:border-primary/20">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Unique Views</span>
+                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('unique_views_label')}</span>
                                         <IconEye className="w-4 h-4 text-gray-400" />
                                     </div>
                                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
                                         {totalViewed}
                                     </div>
-                                    <p className="text-xs text-gray-500 mt-1">Acknowledged</p>
+                                    <p className="text-xs text-gray-500 mt-1">{t('acknowledged_label')}</p>
                                 </div>
 
                                 <div className="p-5 rounded-xl border border-primary/20 bg-primary/5 dark:bg-primary/10 shadow-sm transition-all hover:shadow-md">
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-bold text-primary uppercase tracking-wider">Engagement</span>
+                                        <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('engagement_label')}</span>
                                         <IconChartBar className="w-4 h-4 text-primary" />
                                     </div>
                                     <div className="text-2xl font-bold text-primary">
@@ -204,14 +206,14 @@ const StatsDialog: React.FC<StatsDialogProps> = ({ open, onOpenChange, announcem
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                        Acknowledged By
+                                        {t('acknowledged_by_title')}
                                     </h3>
                                     <div className="relative w-full max-w-[240px]">
                                         <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                                         <Input
                                             value={search}
                                             onChange={(e) => setSearch(e.target.value)}
-                                            placeholder="Search viewer..."
+                                            placeholder={t('search_viewer_placeholder')}
                                             className="pl-9 h-8 text-xs bg-gray-50 dark:bg-gray-800/50"
                                         />
                                         {search && (
@@ -230,9 +232,9 @@ const StatsDialog: React.FC<StatsDialogProps> = ({ open, onOpenChange, announcem
                                         <table className="w-full text-left text-xs">
                                             <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-800">
                                                 <tr>
-                                                    <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider">Employee</th>
-                                                    <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider">Department</th>
-                                                    <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider text-right">Viewed At</th>
+                                                    <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider">{t('employee_label')}</th>
+                                                    <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider">{t('department_label')}</th>
+                                                    <th className="px-4 py-3 text-gray-500 font-bold uppercase tracking-wider text-right">{t('viewed_at_label')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-gray-900">
@@ -267,7 +269,7 @@ const StatsDialog: React.FC<StatsDialogProps> = ({ open, onOpenChange, announcem
                                                 ) : (
                                                     <tr>
                                                         <td colSpan={3} className="px-4 py-12 text-center text-gray-400 italic font-medium">
-                                                            {search ? 'No matching viewers found.' : 'No one has viewed this announcement yet.'}
+                                                            {search ? t('no_matching_viewers_found_msg') : t('no_one_viewed_announcement_msg')}
                                                         </td>
                                                     </tr>
                                                 )}
@@ -294,7 +296,7 @@ const StatsDialog: React.FC<StatsDialogProps> = ({ open, onOpenChange, announcem
                 {/* Sticky Footer */}
                 <div className="shrink-0 flex justify-end px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                        Close
+                        {t('close_btn_label')}
                     </Button>
                 </div>
             </DialogContent>

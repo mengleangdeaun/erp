@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
+import HighlightText from '@/components/ui/HighlightText';
 import EmptyState from '../../../components/ui/EmptyState';
 import Pagination from '../../../components/ui/Pagination';
 import DeleteModal from '../../../components/DeleteModal';
@@ -12,6 +14,7 @@ import { IconMessageHeart, IconMessageChatbot  } from '@tabler/icons-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 
 const CompanyFeedbackIndex = () => {
+    const { t } = useTranslation();
     const [feedbacks, setFeedbacks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
@@ -50,7 +53,7 @@ const CompanyFeedbackIndex = () => {
             })
             .catch(err => {
                 console.error(err);
-                toast.error('Failed to fetch feedbacks');
+                toast.error(t('failed_fetch_feedbacks_msg'));
                 setLoading(false);
             });
     };
@@ -78,13 +81,13 @@ const CompanyFeedbackIndex = () => {
                 credentials: 'include',
             });
             if (response.ok) {
-                toast.success('Feedback deleted');
+                toast.success(t('feedback_deleted_msg'));
                 fetchData(currentPage);
             } else {
-                toast.error('Failed to delete feedback');
+                toast.error(t('failed_delete_feedback_msg'));
             }
         } catch (error) {
-            toast.error('An error occurred');
+            toast.error(t('failed_save_msg'));
         } finally {
             setIsDeleting(false);
             setDeleteModalOpen(false);
@@ -105,8 +108,8 @@ const CompanyFeedbackIndex = () => {
         <div>
             <FilterBar
                 icon={<IconMessageChatbot className="w-6 h-6 text-primary" />}
-                title="Company Feedback"
-                description="View anonymous feedback and recommendations from employees"
+                title={t('company_feedback_title')}
+                description={t('company_feedback_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
@@ -116,15 +119,15 @@ const CompanyFeedbackIndex = () => {
                 onClearFilters={() => setType('')}
             >
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Feedback Type</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('feedback_type_label')}</span>
                     <Select value={type} onValueChange={setType}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary">
-                            <SelectValue placeholder="All Types" />
+                            <SelectValue placeholder={t('all_types_label')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all" className="font-medium">All Types</SelectItem>
-                            <SelectItem value="positive" className="font-medium">Positive</SelectItem>
-                            <SelectItem value="negative" className="font-medium">Negative</SelectItem>
+                            <SelectItem value="all" className="font-medium">{t('all_types_label')}</SelectItem>
+                            <SelectItem value="positive" className="font-medium">{t('positive_label')}</SelectItem>
+                            <SelectItem value="negative" className="font-medium">{t('negative_label')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -139,18 +142,18 @@ const CompanyFeedbackIndex = () => {
                             isSearch={!!search}
                             searchTerm={search}
                             onClearFilter={() => setSearch('')}
-                            title="No Feedbacks found"
-                            description="Feedback submitted by employees will appear here."
+                            title={t('no_feedbacks_found_title')}
+                            description={t('no_feedbacks_found_desc')}
                         />
                     ) : (
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700">
                                 <tr>
-                                    <th className="px-6 py-4">Date</th>
-                                    <th className="px-6 py-4">Type</th>
-                                    <th className="px-6 py-4">Feedback Message</th>
-                                    <th className="px-6 py-4">Recommendation</th>
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <th className="px-6 py-4">{t('date_label')}</th>
+                                    <th className="px-6 py-4">{t('type_label')}</th>
+                                    <th className="px-6 py-4">{t('feedback_message_label')}</th>
+                                    <th className="px-6 py-4">{t('recommendation_label')}</th>
+                                    <th className="px-6 py-4 text-right">{t('actions_label')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -163,17 +166,17 @@ const CompanyFeedbackIndex = () => {
                                             <Badge 
                                             size='sm'
                                             variant={item.type === 'positive' ? 'success' : 'destructive'}>
-                                                {item.type}
+                                                {t(item.type + '_label')}
                                             </Badge>
                                         </td>
                                         <td className="px-6 py-4 text-gray-700 dark:text-gray-300 max-w-md">
                                             <div className="line-clamp-3" title={item.message}>
-                                                {item.message}
+                                                <HighlightText text={item.message} highlight={search} />
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-600 dark:text-gray-400 max-w-md">
                                             <div className="line-clamp-3" title={item.recommendation}>
-                                                {item.recommendation || '-'}
+                                                <HighlightText text={item.recommendation} highlight={search} />
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
@@ -204,8 +207,8 @@ const CompanyFeedbackIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Feedback"
-                message="Are you sure you want to delete this feedback record? This action cannot be undone."
+                title={t('delete_feedback_title')}
+                message={t('delete_feedback_confirm')}
             />
         </div>
     );

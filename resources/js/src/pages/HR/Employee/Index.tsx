@@ -15,8 +15,11 @@ import { Badge } from '../../../components/ui/badge';
 import { useHREmployees, useHREmployeeQr, useHRDeleteEmployee } from '@/hooks/useHRData';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
+import HighlightText from '@/components/ui/HighlightText';
+import { useTranslation } from 'react-i18next';
 
 const EmployeeIndex = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
@@ -52,12 +55,12 @@ const EmployeeIndex = () => {
         if (!itemToDelete) return;
         deleteMutation.mutate(itemToDelete, {
             onSuccess: () => {
-                toast.success('Employee deleted successfully');
+                toast.success(t('success_delete_employee'));
                 setDeleteModalOpen(false);
                 setItemToDelete(null);
             },
             onError: () => {
-                toast.error('Failed to delete employee');
+                toast.error(t('failed_delete_employee'));
             }
         });
     };
@@ -70,7 +73,7 @@ const EmployeeIndex = () => {
                 setQrData(data);
             },
             onError: (err: any) => {
-                toast.error(err.response?.data?.message || 'Error generating QR');
+                toast.error(err.response?.data?.message || t('error_generating_qr_msg'));
             }
         });
     };
@@ -137,14 +140,14 @@ const EmployeeIndex = () => {
         <div>
             <FilterBar
                 icon={<IconUser className="w-6 h-6 text-primary" />}
-                title="Employees"
-                description="Manage your employees"
+                title={t('hr_employees')}
+                description={t('manage_employees_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={() => navigate('/hr/employees/create')}
-                addLabel="Add Employee"
+                addLabel={t('add_employee')}
                 onRefresh={() => queryClient.invalidateQueries({ queryKey: ['hr-employees'] })}
                 hasActiveFilters={sortBy !== 'full_name' || sortDirection !== 'asc'}
                 onClearFilters={() => {
@@ -152,15 +155,13 @@ const EmployeeIndex = () => {
                     setSortDirection('asc');
                 }}
             />
-    <div className="rounded-lg border overflow-hidden">
-        <div className="overflow-x-auto">
-                            {loading ? (
+            {loading ? (
                 <TableSkeleton columns={8} rows={itemsPerPage} />
             ) : employees.length === 0 ? (
                 <EmptyState
-                    title="No Employees Found"
-                    description="Get started by adding your first employee."
-                    actionLabel="Add Employee"
+                    title={t('no_employees_found_title')}
+                    description={t('start_adding_employee_desc')}
+                    actionLabel={t('add_employee')}
                     onAction={() => navigate('/hr/employees/create')}
                 />
             ) : filteredAndSortedEmployees.length === 0 ? (
@@ -174,18 +175,20 @@ const EmployeeIndex = () => {
                     }}
                 />
             ) : (
-                <div className="table-responsive">
+    <div className="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="overflow-x-auto">
+                <div className=" table-responsive">
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
-                                <th>Photo</th>
-                                <SortableHeader label="Full Name" value="full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Employee ID" value="employee_id" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Branch" value="branch" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Department" value="department" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Designation" value="designation" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Active" value="is_active" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-right">Action</th>
+                                <th>{t('photo_label')}</th>
+                                <SortableHeader label={t('full_name_label')} value="full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('employee_id_label')} value="employee_id" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('branch_label')} value="branch" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('department_label')} value="department" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('designation_label')} value="designation" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('active')} value="is_active" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="text-right">{t('action')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -204,17 +207,27 @@ const EmployeeIndex = () => {
                                             </div>
                                         )}
                                     </td>
-                                    <td className="whitespace-nowrap font-medium">{emp.full_name}</td>
-                                    <td className="text-xs text-gray-500">{emp.employee_id}</td>
-                                    <td>{emp.branch?.name || '—'}</td>
-                                    <td>{emp.department?.name || '—'}</td>
-                                    <td>{emp.designation?.name || '—'}</td>
+                                    <td className="whitespace-nowrap font-medium">
+                                        <HighlightText text={emp.full_name} highlight={search} />
+                                    </td>
+                                    <td className="text-xs text-gray-500">
+                                        <HighlightText text={emp.employee_id} highlight={search} />
+                                    </td>
+                                    <td>
+                                        <HighlightText text={emp.branch?.name || '—'} highlight={search} />
+                                    </td>
+                                    <td>
+                                        <HighlightText text={emp.department?.name || '—'} highlight={search} />
+                                    </td>
+                                    <td>
+                                        <HighlightText text={emp.designation?.name || '—'} highlight={search} />
+                                    </td>
                                     <td>
                                         <Badge 
                                         size='sm'
                                         dot={true}
                                         variant={emp.is_active ? 'success' : 'destructive'}>
-                                            {emp.is_active ? 'Active' : 'Inactive'}
+                                            {emp.is_active ? t('active') : t('inactive')}
                                         </Badge>
                                     </td>
                                     <td>
@@ -237,9 +250,9 @@ const EmployeeIndex = () => {
                             onPageChange={setCurrentPage}
                         />
                 </div>
-            )}
         </div>
     </div>
+     )}
 
 
             <DeleteModal
@@ -247,28 +260,28 @@ const EmployeeIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={deleteMutation.isPending}
-                title="Delete Employee"
-                message="Are you sure you want to delete this employee? This action cannot be undone."
+                title={t('delete_employee_title')}
+                message={t('delete_employee_message')}
             />
 
             <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Employee Login QR Code</DialogTitle>
+                        <DialogTitle>{t('employee_login_qr_title')}</DialogTitle>
                     </DialogHeader>
                     <div className="flex flex-col items-center justify-center p-6 space-y-6">
-                        {qrMutation.isPending && <div className="animate-pulse">Generating Secure Login Token...</div>}
+                        {qrMutation.isPending && <div className="animate-pulse">{t('generating_qr_msg')}</div>}
                         {qrData && !qrMutation.isPending && (
                             <>
                                 <div className="text-center">
                                     <h3 className="text-lg font-bold">{qrData.employee}</h3>
-                                    <p className="text-sm text-gray-500">Scan this QR to login to the Employee Scanner App</p>
+                                    <p className="text-sm text-gray-500">{t('scan_qr_desc_msg')}</p>
                                 </div>
                                 <div className="bg-white p-4 rounded-xl border-4 border-black">
                                     <QRCode value={qrData.url} size={256} level="H" />
                                 </div>
                                 <div className="text-xs text-center text-red-500 font-medium">
-                                    WARNING: This QR code contains sensitive login credentials. Do not share it.
+                                    {t('qr_warning_msg')}
                                 </div>
                             </>
                         )}

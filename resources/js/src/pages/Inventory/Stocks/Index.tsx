@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import { ScrollArea } from '../../../components/ui/scroll-area';
@@ -13,10 +14,12 @@ import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { IconPackages } from '@tabler/icons-react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
+import HighlightText from '../../../components/ui/HighlightText';
 
 import { useInventoryStocks, useAdjustStock, useInventoryProducts, useInventoryLocations } from '@/hooks/useInventoryData';
 
 const StockIndex = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     
     const [modalOpen, setModalOpen] = useState(false);
@@ -42,8 +45,8 @@ const StockIndex = () => {
     const adjustStockMutation = useAdjustStock();
 
     useEffect(() => {
-        dispatch(setPageTitle('Stocks'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('stock')));
+    }, [dispatch, t]);
 
     const handleStockAdjustment = () => { setFormData(initialFormState); setModalOpen(true); };
 
@@ -76,14 +79,14 @@ const StockIndex = () => {
 
     return (
         <div>
-            <FilterBar icon={<IconPackages className="w-6 h-6 text-primary" />} title="Stock Valuations & Adjustments" description="Live audit counts mapped physically" search={search} setSearch={setSearch} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} onAdd={handleStockAdjustment} addLabel="System Adjust Stock" onRefresh={() => refetch()} hasActiveFilters={sortBy !== 'product_name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('product_name'); setSortDirection('asc'); }} />
+            <FilterBar icon={<IconPackages className="w-6 h-6 text-primary" />} title={t('stock_valuations_adjustments')} description={t('audit_counts_desc')} search={search} setSearch={setSearch} itemsPerPage={itemsPerPage} setItemsPerPage={setItemsPerPage} onAdd={handleStockAdjustment} addLabel={t('system_adjust_stock')} onRefresh={() => { refetch(); }} hasActiveFilters={sortBy !== 'product_name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('product_name'); setSortDirection('asc'); }} />
 {loading ? (
   <TableSkeleton columns={5} rows={5} />
 ) : stocks.length === 0 ? (
   <EmptyState
-    title="No Physical Stock Listed"
-    description="Your logistics modules are barren. Commence procurement."
-    actionLabel="Audit / Receive Items"
+    title={t('no_physical_stock_listed')}
+    description={t('logistics_barren_msg')}
+    actionLabel={t('audit_receive_items')}
     onAction={handleStockAdjustment}
   />
 ) : filteredAndSorted.length === 0 ? (
@@ -102,19 +105,25 @@ const StockIndex = () => {
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
-                                <SortableHeader label="Referenced Item Code" value="product_code" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Product Name" value="product_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Physical Location" value="location_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Stored Quantity" value="quantity" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Last Update Check" value="last_updated" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('referenced_item_code')} value="product_code" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('product_name')} value="product_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('physical_location')} value="location_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('stored_quantity')} value="quantity" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('last_update_check')} value="last_updated" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                             </tr>
                         </thead>
                         <tbody>
                             {paginated.map((row: any) => (
                                 <tr key={row.id}>
-                                    <td className="font-mono text-xs text-gray-400">{row.product?.code}</td>
-                                    <td className="whitespace-nowrap font-medium text-primary">{row.product?.name}</td>
-                                    <td className="text-sm font-semibold">{row.location?.name}</td>
+                                    <td className="font-mono text-xs text-gray-400">
+                                        <HighlightText text={row.product?.code} highlight={search} />
+                                    </td>
+                                    <td className="whitespace-nowrap font-medium text-primary">
+                                        <HighlightText text={row.product?.name} highlight={search} />
+                                    </td>
+                                    <td className="text-sm font-semibold">
+                                        <HighlightText text={row.location?.name} highlight={search} />
+                                    </td>
                                     <td className="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg px-2 text-center">{parseFloat(row.quantity).toFixed(2)}</td>
                                     <td className="text-xs text-slate-500">{new Date(row.last_updated).toLocaleString()}</td>
                                 </tr>
@@ -128,26 +137,26 @@ const StockIndex = () => {
                 <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     <div className="shrink-0 bg-gradient-to-r from-emerald-500/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-emerald-500/20 p-3 rounded-2xl shadow-sm"><IconPackages className="text-emerald-600 w-7 h-7" /></div>
-                        <div><DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">Warehouse System Alignment</DialogTitle><p className="form-description text-sm opacity-50">Transacting modifications mathematically applies automatically against the specific item location profile without deleting existing datasets.</p></div>
+                        <div><DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">{t('warehouse_alignment')}</DialogTitle><p className="form-description text-sm opacity-50">{t('transacting_modifications_desc')}</p></div>
                     </div>
                     <ScrollArea className="flex-1 min-h-0">
                         <form id="stock-form" onSubmit={handleSubmit} className="p-6 space-y-6">
                             <div className="space-y-4">
-                                <div className="space-y-1"><label className="text-sm font-medium">Select Product Node <span className="text-red-500">*</span></label>
-                                    <SearchableSelect options={products.map((p: any) => ({ value: String(p.id), label: `${p.code} - ${p.name}` }))} value={String(formData.product_id)} onChange={(val) => handleSelectChange(String(val), 'product_id')} placeholder="Search Product DB..." />
+                                <div className="space-y-1"><label className="text-sm font-medium">{t('select_product_node')} <span className="text-red-500">*</span></label>
+                                    <SearchableSelect options={products.map((p: any) => ({ value: String(p.id), label: `${p.code} - ${p.name}` }))} value={String(formData.product_id)} onChange={(val) => handleSelectChange(String(val), 'product_id')} placeholder={t('search_product_db')} />
                                 </div>
-                                <div className="space-y-1"><label className="text-sm font-medium">Target Physical Grid Repository <span className="text-red-500">*</span></label>
-                                    <SearchableSelect options={locations.map((l: any) => ({ value: String(l.id), label: l.name }))} value={String(formData.location_id)} onChange={(val) => handleSelectChange(String(val), 'location_id')} placeholder="Select Logistics Warehouse..." />
+                                <div className="space-y-1"><label className="text-sm font-medium">{t('target_physical_grid')} <span className="text-red-500">*</span></label>
+                                    <SearchableSelect options={locations.map((l: any) => ({ value: String(l.id), label: l.name }))} value={String(formData.location_id)} onChange={(val) => handleSelectChange(String(val), 'location_id')} placeholder={t('select_logistics_warehouse')} />
                                 </div>
-                                <div className="space-y-1"><label className="text-sm font-medium text-emerald-600">Differential Quantity Modification (Negative drops stock) <span className="text-red-500">*</span></label>
+                                <div className="space-y-1"><label className="text-sm font-medium text-emerald-600">{t('differential_quantity_msg')} <span className="text-red-500">*</span></label>
                                     <Input name="quantity" type="number" step="0.01" value={formData.quantity} onChange={handleChange} required className="text-lg font-bold" />
                                 </div>
                             </div>
                         </form>
                     </ScrollArea>
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
-                        <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>Abort Modification</Button>
-                        <Button type="submit" form="stock-form" disabled={adjustStockMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20">{adjustStockMutation.isPending ? 'Processing Compute...' : 'Perform Database Append'}</Button>
+                        <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>{t('abort_modification')}</Button>
+                        <Button type="submit" form="stock-form" disabled={adjustStockMutation.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-500/20">{adjustStockMutation.isPending ? t('processing_compute') : t('perform_database_append')}</Button>
                     </div>
                 </DialogContent>
             </Dialog>

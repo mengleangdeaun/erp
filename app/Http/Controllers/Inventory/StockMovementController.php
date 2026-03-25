@@ -10,7 +10,7 @@ class StockMovementController extends Controller
 {
     public function index(Request $request)
     {
-        $query = InventoryStockMovement::with(['product', 'location', 'user', 'product.category', 'product.baseUom']);
+        $query = InventoryStockMovement::with(['product', 'location', 'user', 'product.category', 'product.baseUom', 'serial']);
         
         if ($request->has('search')) {
             $search = $request->search;
@@ -18,7 +18,10 @@ class StockMovementController extends Controller
                 $q->whereHas('product', function($pq) use ($search) {
                     $pq->where('name', 'like', "%{$search}%")
                        ->orWhere('code', 'like', "%{$search}%");
-                })->orWhere('reason', 'like', "%{$search}%");
+                })->orWhere('reason', 'like', "%{$search}%")
+                  ->orWhereHas('serial', function($sq) use ($search) {
+                      $sq->where('serial_number', 'like', "%{$search}%");
+                  });
             });
         }
 
@@ -42,14 +45,14 @@ class StockMovementController extends Controller
             $query->whereDate('created_at', '<=', $request->end_date);
         }
 
-        $movements = $query->orderBy('created_at', 'desc')->get();
+        $movements = $query->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get();
 
         return response()->json($movements);
     }
 
     public function show($id)
     {
-        $movement = InventoryStockMovement::with(['product', 'location', 'user', 'reference'])->findOrFail($id);
+        $movement = InventoryStockMovement::with(['product', 'location', 'user', 'reference', 'serial'])->findOrFail($id);
         return response()->json($movement);
     }
 }

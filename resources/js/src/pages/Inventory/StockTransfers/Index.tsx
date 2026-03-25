@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../components/ui/button';
 import { toast } from 'sonner';
 import { PlusCircle, ClipboardList, Info, Trash2, CheckCircle2, Clock, X, ArrowRight } from 'lucide-react';
@@ -6,6 +7,7 @@ import { IconArrowsExchange, IconHistory, IconPlus } from '@tabler/icons-react';
 import { useFormatDate } from '@/hooks/useFormatDate';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
+import { useNavigate } from 'react-router-dom';
 
 // Custom components
 import FilterBar from '../../../components/ui/FilterBar';
@@ -19,6 +21,7 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import RejectModal from '../../../components/RejectModal';
 import DetailDialog from './DetailDialog';
+import HighlightText from '../../../components/ui/HighlightText';
 
 interface StockTransfer {
     id: number;
@@ -81,6 +84,8 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
 import { useStockTransfers, useDeleteStockTransfer, useApproveStockTransfer, useRejectStockTransfer } from '@/hooks/useInventoryData';
 
 export default function StockTransfersPage() {
+    const { t } = useTranslation();
+    const navigate = useNavigate();
     const dispatch = useDispatch();
     const { formatDate } = useFormatDate();
 
@@ -116,8 +121,8 @@ export default function StockTransfersPage() {
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
 
     useEffect(() => {
-        dispatch(setPageTitle('Stock Transfers'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('stock_transfers')));
+    }, [dispatch, t]);
 
     const confirmDelete = (id: number) => {
         setItemToDelete(id);
@@ -172,14 +177,14 @@ export default function StockTransfersPage() {
         <div>
             <FilterBar
                 icon={<IconArrowsExchange className="w-6 h-6 text-primary" />}
-                title="Stock Transfers"
-                description="Movement of inventory between locations"
+                title={t('stock_transfers')}
+                description={t('inventory_movement_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-                onAdd={() => window.location.href = '/inventory/stock-transfers/create'}
-                addLabel="New Transfer"
+                onAdd={() => navigate('/inventory/stock-transfers/create')}
+                addLabel={t('new_transfer')}
                 onRefresh={() => { fetchData(); }}
             />
 
@@ -187,9 +192,9 @@ export default function StockTransfersPage() {
                 <TableSkeleton columns={6} rows={5} />
             ) : transfers.length === 0 ? (
                 <EmptyState
-                    title="No Stock Transfers Found"
-                    description="Inventory movements between locations will appear here."
-                    actionLabel="New Transfer"
+                    title={t('no_transfers_found')}
+                    description={t('inventory_movements_appear_here')}
+                    actionLabel={t('new_transfer')}
                     onAction={() => window.location.href = '/inventory/stock-transfers/create'}
                 />
             ) : (
@@ -198,29 +203,29 @@ export default function StockTransfersPage() {
                         <thead>
                             <tr>
                                 <SortableHeader
-                                    label="TRF Number"
+                                    label={t('trf_number')}
                                     value="transfer_no"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Date"
+                                    label={t('date')}
                                     value="date"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
-                                <th className="px-4 py-3 text-left">Movement</th>
-                                <th className="px-4 py-3 text-left">Items</th>
+                                <th className="px-4 py-3 text-left">{t('movement')}</th>
+                                <th className="px-4 py-3 text-left">{t('items')}</th>
                                 <SortableHeader
-                                    label="Status"
+                                    label={t('status')}
                                     value="status"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
-                                <th className="text-right">Actions</th>
+                                <th className="text-right">{t('actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -228,28 +233,38 @@ export default function StockTransfersPage() {
                                 const StatusIcon = STATUS_CONFIG[trf.status]?.icon || Info;
                                 return (
                                     <tr key={trf.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                        <td className="font-mono font-semibold text-primary">{trf.transfer_no}</td>
+                                        <td className="font-mono font-semibold text-primary">
+                                            <HighlightText text={trf.transfer_no} highlight={search} />
+                                        </td>
                                         <td className="text-gray-600 dark:text-gray-300">
                                             {formatDate(trf.date)}
                                         </td>
                                         <td>
                                             <div className="flex items-center gap-2 text-xs">
-                                                <span className="font-bold text-gray-700 dark:text-gray-300">{trf.from_location?.name}</span>
+                                                <HighlightText 
+                                                    text={trf.from_location?.name} 
+                                                    highlight={search} 
+                                                    className="font-bold text-gray-700 dark:text-gray-300" 
+                                                />
                                                 <ArrowRight className="w-3 h-3 text-gray-400" />
-                                                <span className="font-bold text-primary">{trf.to_location?.name}</span>
+                                                <HighlightText 
+                                                    text={trf.to_location?.name} 
+                                                    highlight={search} 
+                                                    className="font-bold text-primary" 
+                                                />
                                             </div>
                                         </td>
                                         <td>
                                             <div className="flex flex-col">
                                                 <span className="font-medium text-gray-900 dark:text-white text-xs">
-                                                    {trf.items.length} Item(s)
+                                                    {trf.items.length} {trf.items.length !== 1 ? t('items') : t('item')}
                                                 </span>
                                             </div>
                                         </td>
                                         <td>
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-tight ${STATUS_CONFIG[trf.status]?.class}`}>
                                                 <StatusIcon className="w-3 h-3" />
-                                                {STATUS_CONFIG[trf.status]?.label}
+                                                {t(trf.status.toLowerCase())}
                                             </span>
                                         </td>
                                         <td className="text-right">
@@ -297,8 +312,8 @@ export default function StockTransfersPage() {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={deleteMutation.isPending}
-                title="Delete Transfer"
-                message="Are you sure you want to delete this draft transfer? This action cannot be undone."
+                title={t('delete_transfer')}
+                message={t('delete_trf_confirm')}
             />
 
             <DetailDialog
@@ -312,9 +327,9 @@ export default function StockTransfersPage() {
                 setIsOpen={setConfirmModalOpen}
                 onConfirm={handleApprove}
                 loading={approveMutation.isPending}
-                title="Approve Stock Transfer"
-                description="Are you sure you want to approve this transfer? This will immediately move the items from the source to the destination location."
-                confirmText="Yes, Approve Transfer"
+                title={t('approve_stock_transfer')}
+                description={t('approve_trf_confirm')}
+                confirmText={t('yes_approve_transfer')}
             />
 
             <RejectModal
@@ -322,8 +337,8 @@ export default function StockTransfersPage() {
                 setIsOpen={setRejectModalOpen}
                 onConfirm={handleReject}
                 loading={rejectMutation.isPending}
-                title="Reject Stock Transfer"
-                description="Please provide a reason for rejecting this stock transfer."
+                title={t('reject_stock_transfer')}
+                description={t('reject_trf_description')}
             />
         </div>
     );

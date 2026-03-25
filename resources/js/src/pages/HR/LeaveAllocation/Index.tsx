@@ -16,8 +16,10 @@ import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import { IconUserCheck, IconX, IconUsers } from '@tabler/icons-react';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import dayjs from 'dayjs';
 import { IconCalendar } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 import { 
     useHRLeaveAllocations, 
     useHRFilterEmployees, 
@@ -146,9 +148,9 @@ const LeaveAllocationIndex = () => {
         if (type === 'all') {
             targets = employees;
         } else if (type === 'dept') {
-            targets = employees.filter(emp => String(emp.department_id) === String(id));
+            targets = employees.filter((emp: any) => String(emp.department_id) === String(id));
         } else if (type === 'branch') {
-            targets = employees.filter(emp => String(emp.branch_id) === String(id));
+            targets = employees.filter((emp: any) => String(emp.branch_id) === String(id));
         }
 
         const newIds = targets.map(emp => String(emp.id));
@@ -307,13 +309,17 @@ const LeaveAllocationIndex = () => {
                                                     {allocation.employee?.full_name?.charAt(0) || '?'}
                                                 </div>
                                             )}
-                                            <div className="font-semibold text-gray-800 dark:text-gray-200">{allocation.employee?.full_name}</div>
+                                            <div className="font-semibold text-gray-800 dark:text-gray-200">
+                                                <HighlightText text={allocation.employee?.full_name} highlight={search} />
+                                            </div>
                                         </div>
                                     </td>
                                     <td>
                                         <div className="flex items-center gap-2">
                                             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: allocation.leave_policy?.leave_type?.color || '#000' }}></div>
-                                            <span className="font-medium">{allocation.leave_policy?.name}</span>
+                                            <span className="font-medium">
+                                                <HighlightText text={allocation.leave_policy?.name} highlight={search} />
+                                            </span>
                                         </div>
                                     </td>
                                     <td>{dayjs(allocation.effective_date).format('MMM DD, YYYY')}</td>
@@ -349,7 +355,7 @@ const LeaveAllocationIndex = () => {
 
 
 <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-  <DialogContent className="sm:max-w-[900px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+  <DialogContent className="sm:max-w-[900px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
     {/* Header */}
     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
       <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -367,7 +373,7 @@ const LeaveAllocationIndex = () => {
       </div>
     </div>
 
-    <ScrollArea className="flex-1 min-h-0">
+    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
       <form id="allocation-form" onSubmit={handleSubmit} className="p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column: Employee Selection */}
@@ -455,8 +461,8 @@ const LeaveAllocationIndex = () => {
                         <p>No employees selected yet</p>
                       </div>
                     ) : (
-                      formData.employee_ids.map(id => {
-                        const emp = employees.find(e => String(e.id) === id);
+                      formData.employee_ids.map((id: string) => {
+                        const emp = employees.find((e: any) => String(e.id) === id);
                         return (
                           <div
                             key={id}
@@ -490,7 +496,7 @@ const LeaveAllocationIndex = () => {
                 <div className="mt-4 w-full">
                   <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Target Employee</Label>
                   <div className="mt-1 p-3 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-md font-medium shadow-sm">
-                    {employees.find(e => String(e.id) === formData.employee_ids[0])?.full_name || 'Loading...'}
+                    {employees.find((e: any) => String(e.id) === formData.employee_ids[0])?.full_name || 'Loading...'}
                   </div>
                 </div>
               </div>
@@ -556,7 +562,7 @@ const LeaveAllocationIndex = () => {
                   <Checkbox
                     name="is_active"
                     checked={formData.is_active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: !!checked })}
                   />
                   <span className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 select-none">
                     Allocation is Active
@@ -570,7 +576,7 @@ const LeaveAllocationIndex = () => {
           </div>
         </div>
       </form>
-    </ScrollArea>
+    </PerfectScrollbar>
 
     {/* Sticky Footer */}
     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">

@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { IconActivity, IconCamera, IconMapPin, IconUser, IconCalendarEvent, IconCheck, IconAlertTriangle, IconClock, IconEye, IconExternalLink, IconFilter } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
@@ -25,12 +27,13 @@ import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
-    submitted: { label: 'Submitted', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: <IconClock size={12} /> },
-    reviewed: { label: 'Reviewed', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: <IconCheck size={12} /> },
-    flagged: { label: 'Flagged', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: <IconAlertTriangle size={12} /> },
+    submitted: { label: 'submitted_status', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: <IconClock size={12} /> },
+    reviewed: { label: 'reviewed_status', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: <IconCheck size={12} /> },
+    flagged: { label: 'flagged_status', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: <IconAlertTriangle size={12} /> },
 };
 
 export default function HrActivityIndex() {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
 
     // UI State
@@ -105,11 +108,11 @@ export default function HrActivityIndex() {
         if (!selected) return;
         updateStatusMutation.mutate({ id: selected.id, status: newStatus, admin_note: adminNote }, {
             onSuccess: () => {
-                toast.success('Activity updated');
+                toast.success(t('activity_updated_msg'));
                 setDetailOpen(false);
             },
             onError: (err: any) => {
-                toast.error(err.response?.data?.message || 'Failed to update');
+                toast.error(err.response?.data?.message || t('failed_update_msg'));
             }
         });
     };
@@ -123,20 +126,20 @@ export default function HrActivityIndex() {
         if (!itemToDelete) return;
         deleteMutation.mutate(itemToDelete, {
             onSuccess: () => {
-                toast.success('Activity deleted');
+                toast.success(t('activity_deleted_msg'));
                 setDeleteModalOpen(false);
                 setItemToDelete(null);
             },
             onError: () => {
-                toast.error('Failed to delete');
+                toast.error(t('failed_delete_msg'));
             }
         });
     };
 
     const employeeOptions = useMemo(() => [
-        { value: 'all', label: 'All Employees' },
+        { value: 'all', label: t('all_employees_label') },
         ...employees.map((e: any) => ({ value: String(e.id), label: `${e.full_name} (${e.employee_id})` }))
-    ], [employees]);
+    ], [employees, t]);
 
     const hasActiveFilters = search !== '' || statusFilter !== 'all' || employeeFilter !== 'all' || dateRange !== undefined;
 
@@ -144,8 +147,8 @@ export default function HrActivityIndex() {
         <div>
             <FilterBar
                 icon={<IconCamera className="w-6 h-6 text-primary" />}
-                title="Activity Log"
-                description="Monitor field activities submitted by outdoor sales staff"
+                title={t('activity_log_title')}
+                description={t('activity_log_desc')}
                 search={searchInput}
                 setSearch={setSearchInput}
                 itemsPerPage={itemsPerPage}
@@ -162,39 +165,39 @@ export default function HrActivityIndex() {
                 }}
             >
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('date_range_label')}</span>
                     <DateRangePicker
                         value={dateRange}
                         onChange={(range) => { setDateRange(range); setCurrentPage(1); }}
-                        placeholder="All Dates"
+                        placeholder={t('all_dates_label')}
                     />
                 </div>
 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('status_label')}</span>
                     <Select
                         value={statusFilter}
                         onValueChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}
                     >
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                            <SelectValue placeholder="All Statuses" />
+                            <SelectValue placeholder={t('all_statuses_label')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all" className="font-medium">All Statuses</SelectItem>
-                            <SelectItem value="submitted" className="font-medium">Submitted</SelectItem>
-                            <SelectItem value="reviewed" className="font-medium">Reviewed</SelectItem>
-                            <SelectItem value="flagged" className="font-medium">Flagged</SelectItem>
+                            <SelectItem value="all" className="font-medium">{t('all_statuses_label')}</SelectItem>
+                            <SelectItem value="submitted" className="font-medium">{t('submitted_status')}</SelectItem>
+                            <SelectItem value="reviewed" className="font-medium">{t('reviewed_status')}</SelectItem>
+                            <SelectItem value="flagged" className="font-medium">{t('flagged_status')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Employee</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('employee_label')}</span>
                     <SearchableSelect
                         options={employeeOptions}
                         value={employeeFilter}
                         onChange={(val) => { setEmployeeFilter(String(val)); setCurrentPage(1); }}
-                        placeholder="All Employees"
+                        placeholder={t('all_employees_label')}
                     />
                 </div>
             </FilterBar>
@@ -211,19 +214,19 @@ export default function HrActivityIndex() {
                                 setSearch(''); setStatusFilter('all'); setEmployeeFilter('all');
                                 setDateRange(undefined); setCurrentPage(1);
                             }}
-                            title="No activities found"
-                            description="Records will appear here once employees submit their field activities via the PWA."
+                            title={t('no_activities_found_title')}
+                            description={t('no_activities_found_desc')}
                         />
                     ) : (
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700">
                                 <tr>
-                                    <th className="px-6 py-4 w-20">Photo</th>
-                                    <SortableHeader label="Employee" value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Submitted" value="submitted_at" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <th className="px-6 py-4">Location</th>
-                                    <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <th className="px-6 py-4 w-20">{t('photo_label')}</th>
+                                    <SortableHeader label={t('employee_label')} value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('submitted_status')} value="submitted_at" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <th className="px-6 py-4">{t('location_label')}</th>
+                                    <SortableHeader label={t('status_label')} value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <th className="px-6 py-4 text-right">{t('actions_label')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 font-medium">
@@ -245,8 +248,12 @@ export default function HrActivityIndex() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div>
-                                                        <div className="text-gray-900 dark:text-white font-bold">{act.employee?.full_name}</div>
-                                                        <div className="text-xs text-gray-400 font-medium">{act.employee?.employee_id}</div>
+                                                        <div className="text-gray-900 dark:text-white font-bold">
+                                                            <HighlightText text={act.employee?.full_name} highlight={search} />
+                                                        </div>
+                                                        <div className="text-xs text-gray-400 font-medium">
+                                                            <HighlightText text={act.employee?.employee_id} highlight={search} />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -272,18 +279,18 @@ export default function HrActivityIndex() {
                                                     >
                                                         <IconMapPin size={14} className="shrink-0 group-hover:animate-bounce" />
                                                         <span className="truncate max-w-[150px] font-bold">
-                                                            {act.location_name ?? 'View Map'}
+                                                            {act.location_name ?? t('view_map_label')}
                                                         </span>
                                                     </a>
                                                 ) : (
-                                                    <span className="text-gray-300 font-normal italic">No GPS</span>
+                                                    <span className="text-gray-300 font-normal italic">{t('no_gps_label')}</span>
                                                 )}
                                             </td>
 
                                             {/* Status */}
                                             <td className="px-6 py-4">
                                                 <span className={cn('inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border', status.className)}>
-                                                    {status.icon} {status.label}
+                                                    {status.icon} {t(status.label)}
                                                 </span>
                                             </td>
 
@@ -293,7 +300,7 @@ export default function HrActivityIndex() {
                                                     skipDeleteConfirm={true}
                                                     onDelete={() => confirmDelete(act.id)}
                                                     onView={() => openDetail(act)}
-                                                    viewLabel="Review Activity"
+                                                    viewLabel={t('review_activity_label')}
                                                 />
                                             </td>
                                         </tr>
@@ -324,10 +331,10 @@ export default function HrActivityIndex() {
                         </div>
                         <div>
                             <DialogTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
-                                Activity Review
+                                {t('activity_review_title')}
                             </DialogTitle>
                             <p className="text-sm text-gray-500 mt-1">
-                                Review details and update status for {selected?.employee?.full_name || 'activity'}.
+                                {t('activity_review_desc')} {selected?.employee?.full_name || t('activity')}.
                             </p>
                         </div>
                     </div>
@@ -361,7 +368,7 @@ export default function HrActivityIndex() {
                             {/* Optional caption (could show file name or dimensions) */}
                             {selected?.photo_url && (
                                 <div className="absolute bottom-3 left-3 px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-full text-xs font-medium text-white truncate max-w-[70%]">
-                                Activity Photo
+                                {t('activity_photo_label')}
                                 </div>
                             )}
                             </div>
@@ -370,7 +377,7 @@ export default function HrActivityIndex() {
                             <div className="flex items-start justify-between">
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                                        Outdoor Activity
+                                        {t('outdoor_activity_label')}
                                     </p>
                                     <h3 className="text-xl font-black text-gray-900 dark:text-white leading-tight">
                                         {selected?.employee?.full_name}
@@ -395,7 +402,7 @@ export default function HrActivityIndex() {
                             <div className="grid grid-cols-2 gap-6 py-6 border-y border-gray-100 dark:border-gray-800">
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                        <IconCalendarEvent size={12} /> Date & Time
+                                        <IconCalendarEvent size={12} /> {t('date_time_label')}
                                     </div>
                                     <p className="text-sm font-bold text-gray-800 dark:text-gray-200">
                                         {selected?.submitted_at && new Date(selected.submitted_at).toLocaleString([], {
@@ -406,7 +413,7 @@ export default function HrActivityIndex() {
                                 </div>
                                 <div className="space-y-1 text-right sm:text-left">
                                     <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 justify-end sm:justify-start">
-                                        <IconMapPin size={12} /> Location
+                                        <IconMapPin size={12} /> {t('location_label')}
                                     </div>
                                     {selected?.latitude ? (
                                         <a
@@ -421,7 +428,7 @@ export default function HrActivityIndex() {
                                                 ).toFixed(4)}`}
                                         </a>
                                     ) : (
-                                        <p className="text-sm font-bold text-gray-400">Unavailable</p>
+                                        <p className="text-sm font-bold text-gray-400">{t('unavailable_label')}</p>
                                     )}
                                 </div>
                             </div>
@@ -430,7 +437,7 @@ export default function HrActivityIndex() {
                             {selected?.comment && (
                                 <div className="border border-l-primary border-l-4 p-4 rounded-lg">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
-                                        Staff Comment
+                                        {t('staff_comment_label')}
                                     </p>
                                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300 leading-relaxed italic">
                                         "{selected.comment}"
@@ -442,7 +449,7 @@ export default function HrActivityIndex() {
                             <div className="space-y-4 pt-2">
                                 <div className="flex items-center justify-between">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                        Manager Review
+                                        {t('manager_review_label')}
                                     </p>
                                     <div className="flex gap-2">
                                         {['submitted', 'reviewed', 'flagged'].map((s) => (
@@ -457,7 +464,7 @@ export default function HrActivityIndex() {
                                                         : 'bg-transparent text-gray-400 border-gray-100 dark:border-gray-800 grayscale opacity-50'
                                                 )}
                                             >
-                                                {s}
+                                                {t(`${s}_status`)}
                                             </button>
                                         ))}
                                     </div>
@@ -467,7 +474,7 @@ export default function HrActivityIndex() {
                                     rows={3}
                                     value={adminNote}
                                     onChange={(e) => setAdminNote(e.target.value)}
-                                    placeholder="Enter your private notes or reason for flagging..."
+                                    placeholder={t('admin_note_placeholder')}
                                 />
                             </div>
                         </div>
@@ -481,7 +488,7 @@ export default function HrActivityIndex() {
                             className="px-5"
                             onClick={() => setDetailOpen(false)}
                         >
-                            Discard
+                            {t('discard_btn_label')}
                         </Button>
                         <Button
                             type="button"
@@ -490,7 +497,7 @@ export default function HrActivityIndex() {
                             onClick={saveStatus}
                             disabled={updateStatusMutation.isPending}
                         >
-                            {updateStatusMutation.isPending ? 'Saving...' : 'Confirm Review'}
+                            {updateStatusMutation.isPending ? t('saving_label') : t('confirm_review_btn')}
                         </Button>
                     </div>
                 </DialogContent>
@@ -502,8 +509,8 @@ export default function HrActivityIndex() {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={deleteMutation.isPending}
-                title="Delete Activity Log"
-                message="Are you sure you want to delete this activity record and its photo content? This cannot be undone."
+                title={t('delete_activity_title')}
+                message={t('delete_activity_confirm')}
             />
         </div>
     );

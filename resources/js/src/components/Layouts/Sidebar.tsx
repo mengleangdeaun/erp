@@ -122,7 +122,7 @@ const Sidebar = () => {
                             </h2>
 
                             <li className="menu nav-item !mt-1">
-                                <button type="button" className={`${currentMenu === 'hrmanagement' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('hrmanagement')}>
+                                <button type="button" className={`${currentMenu === 'hr_management' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('hr_management')}>
                                     <div className="flex items-center">
                                         <svg className="group-hover:!text-primary shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path
@@ -135,17 +135,17 @@ const Sidebar = () => {
                                                 fill="currentColor"
                                             />
                                         </svg>
-                                        <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('hrmanagement')}</span>
+                                        <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('hr_management')}</span>
                                     </div>
 
-                                    <div className={currentMenu === 'hrmanagement' ? 'rotate-90' : 'rtl:rotate-180'}>
+                                    <div className={currentMenu === 'hr_management' ? 'rotate-90' : 'rtl:rotate-180'}>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M9 5L15 12L9 19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                         </svg>
                                     </div>
                                 </button>
 
-                                <AnimateHeight duration={300} height={currentMenu === 'hrmanagement' ? 'auto' : 0}>
+                                <AnimateHeight duration={300} height={currentMenu === 'hr_management' ? 'auto' : 0}>
                                     <ul className="sub-menu text-gray-500">
                                         <li>
                                             <NavLink to="/hr/branches">{t('branchs')}</NavLink>
@@ -193,10 +193,10 @@ const Sidebar = () => {
                                             <NavLink to="/hr/company-feedbacks">{t('company_feedback', 'Company Feedback')}</NavLink>
                                         </li>
                                         <li>
-                                            <NavLink to="/hr/announcements">{'Announcements'}</NavLink>
+                                            <NavLink to="/hr/announcements">{t('announcements')}</NavLink>
                                         </li>
                                         <li>
-                                            <NavLink to="/hr/telegram-settings">{'Telegram Settings'}</NavLink>
+                                            <NavLink to="/hr/telegram-settings">{t('telegram_settings')}</NavLink>
                                         </li>
                                     </ul>
                                 </AnimateHeight>
@@ -211,7 +211,7 @@ const Sidebar = () => {
                             </h2>
 
                             <li className="menu nav-item !mt-1">
-                                <button type="button" className={`${currentMenu === 'leavemanagement' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('leavemanagement')}>
+                                <button type="button" className={`${currentMenu === 'leave_management' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('leave_management')}>
                                     <div className="flex items-center">
                                         <svg className="group-hover:!text-primary shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path opacity="0.5" d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" fill="currentColor" />
@@ -219,17 +219,17 @@ const Sidebar = () => {
                                             <path d="M8 2V6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                                             <circle cx="12" cy="14" r="2" fill="currentColor" />
                                         </svg>
-                                        <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('leavemanagement', 'Leave')}</span>
+                                        <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('leave_management', 'Leave')}</span>
                                     </div>
 
-                                    <div className={currentMenu === 'leavemanagement' ? 'rotate-90' : 'rtl:rotate-180'}>
+                                    <div className={currentMenu === 'leave_management' ? 'rotate-90' : 'rtl:rotate-180'}>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M9 5L15 12L9 19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                         </svg>
                                     </div>
                                 </button>
 
-                                <AnimateHeight duration={300} height={currentMenu === 'leavemanagement' ? 'auto' : 0}>
+                                <AnimateHeight duration={300} height={currentMenu === 'leave_management' ? 'auto' : 0}>
                                     <ul className="sub-menu text-gray-500">
                                         <li>
                                             <NavLink to="/hr/leave-types">{t('leave_types', 'Types')}</NavLink>

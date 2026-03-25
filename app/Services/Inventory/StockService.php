@@ -21,9 +21,9 @@ class StockService
      * @param int|null $userId
      * @return InventoryStock
      */
-    public function updateStock(int $productId, int $locationId, float $quantity, string $type, $reference = null, ?string $reason = null, ?int $userId = null)
+    public function updateStock(int $productId, int $locationId, float $quantity, string $type, $reference = null, ?string $reason = null, ?int $userId = null, ?int $serialId = null)
     {
-        return DB::transaction(function () use ($productId, $locationId, $quantity, $type, $reference, $reason, $userId) {
+        return DB::transaction(function () use ($productId, $locationId, $quantity, $type, $reference, $reason, $userId, $serialId) {
             // 1. Get current stock
             $stock = InventoryStock::firstOrCreate(
                 ['product_id' => $productId, 'location_id' => $locationId],
@@ -50,6 +50,7 @@ class StockService
                 'reference_type' => $reference ? get_class($reference) : null,
                 'reference_id' => $reference ? $reference->id : null,
                 'reason' => $reason,
+                'serial_id' => $serialId,
             ]);
 
             return $stock;

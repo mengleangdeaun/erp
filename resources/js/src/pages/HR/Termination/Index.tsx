@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -6,7 +7,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { DatePicker } from '../../../components/ui/date-picker';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -17,6 +18,7 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import MediaSelector, { MediaFile } from '../../../components/MediaSelector';
 import { IconBan, IconFileText, IconX, IconExternalLink, IconPaperclip } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 
 const toDateStr = (d: Date | undefined) => d ? d.toISOString().split('T')[0] : '';
 
@@ -37,6 +39,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 const TerminationIndex = () => {
+    const { t } = useTranslation();
     const [terminations, setTerminations] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
 
@@ -129,8 +132,8 @@ const TerminationIndex = () => {
                 headers: { 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
                 credentials: 'include',
             });
-            if (res.ok) { toast.success('Termination record deleted'); fetchData(); }
-            else toast.error('Failed to delete');
+            if (res.ok) { toast.success(t('termination_deleted_msg')); fetchData(); }
+            else toast.error(t('failed_delete_msg'));
         } catch { toast.error('An error occurred'); }
         finally { setIsDeleting(false); setDeleteModalOpen(false); setItemToDelete(null); }
     };
@@ -159,12 +162,12 @@ const TerminationIndex = () => {
             });
             const data = await res.json();
             if (res.ok) {
-                toast.success(`Termination ${editingItem ? 'updated' : 'recorded'} successfully`);
+                toast.success(`${t('terminations_title')} ${editingItem ? t('updated') : t('recorded')} ${t('successfully')}`);
                 setModalOpen(false);
                 fetchData();
             } else {
                 const firstError = data.errors ? Object.values(data.errors)[0] : data.message;
-                toast.error(Array.isArray(firstError) ? firstError[0] : firstError || 'Error saving');
+                toast.error(Array.isArray(firstError) ? firstError[0] : firstError || t('failed_save_msg'));
             }
         } catch { toast.error('An error occurred'); }
         finally { setIsSaving(false); }
@@ -210,14 +213,14 @@ const TerminationIndex = () => {
         <div>
             <FilterBar
                 icon={<IconBan className="w-6 h-6 text-primary" />}
-                title="Employee Terminations"
-                description="Track and manage employee termination records"
+                title={t('terminations_title')}
+                description={t('terminations_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
                 onAdd={handleCreate}
-                addLabel="Record Termination"
+                addLabel={t('record_termination_add')}
                 onRefresh={fetchData}
             />
 
@@ -230,23 +233,23 @@ const TerminationIndex = () => {
                             isSearch={!!search}
                             searchTerm={search}
                             onClearFilter={() => setSearch('')}
-                            title="No Termination records found"
-                            description="Record an employee termination to track offboarding."
-                            actionLabel="Record Termination"
+                            title={t('no_terminations_found_title')}
+                            description={t('record_termination_desc')}
+                            actionLabel={t('record_termination_add')}
                             onAction={handleCreate}
                         />
                     ) : (
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700">
                                 <tr>
-                                    <SortableHeader label="Employee" value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Type" value="termination_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Notice Date" value="notice_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <SortableHeader label="Termination Date" value="termination_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <th className="px-6 py-4">Exit Interview</th>
-                                    <th className="px-6 py-4">Document</th>
-                                    <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
-                                    <th className="px-6 py-4 text-right">Actions</th>
+                                    <SortableHeader label={t('employee_label')} value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('type_label')} value="termination_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('notice_date_label')} value="notice_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <SortableHeader label={t('termination_date_label')} value="termination_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <th className="px-6 py-4">{t('exit_interview_label')}</th>
+                                    <th className="px-6 py-4">{t('document_label')}</th>
+                                    <SortableHeader label={t('status_label')} value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
+                                    <th className="px-6 py-4 text-right">{t('actions_label')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -262,14 +265,18 @@ const TerminationIndex = () => {
                                                     </div>
                                                 )}
                                                 <div>
-                                                    <div className="font-semibold">{item.employee?.full_name}</div>
-                                                    <div className="text-xs text-gray-500">{item.employee?.employee_id}</div>
+                                                    <div className="font-semibold">
+                                                        <HighlightText text={item.employee?.full_name} highlight={search} />
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        <HighlightText text={item.employee?.employee_id} highlight={search} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                                {item.termination_type}
+                                                {t(item.termination_type.toLowerCase().replace(/ /g, '_'))}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-500">
@@ -280,7 +287,7 @@ const TerminationIndex = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             {item.exit_interview_conducted ? (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Conducted</span>
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{t('conducted')}</span>
                                             ) : (
                                                 <span className="text-gray-400 text-xs">—</span>
                                             )}
@@ -291,7 +298,7 @@ const TerminationIndex = () => {
                                                     href={item.document}
                                                     target="_blank"
                                                     rel="noreferrer"
-                                                    title="View Document"
+                                                    title={t('view_document_tooltip')}
                                                     className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-colors dark:bg-red-900/20 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/40"
                                                 >
                                                     <IconPaperclip size={15} />
@@ -302,7 +309,7 @@ const TerminationIndex = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig[item.status]?.className}`}>
-                                                {statusConfig[item.status]?.label ?? item.status}
+                                                {t(item.status)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -327,7 +334,7 @@ const TerminationIndex = () => {
 
             {/* Create / Edit Dialog */}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent className="sm:max-w-[750px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                <DialogContent className="sm:max-w-[750px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     {/* Sticky Header */}
                     <div className="shrink-0 bg-gradient-to-r from-red-500/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                         <div className="bg-red-500/20 p-3 rounded-2xl shadow-sm">
@@ -335,40 +342,40 @@ const TerminationIndex = () => {
                         </div>
                         <div>
                             <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                                {editingItem ? 'Edit Termination' : 'Record Termination'}
+                                {editingItem ? t('edit_termination_title') : t('record_termination_add')}
                             </DialogTitle>
                             <p className="text-sm text-gray-500 mt-0.5">
-                                {editingItem ? 'Update the termination details below.' : 'Fill in the details to log an employee termination.'}
+                                {editingItem ? t('update_termination_detail_desc') : t('fill_termination_detail_desc')}
                             </p>
                         </div>
                     </div>
 
                     {/* Scrollable Body */}
-                    <ScrollArea className="flex-1 min-h-0">
+                    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
                         <form id="termination-form" onSubmit={handleSubmit} className="p-6 space-y-6">
 
                             {/* Employee, Type & Status */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Termination Details</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('termination_details_title')}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="space-y-1">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Employee <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('employee_label')} <span className="text-red-500">*</span></label>
                                         <SearchableSelect
                                             options={employeeOptions}
                                             value={formData.employee_id}
                                             onChange={(val) => handleSelectChange(val, 'employee_id')}
-                                            placeholder="Search employee..."
-                                            searchPlaceholder="Type name to search..."
-                                            emptyMessage="No employees found"
+                                            placeholder={t('search_employee_placeholder')}
+                                            searchPlaceholder={t('type_name_search_placeholder')}
+                                            emptyMessage={t('no_employees_found_title')}
                                         />
                                     </div>
                                     <div className="space-y-2.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Termination Type <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('termination_type_label')} <span className="text-red-500">*</span></label>
                                         <Select onValueChange={(val) => handleSelectChange(val, 'termination_type')} value={formData.termination_type}>
-                                            <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder={t('select_type_placeholder')} /></SelectTrigger>
                                             <SelectContent>
-                                                {TERMINATION_TYPES.map(t => (
-                                                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                                                {TERMINATION_TYPES.map(t_val => (
+                                                    <SelectItem key={t_val} value={t_val}>{t(t_val.toLowerCase().replace(/ /g, '_'))}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -376,18 +383,18 @@ const TerminationIndex = () => {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('status_label')} <span className="text-red-500">*</span></label>
                                         <Select onValueChange={(val) => handleSelectChange(val, 'status')} value={formData.status}>
-                                            <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder={t('select_status_placeholder')} /></SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="pending">Pending</SelectItem>
-                                                <SelectItem value="approved">Approved</SelectItem>
-                                                <SelectItem value="rejected">Rejected</SelectItem>
+                                                <SelectItem value="pending">{t('pending')}</SelectItem>
+                                                <SelectItem value="approved">{t('approved')}</SelectItem>
+                                                <SelectItem value="rejected">{t('rejected')}</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Notice Period (days)</label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('notice_period_days_label')}</label>
                                         <Input type="number" name="notice_period" value={formData.notice_period} onChange={handleChange} min={0} />
                                     </div>
                                 </div>
@@ -395,22 +402,22 @@ const TerminationIndex = () => {
 
                             {/* Dates */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Key Dates</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('key_dates_title')}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Notice Date</label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('notice_date_label')}</label>
                                         <DatePicker
                                             value={formData.notice_date}
                                             onChange={(d) => setFormData((prev: any) => ({ ...prev, notice_date: toDateStr(d) }))}
-                                            placeholder="Select notice date"
+                                            placeholder={t('select_notice_date_placeholder')}
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Termination Date <span className="text-red-500">*</span></label>
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('termination_date_label')} <span className="text-red-500">*</span></label>
                                         <DatePicker
                                             value={formData.termination_date}
                                             onChange={(d) => setFormData((prev: any) => ({ ...prev, termination_date: toDateStr(d) }))}
-                                            placeholder="Select termination date"
+                                            placeholder={t('select_termination_date_placeholder')}
                                         />
                                     </div>
                                 </div>
@@ -418,20 +425,20 @@ const TerminationIndex = () => {
 
                             {/* Reason & Description */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Reason & Description</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('reason_description_title')}</h3>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Reason</label>
-                                    <Input name="reason" value={formData.reason} onChange={handleChange} placeholder="Brief reason for termination" />
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('reason_label')}</label>
+                                    <Input name="reason" value={formData.reason} onChange={handleChange} placeholder={t('termination_reason_placeholder')} />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                                    <Textarea name="description" value={formData.description} onChange={handleChange} placeholder="Further details about this termination..." rows={3} className="resize-none" />
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('description_label')}</label>
+                                    <Textarea name="description" value={formData.description} onChange={handleChange} placeholder={t('termination_description_placeholder')} rows={3} className="resize-none" />
                                 </div>
                             </div>
 
                             {/* Document */}
                             <div className="space-y-3">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Supporting Document</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('supporting_document_title')}</h3>
                                 <div
                                     className={`relative group border-2 border-dashed rounded-xl p-5 transition-all duration-200 cursor-pointer ${formData.document ? 'border-primary/50 bg-primary/5' : 'border-gray-200 dark:border-gray-700 hover:border-primary/40 hover:bg-primary/5'}`}
                                     onClick={() => setMediaSelectorOpen(true)}
@@ -441,8 +448,8 @@ const TerminationIndex = () => {
                                             <IconFileText stroke={1.5} size={28} />
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">Termination Document</p>
-                                            <p className="text-xs text-gray-500 mt-1">{formData.document ? 'Click to change document' : 'Upload or select PDF/Image'}</p>
+                                            <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{t('termination_document_label')}</p>
+                                            <p className="text-xs text-gray-500 mt-1">{formData.document ? t('click_change_document_label') : t('upload_select_pdf_image_label')}</p>
                                         </div>
                                     </div>
                                     {formData.document && (
@@ -460,7 +467,7 @@ const TerminationIndex = () => {
 
                             {/* Exit Interview */}
                             <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Exit Interview</h3>
+                                <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{t('exit_interview_title')}</h3>
                                 <label className="flex items-center gap-3 cursor-pointer w-fit">
                                     <div className="relative">
                                         <input
@@ -473,39 +480,39 @@ const TerminationIndex = () => {
                                         <div className="w-10 h-6 bg-gray-200 dark:bg-gray-700 peer-checked:bg-primary rounded-full transition-colors" />
                                         <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4" />
                                     </div>
-                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Exit Interview Conducted</span>
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('exit_interview_conducted_label')}</span>
                                 </label>
 
                                 {formData.exit_interview_conducted && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pl-1">
                                         <div className="space-y-1.5">
-                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Exit Interview Date</label>
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('exit_interview_date_label')}</label>
                                             <DatePicker
                                                 value={formData.exit_interview_date}
                                                 onChange={(d) => setFormData((prev: any) => ({ ...prev, exit_interview_date: toDateStr(d) }))}
-                                                placeholder="Select interview date"
+                                                placeholder={t('select_interview_date_placeholder')}
                                             />
                                         </div>
                                         <div className="space-y-1.5 md:col-span-2">
-                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Exit Feedback</label>
-                                            <Textarea name="exit_feedback" value={formData.exit_feedback} onChange={handleChange} placeholder="Summary of the exit interview feedback..." rows={3} className="resize-none" />
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('exit_feedback_label')}</label>
+                                            <Textarea name="exit_feedback" value={formData.exit_feedback} onChange={handleChange} placeholder={t('exit_feedback_placeholder')} rows={3} className="resize-none" />
                                         </div>
                                     </div>
                                 )}
                             </div>
                         </form>
-                    </ScrollArea>
+                    </PerfectScrollbar>
 
                     {/* Sticky Footer */}
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
-                        <Button type="button" variant="ghost" className="px-5" onClick={() => setModalOpen(false)}>Cancel</Button>
+                        <Button type="button" variant="ghost" className="px-5" onClick={() => setModalOpen(false)}>{t('cancel_btn_label')}</Button>
                         <Button
                             type="submit"
                             form="termination-form"
                             disabled={isSaving}
                             className="px-7 bg-red-500 hover:bg-red-600 text-white shadow-md shadow-red-500/20"
                         >
-                            {isSaving ? 'Processing...' : (editingItem ? 'Save Changes' : 'Record Termination')}
+                            {isSaving ? t('processing_label') : (editingItem ? t('save_changes_btn_label') : t('record_termination_add'))}
                         </Button>
                     </div>
                 </DialogContent>
@@ -516,8 +523,8 @@ const TerminationIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Termination Record"
-                message="Are you sure you want to delete this termination record? This action cannot be undone."
+                title={t('delete_termination_title')}
+                message={t('delete_termination_confirm')}
             />
 
             <MediaSelector

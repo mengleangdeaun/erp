@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../components/ui/button';
 import { toast } from 'sonner';
 import { PlusCircle, ClipboardList, Info, Trash2, CheckCircle2, Clock, X } from 'lucide-react';
@@ -19,6 +20,7 @@ import DeleteModal from '../../../components/DeleteModal';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import RejectModal from '../../../components/RejectModal';
 import DetailDialog from './DetailDialog';
+import HighlightText from '../../../components/ui/HighlightText';
 
 interface StockAdjustment {
     id: number;
@@ -75,6 +77,7 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
 import { useStockAdjustments, useDeleteStockAdjustment, useApproveStockAdjustment, useRejectStockAdjustment } from '@/hooks/useInventoryData';
 
 const StockAdjustmentsPage = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const { formatDate } = useFormatDate();
 
@@ -116,8 +119,8 @@ const StockAdjustmentsPage = () => {
     const [selectedDetailId, setSelectedDetailId] = useState<number | null>(null);
 
     useEffect(() => {
-        dispatch(setPageTitle('Stock Adjustments'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('stock_adjustments')));
+    }, [dispatch, t]);
 
     const confirmDelete = (id: number) => {
         setItemToDelete(id);
@@ -184,24 +187,24 @@ const StockAdjustmentsPage = () => {
         <div>
             <FilterBar
                 icon={<IconAdjustments className="w-6 h-6 text-primary" />}
-                title="Stock Adjustments"
-                description="Manage manual stock corrections and audit trails"
+                title={t('stock_adjustments')}
+                description={t('manage_corrections_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={() => window.location.href = '/inventory/stock-adjustments/create'}
-                addLabel="New Adjustment"
-                onRefresh={fetchData}
+                addLabel={t('new_adjustment')}
+                onRefresh={() => { fetchData(); }}
             />
 
             {loading ? (
                 <TableSkeleton columns={6} rows={5} />
             ) : adjustments.length === 0 ? (
                 <EmptyState
-                    title="No Stock Adjustments Found"
-                    description="Manual stock corrections will appear here."
-                    actionLabel="New Adjustment"
+                    title={t('no_adjustments_found')}
+                    description={t('manual_corrections_appear_here')}
+                    actionLabel={t('new_adjustment')}
                     onAction={() => window.location.href = '/inventory/stock-adjustments/create'}
                 />
             ) : (
@@ -210,29 +213,29 @@ const StockAdjustmentsPage = () => {
                         <thead>
                             <tr>
                                 <SortableHeader
-                                    label="Adj Number"
+                                    label={t('adj_number')}
                                     value="adjustment_no"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Date"
+                                    label={t('date')}
                                     value="date"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
-                                <th className="px-4 py-3 text-left">Items</th>
-                                <th>Reason / Note</th>
+                                <th className="px-4 py-3 text-left">{t('items')}</th>
+                                <th>{t('reason_note')}</th>
                                 <SortableHeader
-                                    label="Status"
+                                    label={t('status')}
                                     value="status"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
-                                <th className="text-right">Actions</th>
+                                <th className="text-right">{t('actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -240,28 +243,35 @@ const StockAdjustmentsPage = () => {
                                 const StatusIcon = STATUS_CONFIG[adj.status]?.icon || Info;
                                 return (
                                     <tr key={adj.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                        <td className="font-mono font-semibold text-primary">{adj.adjustment_no}</td>
+                                        <td className="font-mono font-semibold text-primary">
+                                            <HighlightText text={adj.adjustment_no} highlight={search} />
+                                        </td>
                                         <td className="text-gray-600 dark:text-gray-300">
                                             {formatDate(adj.date)}
                                         </td>
                                         <td>
                                             <div className="flex flex-col">
                                                 <span className="font-medium text-gray-900 dark:text-white">
-                                                    {adj.items.length} Product{adj.items.length !== 1 ? 's' : ''}
+                                                    {adj.items.length} {adj.items.length !== 1 ? t('products') : t('product')}
                                                 </span>
                                                 <span className="text-[10px] text-gray-400 truncate max-w-[200px]">
-                                                    {adj.items.slice(0, 2).map((i: any) => i.product?.name).join(', ')}
+                                                    {adj.items.slice(0, 2).map((i: any, idx: number) => (
+                                                        <span key={idx}>
+                                                            <HighlightText text={i.product?.name} highlight={search} />
+                                                            {idx < Math.min(adj.items.length, 2) - 1 ? ', ' : ''}
+                                                        </span>
+                                                    ))}
                                                     {adj.items.length > 2 ? '...' : ''}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="text-gray-500 max-w-xs truncate italic">
-                                            {adj.notes || '-'}
+                                            <HighlightText text={adj.notes || '-'} highlight={search} />
                                         </td>
                                         <td>
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[adj.status]?.class}`}>
                                                 <StatusIcon className="w-3 h-3" />
-                                                {STATUS_CONFIG[adj.status]?.label}
+                                                {t(adj.status.toLowerCase())}
                                             </span>
                                         </td>
                                         <td className="text-right">
@@ -301,8 +311,8 @@ const StockAdjustmentsPage = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={deleteMutation.isPending}
-                title="Delete Adjustment"
-                message="Are you sure you want to delete this draft adjustment? This action cannot be undone."
+                title={t('delete_adjustment')}
+                message={t('delete_adj_confirm')}
             />
 
             <ConfirmationModal
@@ -310,9 +320,9 @@ const StockAdjustmentsPage = () => {
                 setIsOpen={setApproveModalOpen}
                 onConfirm={executeApprove}
                 loading={approveMutation.isPending}
-                title="Approve Stock Adjustment"
-                description="Are you sure you want to approve this adjustment? This will update the inventory stock levels permanently."
-                confirmText="Approve Adjustment"
+                title={t('approve_stock_adjustment')}
+                description={t('approve_adj_confirm')}
+                confirmText={t('approve_adjustment')}
                 confirmVariant="success"
             />
 
@@ -321,8 +331,8 @@ const StockAdjustmentsPage = () => {
                 setIsOpen={setRejectModalOpen}
                 onConfirm={executeReject}
                 loading={rejectMutation.isPending}
-                title="Reject Stock Adjustment"
-                description="Please provide a clear reason for rejecting this adjustment. This will be visible to the user who created it."
+                title={t('reject_stock_adjustment')}
+                description={t('reject_adj_description')}
             />
 
             <DetailDialog

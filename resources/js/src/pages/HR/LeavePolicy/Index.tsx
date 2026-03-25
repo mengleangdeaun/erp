@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { Label } from '../../../components/ui/label';
-import { ScrollArea } from '../../../components/ui/scroll-area';   
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { Checkbox } from '../../../components/ui/checkbox';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
@@ -18,6 +18,7 @@ import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { IconClipboardHeart } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
 
 const LeavePolicyIndex = () => {
     const [leavePolicies, setLeavePolicies] = useState<any[]>([]);
@@ -337,13 +338,15 @@ const LeavePolicyIndex = () => {
                         <tbody>
                             {paginatedLeavePolicies.map((policy: any) => (
                                 <tr key={policy.id}>
-                                    <td className="whitespace-nowrap font-medium">{policy.name}</td>
+                                    <td className="whitespace-nowrap font-medium">
+                                        <HighlightText text={policy.name} highlight={search} />
+                                    </td>
                                     <td>
                                         <div className="flex items-center gap-2">
                                             {policy.leave_type && (
                                                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: policy.leave_type?.color || '#000000' }}></div>
                                             )}
-                                            {policy.leave_type?.name || 'N/A'}
+                                            <HighlightText text={policy.leave_type?.name || 'N/A'} highlight={search} />
                                         </div>
                                     </td>
                                     <td className="capitalize">{policy.accrual_type}</td>
@@ -384,7 +387,7 @@ const LeavePolicyIndex = () => {
 
 
 <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-  <DialogContent className="sm:max-w-[700px] w-[95vw] h-[90vh] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+  <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
     {/* Header */}
     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
       <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -402,7 +405,7 @@ const LeavePolicyIndex = () => {
       </div>
     </div>
 
-    <ScrollArea className="flex-1 min-h-0">
+    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
       <form id="leave-policy-form" onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
@@ -563,7 +566,7 @@ const LeavePolicyIndex = () => {
                 name="require_approval"
                 checked={formData.require_approval}
                 onCheckedChange={(checked) => {
-                  setFormData(prev => ({ ...prev, require_approval: checked }));
+                  setFormData(prev => ({ ...prev, require_approval: !!checked }));
                 }}
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
@@ -576,7 +579,7 @@ const LeavePolicyIndex = () => {
                 name="status"
                 checked={formData.status}
                 onCheckedChange={(checked) => {
-                  setFormData(prev => ({ ...prev, status: checked }));
+                  setFormData(prev => ({ ...prev, status: !!checked }));
                 }}
               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
@@ -586,7 +589,7 @@ const LeavePolicyIndex = () => {
           </div>
         </div>
       </form>
-    </ScrollArea>
+    </PerfectScrollbar>
 
     {/* Sticky Footer */}
     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,6 +31,7 @@ import SerialDetailsDrawer from './SerialDetailsDrawer';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 
 const SerialIndex = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -62,8 +64,8 @@ const SerialIndex = () => {
     const loading = useDelayedLoading(loadingSerials, 500);
 
     useEffect(() => {
-        dispatch(setPageTitle('Roll Inventory Management'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('roll_inventory_mgmt')));
+    }, [dispatch, t]);
 
     const branchOptions = useMemo(() => 
         branches.filter((b: any) => b.status === 'active').map((b: any) => ({ value: b.id, label: b.name, description: b.code })),
@@ -110,8 +112,8 @@ const SerialIndex = () => {
         <div className="space-y-6">
             <FilterBar
                 icon={<IconRuler2 className="w-6 h-6 text-primary" />}
-                title="Roll Inventory Management"
-                description="Monitor and manage serialized film rolls across all branches"
+                title={t('roll_inventory_mgmt')}
+                description={t('monitor_manage_rolls_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
@@ -120,7 +122,7 @@ const SerialIndex = () => {
                 onClearFilters={handleClearAll}
                 hasActiveFilters={!!selectedBranchId || !!selectedLocationId || !!selectedProductId}
                 onAdd={() => setIsAddOpen(true)}
-                addLabel="Register New Roll"
+                addLabel={t('register_new_roll')}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -130,7 +132,7 @@ const SerialIndex = () => {
                         <CardHeader className="pb-4 flex flex-row items-center justify-between">
                             <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-gray-500">
                                 <IconAdjustmentsHorizontal size={16} />
-                                Filters
+                                {t('filters')}
                             </CardTitle>
                             {(selectedBranchId || selectedProductId || selectedLocationId) && (
                                 <Button 
@@ -139,48 +141,48 @@ const SerialIndex = () => {
                                     onClick={handleClearAll}
                                     className="h-7 px-2 text-[10px] font-black uppercase text-rose-500 hover:text-rose-600 hover:bg-rose-50"
                                 >
-                                    Clear All
+                                    {t('clear_all')}
                                 </Button>
                             )}
                         </CardHeader>
                         <div className="border-b border-gray-100 dark:border-gray-800 mx-6 mb-4" />
                         <CardContent className="space-y-6">
                             <div>
-                                <Label className="text-[11px] font-black uppercase text-gray-400">Branch</Label>
+                                <Label className="text-[11px] font-black uppercase text-gray-400">{t('branch')}</Label>
                                 <SearchableSelect
-                                    options={[{ value: 'all', label: 'All Branches' }, ...branchOptions]}
+                                    options={[{ value: 'all', label: t('all_branches') }, ...branchOptions]}
                                     value={selectedBranchId || 'all'}
                                     onChange={(val) => {
                                         setSelectedBranchId(val === 'all' ? null : val);
                                         setSelectedLocationId(null); // Reset location when branch changes
                                     }}
-                                    placeholder="All Branches"
+                                    placeholder={t('all_branches')}
                                     loading={loadingBranches}
                                 />
                             </div>
 
                             <div>
-                                <Label className="text-[11px] font-black uppercase text-gray-400">Location</Label>
+                                <Label className="text-[11px] font-black uppercase text-gray-400">{t('location')}</Label>
                                 <SearchableSelect
-                                    options={[{ value: 'all', label: 'All Locations' }, ...locationOptions]}
+                                    options={[{ value: 'all', label: t('all_locations') }, ...locationOptions]}
                                     value={selectedLocationId || 'all'}
                                     onChange={(val) => setSelectedLocationId(val === 'all' ? null : val)}
-                                    placeholder="All Locations"
+                                    placeholder={t('all_locations')}
                                     disabled={!selectedBranchId && selectedBranchId !== null} 
                                     loading={loadingLocations}
-                                    emptyMessage={!selectedBranchId ? "Select a branch first" : "No locations found"}
+                                    emptyMessage={!selectedBranchId ? t('select_branch_first') : t('no_data')}
                                 />
                             </div>
 
                             <div>
-                                <Label className="text-[11px] font-black uppercase text-gray-400">Product</Label>
+                                <Label className="text-[11px] font-black uppercase text-gray-400">{t('product')}</Label>
                                 <SearchableSelect
-                                    options={[{ value: 'all', label: 'All Products' }, ...productOptions]}
+                                    options={[{ value: 'all', label: t('all_products') }, ...productOptions]}
                                     value={selectedProductId || 'all'}
                                     onChange={(val) => setSelectedProductId(val === 'all' ? null : val)}
-                                    placeholder="All Products"
+                                    placeholder={t('all_products')}
                                     loading={loadingProducts || (!!selectedBranchId && loadingBranchProducts)}
-                                    emptyMessage={!!selectedBranchId && branchProductsRaw.length === 0 ? "No products assigned to this branch" : "No products found"}
+                                    emptyMessage={!!selectedBranchId && branchProductsRaw.length === 0 ? t('no_products_assigned_branch') : t('no_data')}
                                 />
                             </div>
                         </CardContent>
@@ -196,12 +198,12 @@ const SerialIndex = () => {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50/50 dark:bg-gray-900/50">
-                                        <SortableHeader label="Roll Serial" value="serial_number" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-6 py-4" />
-                                        <SortableHeader label="Product" value="product_id" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-6 py-4" />
-                                        <SortableHeader label="Remaining" value="current_quantity" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-6 py-4 text-center" />
-                                        <SortableHeader label="Branch & Location" value="branch_id" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-6 py-4" />
-                                        <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-6 py-4 text-center" />
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
+                                        <SortableHeader label={t('roll_serial')} value="serial_number" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-6 py-4" />
+                                        <SortableHeader label={t('product')} value="product_id" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-6 py-4" />
+                                        <SortableHeader label={t('remaining')} value="current_quantity" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-6 py-4 text-center" />
+                                        <SortableHeader label={t('branch_location')} value="branch_id" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-6 py-4" />
+                                        <SortableHeader label={t('status')} value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-6 py-4 text-center" />
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">{t('actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800 text-sm">
@@ -261,7 +263,7 @@ const SerialIndex = () => {
                                                         variant={serial.status === 'Available' ? 'success' : serial.status === 'Empty' ? 'secondary' : 'destructive'} 
                                                         className="h-5 px-3 text-[9px] font-black uppercase tracking-widest rounded-full"
                                                     >
-                                                        {serial.status}
+                                                        {t(serial.status.toLowerCase())}
                                                     </Badge>
                                                 </td>
                                                 <td className="px-6 py-5 text-right">
@@ -271,7 +273,7 @@ const SerialIndex = () => {
                                                             setIsDetailsOpen(true);
                                                         }}
                                                         icon={IconInfoCircle}
-                                                        label="View Details"
+                                                        label={t('view_details')}
                                                         style="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50"
                                                     />
                                                 </td>
@@ -280,7 +282,7 @@ const SerialIndex = () => {
                                     ) : (
                                         <tr>
                                             <td colSpan={6}>
-                                                <EmptyState isSearch={!!search} searchTerm={search} title="No film rolls found" />
+                                                <EmptyState isSearch={!!search} searchTerm={search} title={t('no_film_rolls_found')} />
                                             </td>
                                         </tr>
                                     )}

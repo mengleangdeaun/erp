@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
 import { IconScale, IconChevronDown, IconChevronRight, IconPackage, IconBuildingSkyscraper, IconMapPin, IconRuler2, IconHash } from '@tabler/icons-react';
@@ -10,8 +11,10 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import HighlightText from '../../../components/ui/HighlightText';
 
 const StockBalanceIndex = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const [branchId, setBranchId] = useState('');
     const [locationId, setLocationId] = useState('');
@@ -20,8 +23,8 @@ const StockBalanceIndex = () => {
     const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
     useEffect(() => {
-        dispatch(setPageTitle('Stock Balance'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('stock_balance')));
+    }, [dispatch, t]);
 
     const { data, isLoading, refetch } = useStockBalance({ 
         branch_id: branchId, 
@@ -32,9 +35,9 @@ const StockBalanceIndex = () => {
     const { data: locations = [] } = useInventoryLocations();
 
     const branchOptions = useMemo(() => [
-        { value: '', label: 'All Branches' },
+        { value: '', label: t('all_branches') },
         ...branches.map((b: any) => ({ value: String(b.id), label: b.name }))
-    ], [branches]);
+    ], [branches, t]);
 
     const locationOptions = useMemo(() => {
         let filtered = locations;
@@ -42,10 +45,10 @@ const StockBalanceIndex = () => {
             filtered = locations.filter((l: any) => String(l.branch_id) === branchId);
         }
         return [
-            { value: '', label: 'All Locations' },
+            { value: '', label: t('all_locations') },
             ...filtered.map((l: any) => ({ value: String(l.id), label: l.name }))
         ];
-    }, [locations, branchId]);
+    }, [locations, branchId, t]);
 
     // Reset location when branch changes
     useEffect(() => {
@@ -78,8 +81,8 @@ const StockBalanceIndex = () => {
         <div className="space-y-6">
             <FilterBar 
                 icon={<IconScale className="w-6 h-6 text-primary" />} 
-                title="Stock Balance Report" 
-                description="Aggregated inventory levels across all branches and locations"
+                title={t('stock_balance_report')} 
+                description={t('aggregated_inventory_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
@@ -92,7 +95,7 @@ const StockBalanceIndex = () => {
                             options={branchOptions}
                             value={branchId}
                             onChange={(val) => setBranchId(val as string)}
-                            placeholder="Filter by Branch"
+                            placeholder={t('filter_by_branch')}
                         />
                     </div>
                     <div className="w-full sm:w-60">
@@ -100,7 +103,7 @@ const StockBalanceIndex = () => {
                             options={locationOptions}
                             value={locationId}
                             onChange={(val) => setLocationId(val as string)}
-                            placeholder="Filter by Location"
+                            placeholder={t('filter_by_location')}
                             disabled={!branchId}
                         />
                     </div>
@@ -111,8 +114,8 @@ const StockBalanceIndex = () => {
                 <TableSkeleton columns={5} rows={10} />
             ) : filteredData.length === 0 ? (
                 <EmptyState 
-                    title="No Stock Data Found"
-                    description={search || branchId || locationId ? "Try adjusting your filters to see more results." : "Inventory is currently empty."}
+                    title={t('no_stock_data_found')}
+                    description={search || branchId || locationId ? t('adjust_filters_msg') : t('inventory_empty_msg')}
                     isSearch={!!search || !!branchId || !!locationId}
                     onClearFilter={() => {
                         setSearch('');
@@ -127,10 +130,10 @@ const StockBalanceIndex = () => {
                             <thead>
                                 <tr className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800 text-left">
                                     <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 w-10"></th>
-                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Product</th>
-                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 text-right">Bulk Stock</th>
-                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 text-right">Serial/Rolls</th>
-                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 text-right">Total Available</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">{t('product')}</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 text-right">{t('bulk_stock')}</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 text-right">{t('serial_rolls')}</th>
+                                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 text-right">{t('total_available')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -155,8 +158,17 @@ const StockBalanceIndex = () => {
                                                         <IconPackage className="text-primary w-5 h-5" />
                                                     </div>
                                                     <div>
-                                                        <div className="font-bold text-gray-900 dark:text-white">{product.name}</div>
-                                                        <div className="text-xs text-gray-500 font-mono tracking-tighter">{product.code} {product.sku && `• ${product.sku}`}</div>
+                                                        <HighlightText 
+                                                            text={product.name} 
+                                                            highlight={search} 
+                                                            className="font-bold text-gray-900 dark:text-white" 
+                                                        />
+                                                        <div className="text-xs text-gray-500 font-mono tracking-tighter">
+                                                            <HighlightText text={product.code} highlight={search} />
+                                                            {product.sku && (
+                                                                <> • <HighlightText text={product.sku} highlight={search} /></>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -176,12 +188,12 @@ const StockBalanceIndex = () => {
                                                     <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
                                                         <h4 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
                                                             <div className="h-px w-8 bg-gray-200 dark:bg-gray-800"></div>
-                                                            Network Distribution Breakdown
+                                                            {t('network_distribution')}
                                                             <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800"></div>
                                                         </h4>
                                                         
                                                         { (product.branches || []).length === 0 ? (
-                                                            <div className="text-sm italic text-gray-400 py-2">No physical distribution records found for this product.</div>
+                                                            <div className="text-sm italic text-gray-400 py-2">{t('no_distribution_records')}</div>
                                                         ) : (
                                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                                                 {(product.branches || []).map((branch: any) => (
@@ -205,7 +217,7 @@ const StockBalanceIndex = () => {
                                                                                             <Popover>
                                                                                                 <PopoverTrigger asChild>
                                                                                                     <button className="text-[10px] font-black bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 rounded uppercase self-center hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors shadow-sm active:scale-95">
-                                                                                                        {loc.serial_qty} Rolls
+                                                                                                        {loc.serial_qty} {t('rolls')}
                                                                                                     </button>
                                                                                                 </PopoverTrigger>
                                                                                                 <PopoverContent className="w-80 p-0 overflow-hidden shadow-2xl border-amber-100 dark:border-amber-900/50" side="right" align="start">
@@ -215,7 +227,7 @@ const StockBalanceIndex = () => {
                                                                                                                 <IconPackage size={16} className="text-amber-600" />
                                                                                                             </div>
                                                                                                             <div>
-                                                                                                                <div className="text-xs font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">Available Rolls</div>
+                                                                                                                <div className="text-xs font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">{t('available_rolls')}</div>
                                                                                                                 <div className="text-[10px] text-amber-600/60 font-medium">{loc.name}</div>
                                                                                                             </div>
                                                                                                         </div>
@@ -274,9 +286,9 @@ const StockBalanceIndex = () => {
                                                                         </div>
 
                                                                         <div className="mt-4 pt-3 border-t border-gray-50 dark:border-gray-800/50 flex justify-between items-end relative">
-                                                                            <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Branch Total</span>
+                                                                            <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{t('branch_total')}</span>
                                                                             <div className="text-right">
-                                                                                <div className="text-xs font-bold text-primary">{(branch.bulk_qty + branch.serial_qty).toLocaleString()} units</div>
+                                                                                <div className="text-xs font-bold text-primary">{(branch.bulk_qty + branch.serial_qty).toLocaleString()} {t('units')}</div>
                                                                             </div>
                                                                         </div>
                                                                     </div>

@@ -12,8 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { toast } from 'sonner';
-import { IconCar, IconLoader2 } from '@tabler/icons-react';
 import { useCRMCreateVehicle, useCRMUpdateVehicle, useCRMCustomersMinimal, useCRMVehicleBrands, useCRMVehicleModels } from '@/hooks/useCRMData';
+import { useTranslation } from 'react-i18next';
+import { IconCar, IconLoader2 } from '@tabler/icons-react';
 
 interface VehicleDialogProps {
     isOpen: boolean;
@@ -23,6 +24,7 @@ interface VehicleDialogProps {
 }
 
 const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProps) => {
+    const { t } = useTranslation();
     const createMutation = useCRMCreateVehicle();
     const updateMutation = useCRMUpdateVehicle();
     
@@ -83,22 +85,22 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.customer_id || !formData.brand_id || !formData.model_id || !formData.plate_number) {
-            toast.error('Please fill in all required fields');
+            toast.error(t('fill_required_fields'));
             return;
         }
 
         try {
             if (vehicle) {
                 await updateMutation.mutateAsync({ id: vehicle.id, data: formData });
-                toast.success('Vehicle updated successfully');
+                toast.success(t('success_update_vehicle'));
             } else {
                 await createMutation.mutateAsync(formData);
-                toast.success('Vehicle registered successfully');
+                toast.success(t('success_register_vehicle'));
             }
             setIsOpen(false);
             onSave();
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'An error occurred while saving');
+            toast.error(error?.response?.data?.message || t('error_saving'));
         }
     };
 
@@ -111,10 +113,10 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
                             <div className="p-2 rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
                                 <IconCar size={24} />
                             </div>
-                            {vehicle ? 'Edit Vehicle Info' : 'Register New Vehicle'}
+                            {vehicle ? t('edit_vehicle_info') : t('register_new_vehicle')}
                         </DialogTitle>
                         <DialogDescription className="text-gray-500 font-medium">
-                            Enter the vehicle details for your customer's fleet.
+                            {t('vehicle_details_desc')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -123,18 +125,18 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
                             <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-[1px]">
                                 <div className="flex flex-col items-center gap-3">
                                     <IconLoader2 className="w-10 h-10 text-primary animate-spin" />
-                                    <p className="text-sm font-bold text-primary animate-pulse uppercase tracking-widest">Retrieving Data...</p>
+                                    <p className="text-sm font-bold text-primary animate-pulse uppercase tracking-widest">{t('retrieving_data')}</p>
                                 </div>
                             </div>
                         )}
                         <div className="grid grid-cols-1 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">Owner (Customer) <span className="text-danger">*</span></Label>
+                                <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">{t('owner_customer')} <span className="text-danger">*</span></Label>
                                 <SearchableSelect 
-                                    options={customers.map(c => ({ value: c.id, label: `${c.name || 'No Name'} (${c.customer_code}) - ${c.phone || ''}` }))}
+                                    options={customers.map((c: any) => ({ value: c.id, label: `${c.name || 'No Name'} (${c.customer_code}) - ${c.phone || ''}` }))}
                                     value={formData.customer_id}
                                     onChange={(val) => setFormData({ ...formData, customer_id: val as number })}
-                                    placeholder="Search Customer..."
+                                    placeholder={t('search_customer')}
                                     className="h-11 font-bold text-sm bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-800"
                                     disabled={fetchingData}
                                 />
@@ -142,23 +144,23 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">Brand <span className="text-danger">*</span></Label>
+                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">{t('brand_label')} <span className="text-danger">*</span></Label>
                                     <SearchableSelect 
-                                        options={brands.map(b => ({ value: b.id, label: b.name }))}
+                                        options={brands.map((b: any) => ({ value: b.id, label: b.name }))}
                                         value={formData.brand_id}
                                         onChange={handleBrandChange}
-                                        placeholder="Select Brand..."
+                                        placeholder={t('select_brand')}
                                         className="h-11 font-bold text-sm bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-800"
                                         disabled={fetchingData}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">Model <span className="text-danger">*</span></Label>
+                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">{t('model_label')} <span className="text-danger">*</span></Label>
                                     <SearchableSelect 
-                                        options={models.map(m => ({ value: m.id, label: m.name }))}
+                                        options={models.map((m: any) => ({ value: m.id, label: m.name }))}
                                         value={formData.model_id}
                                         onChange={(val) => setFormData({ ...formData, model_id: val as number })}
-                                        placeholder={formData.brand_id ? "Select Model..." : "Select Brand First"}
+                                        placeholder={formData.brand_id ? t('select_model') : t('select_brand_first')}
                                         className="h-11 font-bold text-sm bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-800"
                                         disabled={!formData.brand_id}
                                     />
@@ -167,7 +169,7 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">Plate Number <span className="text-danger">*</span></Label>
+                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">{t('plate_number')} <span className="text-danger">*</span></Label>
                                     <Input 
                                         value={formData.plate_number}
                                         onChange={e => setFormData({ ...formData, plate_number: e.target.value.toUpperCase() })}
@@ -176,7 +178,7 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">VIN (Last 4)</Label>
+                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">{t('vin_last_4_label')}</Label>
                                     <Input 
                                         value={formData.vin_last_4}
                                         onChange={e => setFormData({ ...formData, vin_last_4: e.target.value.toUpperCase().slice(0, 4) })}
@@ -189,7 +191,7 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
 
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">Color</Label>
+                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">{t('color_label')}</Label>
                                     <Input 
                                         value={formData.color}
                                         onChange={e => setFormData({ ...formData, color: e.target.value })}
@@ -198,7 +200,7 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">Year</Label>
+                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">{t('year_label')}</Label>
                                     <Input 
                                         type="number"
                                         value={formData.year}
@@ -208,7 +210,7 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">Mileage</Label>
+                                    <Label className="text-[11px] font-bold uppercase text-gray-400 tracking-widest ml-1">{t('mileage_label')}</Label>
                                     <Input 
                                         type="number"
                                         value={formData.current_mileage}
@@ -222,14 +224,14 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
                     </div>
 
                     <DialogFooter className="p-6 pt-4 bg-gray-50 dark:bg-gray-900/50 border-t dark:border-gray-800">
-                        <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="font-bold text-gray-500">Cancel</Button>
+                        <Button type="button" variant="ghost" onClick={() => setIsOpen(false)} className="font-bold text-gray-500">{t('cancel')}</Button>
                         <Button 
                             type="submit" 
                             disabled={loading}
                             className="bg-primary hover:bg-primary/90 text-white font-bold px-8 shadow-lg shadow-primary/20"
                         >
                             {loading ? <IconLoader2 className="mr-2 animate-spin" size={18} /> : null}
-                            {vehicle ? 'Update Vehicle' : 'Register Vehicle'}
+                            {vehicle ? t('update_vehicle_btn') : t('register_vehicle_btn')}
                         </Button>
                     </DialogFooter>
                 </form>

@@ -125,11 +125,11 @@ class JobCardController extends Controller
         return $query->get();
     }
 
-    public function complete($id)
+    public function complete($id, \App\Services\Inventory\StockService $stockService)
     {
         $jobCard = JobCard::with(['materialUsage.serial', 'order'])->findOrFail($id);
         
-        DB::transaction(function() use ($jobCard) {
+        DB::transaction(function() use ($jobCard, $stockService) {
             $jobCard->update([
                 'status' => 'Completed',
                 'completed_at' => now()
@@ -168,40 +168,41 @@ class JobCardController extends Controller
                     ]);
                 }
 
-                // 2. Deduct from General Stock
-                // Find the primary location for the branch
+                // 2. Record Movement
                 $branchId = $jobCard->branch_id ?? $jobCard->order->branch_id;
                 $location = \App\Models\Inventory\InventoryLocation::where('branch_id', $branchId)
                     ->where('is_primary', true)
                     ->first() ?? \App\Models\Inventory\InventoryLocation::where('branch_id', $branchId)->first();
 
-                if (!$location) {
+                if ($location) {
+                    if ($usage->serial) {
+                        // Serialized Item: Log movement but DON'T deduct from general stock (roll count)
+                        \App\Models\Inventory\InventoryStockMovement::create([
+                            'product_id' => $usage->product_id,
+                            'location_id' => $location->id,
+                            'serial_id' => $usage->serial_id,
+                            'user_id' => auth()->id(),
+                            'movement_type' => 'JOB_CARD_CONSUMPTION',
+                            'quantity' => -$qty,
+                            'previous_quantity' => $usage->serial->current_quantity + $qty, // Reconstruct prev from current
+                            'current_quantity' => $usage->serial->current_quantity,
+                            'reference_type' => 'Job Card',
+                            'reference_id' => $jobCard->id,
+                            'reason' => 'Consumed in Job Card #' . $jobCard->job_no . ' (Serial: ' . $usage->serial->serial_number . ')'
+                        ]);
+                    } else {
+                        // Bulk Item: Deduct from general stock as usual
+                        $stockService->updateStock(
+                            $usage->product_id,
+                            $location->id,
+                            -$qty,
+                            'JOB_CARD_CONSUMPTION',
+                            $jobCard,
+                            'Consumed in Job Card #' . $jobCard->job_no
+                        );
+                    }
+                } else {
                     \Log::warning("No location found for branch ID: {$branchId}. Skipping stock deduction for product: {$usage->product_id}");
-                    continue;
-                }
-
-                $stock = \App\Models\Inventory\InventoryStock::firstOrCreate(
-                    ['product_id' => $usage->product_id, 'location_id' => $location->id],
-                    ['quantity' => 0]
-                );
-                
-                if ($stock) {
-                    $prevStockQty = (float)$stock->quantity;
-                    $stock->decrement('quantity', $qty);
-
-                    // 3. Record Stock Movement
-                    \App\Models\Inventory\InventoryStockMovement::create([
-                        'product_id' => $usage->product_id,
-                        'location_id' => $location ? $location->id : null,
-                        'user_id' => auth()->id(),
-                        'movement_type' => 'JOB_CARD_CONSUMPTION',
-                        'quantity' => -$qty,
-                        'previous_quantity' => $prevStockQty,
-                        'current_quantity' => (float)$stock->quantity,
-                        'reference_type' => 'Job Card',
-                        'reference_id' => $jobCard->id,
-                        'reason' => 'Consumed in Job Card #' . $jobCard->job_no
-                    ]);
                 }
             }
 

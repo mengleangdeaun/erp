@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
@@ -40,6 +41,7 @@ import {
 } from '@/hooks/useInventoryData';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
+import HighlightText from '../../../components/ui/HighlightText';
 
 interface Supplier { id: number; name: string; }
 interface Product { id: number; code: string; name: string; }
@@ -78,6 +80,7 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
     });
 
 const PurchaseOrdersPage = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const queryClient = useQueryClient();
     const { formatDate } = useFormatDate();
@@ -152,8 +155,8 @@ const PurchaseOrdersPage = () => {
     const receiving = receiveMutation.isPending;
 
     useEffect(() => {
-        dispatch(setPageTitle('Purchase Orders'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('purchase_orders')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         if (pendingItemsData) {
@@ -240,7 +243,7 @@ const PurchaseOrdersPage = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (items.some(it => !it.product_id)) {
-            toast.error('All line items need a product selected');
+            toast.error(t('error_msg'));
             return;
         }
 
@@ -268,13 +271,13 @@ const PurchaseOrdersPage = () => {
     const handleReceiveSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!receiveFormData.location_id) {
-            toast.error('Please select a receiving location');
+            toast.error(t('select_receiving_location'));
             return;
         }
         
         const itemsToReceive = pendingItems.filter(i => parseFloat(i.qty_received) > 0);
         if (itemsToReceive.length === 0) {
-            toast.error('Please enter at least one quantity to receive');
+            toast.error(t('enter_at_one_qty_to_receive'));
             return;
         }
 
@@ -360,35 +363,35 @@ const PurchaseOrdersPage = () => {
         <div>
             <FilterBar
                 icon={<ShoppingCart className="w-6 h-6 text-primary" />}
-                title="Purchase Orders"
-                description="Track your company's procurement purchasing cycle"
+                title={t('purchase_orders')}
+                description={t('track_procurement_purchase_cycle_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={openCreate}
-                addLabel="New PO"
+                addLabel={t('new_po')}
                 onRefresh={() => queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })}
                 hasActiveFilters={sortBy !== 'po_number' || sortDirection !== 'asc' || search !== '' || dateRange !== undefined || statusFilter !== 'all'}
                 onClearFilters={clearFilters}
             >
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('date_range')}</span>
                     <DateRangePicker
                         value={dateRange}
                         onChange={setDateRange}
-                        placeholder="All Dates"
+                        placeholder={t('all_dates')}
                     />
                 </div>
 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('status')}</span>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                            <SelectValue placeholder="All Status" />
+                            <SelectValue placeholder={t('all_status')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all" className="font-medium">All Status</SelectItem>
+                            <SelectItem value="all" className="font-medium">{t('all_status')}</SelectItem>
                             {Object.keys(STATUS_CLASS).map(s => (
                                 <SelectItem key={s} value={s} className="font-medium">{s}</SelectItem>
                             ))}
@@ -401,9 +404,9 @@ const PurchaseOrdersPage = () => {
                 <TableSkeleton columns={7} rows={5} />
             ) : orders.length === 0 ? (
                 <EmptyState
-                    title="No Purchase Orders Found"
-                    description="Start by creating your first purchase order."
-                    actionLabel="New PO"
+                    title={t('no_purchase_orders_found_title')}
+                    description={t('start_creating_first_po')}
+                    actionLabel={t('new_po')}
                     onAction={openCreate}
                 />
             ) : filteredAndSortedOrders.length === 0 ? (
@@ -418,35 +421,35 @@ const PurchaseOrdersPage = () => {
                         <thead>
                             <tr>
                                 <SortableHeader
-                                    label="PO Number"
+                                    label={t('po_number_label')}
                                     value="po_number"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Supplier"
+                                    label={t('supplier_label')}
                                     value="supplier"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Order Date"
+                                    label={t('order_date_label')}
                                     value="order_date"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Expected Delivery"
+                                    label={t('expected_delivery_label')}
                                     value="expected_delivery_date"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Total Amount"
+                                    label={t('total_amount_label')}
                                     value="total_amount"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
@@ -454,20 +457,24 @@ const PurchaseOrdersPage = () => {
                                     className="text-right"
                                 />
                                 <SortableHeader
-                                    label="Status"
+                                    label={t('status')}
                                     value="status"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
-                                <th className="text-right">Actions</th>
+                                <th className="text-right">{t('actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {paginatedOrders.map(o => (
                                 <tr key={o.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                    <td className="font-mono font-semibold text-primary">{o.po_number}</td>
-                                    <td className="text-gray-700 dark:text-gray-200">{o.supplier?.name}</td>
+                                    <td className="font-mono font-semibold text-primary">
+                                        <HighlightText text={o.po_number || ''} highlight={search} />
+                                    </td>
+                                    <td className="text-gray-700 dark:text-gray-200">
+                                        <HighlightText text={o.supplier?.name || ''} highlight={search} />
+                                    </td>
                                     <td className="text-gray-600 dark:text-gray-300">
                                         {formatDate(o.order_date)}
                                     </td>
@@ -479,7 +486,7 @@ const PurchaseOrdersPage = () => {
                                     </td>
                                     <td>
                                         <span className={`badge ${STATUS_CLASS[o.status] || ''}`}>
-                                            {o.status}
+                                            {t(o.status.toLowerCase()) || o.status}
                                         </span>
                                     </td>
                                     <td className="text-right">
@@ -518,10 +525,10 @@ const PurchaseOrdersPage = () => {
             </div>
             <div>
                 <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-                    {editId ? 'Edit Purchase Order' : 'Create Purchase Order'}
+                    {editId ? t('edit_purchase_order') : t('create_purchase_order_title')}
                 </DialogTitle>
                 <p className="text-sm text-gray-500 mt-1">
-                    {editId ? 'Update the order details and line items.' : 'Enter the purchase order information.'}
+                    {editId ? t('update_order_details_line_items_desc') : t('enter_po_info_desc')}
                 </p>
             </div>
         </div>
@@ -531,24 +538,24 @@ const PurchaseOrdersPage = () => {
             {/* Left column – Order Details */}
             <div className="lg:w-80 space-y-4">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    Order Details
+                    {t('order_details')}
                 </h3>
                 <div className="space-y-4">
                     <div className="space-y-1">
                         <Label className="text-sm font-medium">
-                            Supplier <span className="text-red-500">*</span>
+                            {t('supplier_label')} <span className="text-red-500">*</span>
                         </Label>
                         <SearchableSelect
-                            options={suppliers.map(s => ({ value: String(s.id), label: s.name }))}
+                            options={suppliers.map((s: any) => ({ value: String(s.id), label: s.name }))}
                             value={formData.supplier_id}
                             onChange={(val) => handleSelectChange(val, 'supplier_id')}
-                            placeholder="Select supplier..."
+                            placeholder={t('select_supplier_placeholder')}
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <Label className="text-sm font-medium mb-0">
-                                Order Date <span className="text-red-500">*</span>
+                                {t('order_date_label')} <span className="text-red-500">*</span>
                             </Label>
                             <DatePicker
                                 value={formData.order_date ? new Date(formData.order_date) : undefined}
@@ -561,7 +568,7 @@ const PurchaseOrdersPage = () => {
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-sm font-medium mb-0">Time</Label>
+                            <Label className="text-sm font-medium mb-0">{t('time_label')}</Label>
                             <TimePicker
                                 value={formData.order_date ? formData.order_date.split('T')[1]?.slice(0, 5) : '00:00'}
                                 onChange={(time) => {
@@ -573,7 +580,7 @@ const PurchaseOrdersPage = () => {
                         </div>
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-sm font-medium">Expected Delivery</Label>
+                        <Label className="text-sm font-medium">{t('expected_delivery_label')}</Label>
                         <DatePicker
                             value={formData.expected_delivery_date ? new Date(formData.expected_delivery_date) : undefined}
                             onChange={(date) => {
@@ -582,7 +589,7 @@ const PurchaseOrdersPage = () => {
                         />
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-sm font-medium">Status</Label>
+                        <Label className="text-sm font-medium">{t('status')}</Label>
                         <Select
                             value={formData.status}
                             onValueChange={v => setFormData(p => ({ ...p, status: v }))}
@@ -598,7 +605,7 @@ const PurchaseOrdersPage = () => {
                         </Select>
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-sm font-medium">Note</Label>
+                        <Label className="text-sm font-medium">{t('note')}</Label>
                         <Textarea
                             value={formData.note}
                             onChange={e => setFormData(p => ({ ...p, note: e.target.value }))}
@@ -612,27 +619,26 @@ const PurchaseOrdersPage = () => {
             <div className="flex-1 space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                        Order Items
+                        {t('order_items')}
                     </h3>
                     <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => setItems(p => [...p, { ...emptyItem }])}
+                        onClick={() => setItems((p: POItem[]) => [...p, { ...emptyItem }])}
                         className="flex items-center gap-1"
                     >
-                        <Plus className="h-4 w-4" /> Add Row
+                        <Plus className="h-4 w-4" /> {t('add_row')}
                     </Button>
-                </div>
                 <div className="rounded-lg border dark:border-gray-700 overflow-hidden">
                     <div className="max-h-96 overflow-y-auto">
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
                                 <tr>
-                                    <th className="px-3 py-2 text-left">Product</th>
-                                    <th className="px-3 py-2 text-left">Order Qty</th>
-                                    <th className="px-3 py-2 text-left">Unit Cost</th>
-                                    <th className="px-3 py-2 text-right">Total</th>
+                                    <th className="px-3 py-2 text-left">{t('product')}</th>
+                                    <th className="px-3 py-2 text-left">{t('order_qty')}</th>
+                                    <th className="px-3 py-2 text-left">{t('unit_cost')}</th>
+                                    <th className="px-3 py-2 text-right">{t('total_amount_label')}</th>
                                     <th className="px-3 py-2"></th>
                                 </tr>
                             </thead>
@@ -641,10 +647,10 @@ const PurchaseOrdersPage = () => {
                                     <tr key={idx}>
                                         <td className="px-3 py-2">
                                             <SearchableSelect
-                                                options={products.map(p => ({ value: String(p.id), label: `${p.code} - ${p.name}` }))}
+                                                options={products.map((p: any) => ({ value: String(p.id), label: `${p.code} - ${p.name}` }))}
                                                 value={it.product_id}
                                                 onChange={(val) => updateItem(idx, 'product_id', val)}
-                                                placeholder="Select product..."
+                                                placeholder={t('search_product_db')}
                                             />
                                         </td>
                                         <td className="px-3 py-2">
@@ -655,17 +661,17 @@ const PurchaseOrdersPage = () => {
                                                     min="0.01"
                                                     value={it.order_qty}
                                                     onChange={e => updateItem(idx, 'order_qty', e.target.value)}
-                                                    placeholder="Qty"
+                                                    placeholder={t('qty_placeholder')}
                                                     required
                                                 />
                                                 {it.product_id && (
                                                     <div className="flex items-center justify-between px-1">
                                                         <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight">
-                                                            {products.find(p => String(p.id) === it.product_id)?.purchase_uom?.code || 'UNIT'}
+                                                            {products.find((p: any) => String(p.id) === it.product_id)?.purchase_uom?.code || 'UNIT'}
                                                         </span>
-                                                        {products.find(p => String(p.id) === it.product_id)?.uom_multiplier > 1 && (
+                                                        {products.find((p: any) => String(p.id) === it.product_id)?.uom_multiplier > 1 && (
                                                             <span className="text-[9px] font-medium text-slate-400 italic">
-                                                                Total: {(parseFloat(it.order_qty || '0') * (products.find(p => String(p.id) === it.product_id)?.uom_multiplier || 1)).toFixed(2)} {products.find(p => String(p.id) === it.product_id)?.base_uom?.code}
+                                                                Total: {(parseFloat(it.order_qty || '0') * (products.find((p: any) => String(p.id) === it.product_id)?.uom_multiplier || 1)).toFixed(2)} {products.find((p: any) => String(p.id) === it.product_id)?.base_uom?.code}
                                                             </span>
                                                         )}
                                                     </div>
@@ -679,7 +685,7 @@ const PurchaseOrdersPage = () => {
                                                 min="0"
                                                 value={it.unit_cost}
                                                 onChange={e => updateItem(idx, 'unit_cost', e.target.value)}
-                                                placeholder="Cost"
+                                                placeholder={t('cost_placeholder')}
                                                 required
                                             />
                                         </td>
@@ -690,7 +696,7 @@ const PurchaseOrdersPage = () => {
                                             {items.length > 1 && (
                                                 <button
                                                     type="button"
-                                                    onClick={() => setItems(p => p.filter((_, i) => i !== idx))}
+                                                    onClick={() => setItems((p: POItem[]) => p.filter((_, i) => i !== idx))}
                                                     className="text-red-400 hover:text-red-600"
                                                 >
                                                     <X className="h-4 w-4" />
@@ -703,7 +709,7 @@ const PurchaseOrdersPage = () => {
                             <tfoot className="bg-gray-50 dark:bg-gray-800 sticky bottom-0">
                                 <tr>
                                     <td colSpan={3} className="px-3 py-2 text-right font-semibold text-gray-600">
-                                        Total Amount:
+                                        {t('total_amount_label')}:
                                     </td>
                                     <td className="px-3 py-2 text-right font-bold text-lg text-primary">
                                         ${totalAmount.toFixed(2)}
@@ -715,12 +721,13 @@ const PurchaseOrdersPage = () => {
                     </div>
                 </div>
             </div>
+            </div>
         </form>
 
-        {/* Footer */}
+         {/* Footer */}
         <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
-                Cancel
+                {t('cancel')}
             </Button>
             <Button
                 type="submit"
@@ -728,7 +735,7 @@ const PurchaseOrdersPage = () => {
                 disabled={submitting}
                 className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
             >
-                {submitting ? 'Saving...' : editId ? 'Update PO' : 'Create PO'}
+                {submitting ? t('processing') : editId ? t('update_po') : t('create_po_btn')}
             </Button>
         </div>
     </DialogContent>
@@ -740,8 +747,8 @@ const PurchaseOrdersPage = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Purchase Order"
-                message="Are you sure you want to delete this purchase order? This action cannot be undone."
+                title={t('delete_purchase_order')}
+                message={t('delete_po_confirm')}
             />
 
             {/* Good Receive Modal */}
@@ -857,7 +864,7 @@ const PurchaseOrdersPage = () => {
 
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
                         <Button type="button" variant="ghost" onClick={() => setReceiveModalOpen(false)}>
-                            Cancel
+                            {t('cancel')}
                         </Button>
                         <Button
                             type="submit"
@@ -865,7 +872,7 @@ const PurchaseOrdersPage = () => {
                             disabled={receiving || pendingItems.length === 0 || loadingPending}
                             className="px-7 bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-600/20"
                         >
-                            {receiving ? 'Receiving...' : 'Receive Goods'}
+                            {receiving ? t('processing') : t('receive_goods')}
                         </Button>
                     </div>
                 </DialogContent>

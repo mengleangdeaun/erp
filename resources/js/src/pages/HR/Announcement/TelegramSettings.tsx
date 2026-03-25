@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
     IconBrandTelegram, IconDeviceFloppy, IconPlugConnected,
@@ -42,6 +43,7 @@ const SectionCard = ({
 );
 
 export default function TelegramSettings() {
+    const { t } = useTranslation();
     const [form, setForm] = useState({
         bot_token: '',
         global_chat_id: '',
@@ -86,7 +88,7 @@ export default function TelegramSettings() {
                     setBotUsername(data.bot_username);
                 }
             })
-            .catch(() => toast.error('Failed to load settings'))
+            .catch(() => toast.error(t('failed_load_settings_msg')))
             .finally(() => setLoading(false));
     }, []);
 
@@ -104,11 +106,11 @@ export default function TelegramSettings() {
                 body: JSON.stringify(payload),
             });
             if (res.ok) {
-                toast.success('Telegram settings saved successfully!');
+                toast.success(t('telegram_settings_saved_successfully'));
                 setHasExistingToken(true);
                 setForm(f => ({ ...f, bot_token: '' }));
             } else {
-                toast.error('Failed to save settings');
+                toast.error(t('failed_to_save_settings'));
             }
         } catch {
             toast.error('An network error occurred');
@@ -131,12 +133,12 @@ export default function TelegramSettings() {
             setConnectionStatus(data);
             if (data.success) {
                 setBotUsername(data.bot?.username || null);
-                toast.success(data.message);
+                toast.success(t('success_label'), { description: t('test_message_sent_msg') });
             } else {
-                toast.error(data.message);
+                toast.error(t('error_label'), { description: data.message || t('failed_send_test_msg') });
             }
         } catch {
-            toast.error('Test connection failed');
+            toast.error(t('error_label'), { description: t('failed_send_test_msg') });
         } finally {
             setTesting(false);
         }
@@ -147,12 +149,16 @@ export default function TelegramSettings() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                        <IconBrandTelegram size={22} className="text-primary" />
+                    <div className="bg-primary/10 p-2.5 rounded-xl shadow-sm">
+                        <IconBrandTelegram className="text-primary w-6 h-6" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">Telegram Integration</h1>
-                        <p className="text-sm text-gray-500">Configure your Telegram bot for global announcements and alerts.</p>
+                        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+                            {t('telegram_settings_title')}
+                        </h1>
+                        <p className="text-sm text-gray-500">
+                            {t('telegram_settings_desc')}
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -160,18 +166,18 @@ export default function TelegramSettings() {
                         variant="outline" 
                         onClick={handleTest} 
                         disabled={testing || (!hasExistingToken && !form.bot_token)} 
-                        className="gap-2 h-10 w-full sm:w-auto bg-white dark:bg-gray-900 transition-all"
+                        className="gap-2 h-10 w-full sm:w-auto bg-white dark:bg-gray-900 transition-all font-bold"
                     >
-                        <IconPlugConnected size={16} />
-                        {testing ? 'Testing...' : 'Test Connection'}
+                        {testing ? <IconLoader2 size={16} className="animate-spin" /> : <IconPlugConnected size={16} />}
+                        {testing ? t('testing_label') : t('test_connection_btn')}
                     </Button>
                     <Button
                         onClick={handleSave}
                         disabled={saving}
-                        className="gap-2 h-10 w-full sm:w-auto"
+                        className="gap-2 h-10 w-full sm:w-auto font-bold"
                     >
                         {saving ? <IconLoader2 size={16} className="animate-spin" /> : <IconDeviceFloppy size={16} />}
-                        {saving ? 'Saving...' : 'Save Changes'}
+                        {saving ? t('saving_label') : t('save_changes_btn')}
                     </Button>
                 </div>
             </div>
@@ -209,12 +215,12 @@ export default function TelegramSettings() {
                 <>
                     {/* Connection Status Banner */}
                     {connectionStatus && (
-                        <div className={`flex items-center gap-3 p-4 rounded-xl border shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-top-4 ${connectionStatus.success ? 'bg-green-50/50 border-green-200 text-green-800 dark:bg-green-900/10 dark:border-green-900/30' : 'bg-red-50/50 border-red-200 text-red-800 dark:bg-red-900/10 dark:border-red-900/30'}`}>
-                            {connectionStatus.success
+                        <div className={`flex items-center gap-3 p-4 rounded-xl border shadow-sm transition-all duration-300 animate-in fade-in slide-in-from-top-4 ${connectionStatus?.success ? 'bg-green-50/50 border-green-200 text-green-800 dark:bg-green-900/10 dark:border-green-900/30' : 'bg-red-50/50 border-red-200 text-red-800 dark:bg-red-900/10 dark:border-red-900/30'}`}>
+                            {connectionStatus?.success
                                 ? <IconPlugConnected className="w-5 h-5 shrink-0" />
                                 : <IconPlugConnectedX className="w-5 h-5 shrink-0" />
                             }
-                            <span className="text-sm font-semibold">{connectionStatus.message}</span>
+                            <span className="text-sm font-semibold">{connectionStatus?.success ? t('connection_successful_msg') : t('connection_failed_msg')}</span>
                         </div>
                     )}
 
@@ -224,7 +230,7 @@ export default function TelegramSettings() {
                                 <IconBrandTelegram className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             </div>
                             <span className="text-sm text-blue-800 dark:text-blue-300">
-                                Successfully authenticated as <span className="font-bold text-blue-900 dark:text-blue-200">@{botUsername}</span>
+                                {t('successfully_authenticated_as')} <span className="font-bold text-blue-900 dark:text-blue-200">@{botUsername}</span>
                             </span>
                         </div>
                     )}
@@ -236,17 +242,17 @@ export default function TelegramSettings() {
                         <SectionCard
                             icon={<IconShieldCheck size={18} className="text-purple-600 dark:text-purple-400" />}
                             iconColor="bg-purple-100 dark:bg-purple-900/40"
-                            title="Bot Configuration"
-                            description="API settings and notification toggles"
+                            title={t('bot_configuration_title')}
+                            description={t('bot_configuration_desc')}
                         >
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between group">
                                     <div className="space-y-1 pr-6">
                                         <Label className="text-sm font-semibold text-gray-900 dark:text-gray-100 !mb-0">
-                                            Enable Notifications
+                                            {t('enable_notifications_label')}
                                         </Label>
                                         <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
-                                            Activate automated Telegram alerts.
+                                            {t('activate_telegram_alerts_desc')}
                                         </p>
                                     </div>
                                     <Switch 
@@ -261,11 +267,11 @@ export default function TelegramSettings() {
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-end">
                                         <Label className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                            Bot API Token
+                                            {t('bot_api_token_label')}
                                         </Label>
                                         {hasExistingToken && (
                                             <span className="text-[10px] font-bold tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 flex items-center py-0.5 rounded border border-emerald-100 dark:border-emerald-500/20">
-                                                Token configured
+                                                {t('token_configured_badge')}
                                             </span>
                                         )}
                                     </div>
@@ -274,7 +280,7 @@ export default function TelegramSettings() {
                                             type={showToken ? 'text' : 'password'}
                                             value={form.bot_token}
                                             onChange={e => setForm(f => ({ ...f, bot_token: e.target.value }))}
-                                            placeholder={hasExistingToken ? '••••••••••••••••••••' : 'Enter token from @BotFather'}
+                                            placeholder={hasExistingToken ? '••••••••••••••••••••' : t('bot_token_placeholder')}
                                             className="font-mono pr-12 h-10 bg-gray-50/50 dark:bg-gray-950/50 focus-visible:ring-primary"
                                         />
                                         <button 
@@ -287,7 +293,7 @@ export default function TelegramSettings() {
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1.5 flex gap-1.5 items-center">
                                         <IconInfoCircle className="w-3.5 h-3.5 shrink-0" />
-                                        Obtain this token by messaging <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-primary hover:underline">@BotFather</a>.
+                                        {t('obtain_token_desc')}
                                     </p>
                                 </div>
                             </div>
@@ -297,13 +303,13 @@ export default function TelegramSettings() {
                         <SectionCard
                             icon={<IconMessage size={18} className="text-sky-600 dark:text-sky-400" />}
                             iconColor="bg-sky-100 dark:bg-sky-900/40"
-                            title="Global Chat Target"
-                            description="Where global announcements will be sent"
+                            title={t('global_chat_target_title')}
+                            description={t('global_chat_target_desc')}
                         >
                             <div className="space-y-6">
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                        Global Chat ID
+                                        {t('global_chat_id_label')}
                                     </Label>
                                     <Input
                                         value={form.global_chat_id}
@@ -312,13 +318,13 @@ export default function TelegramSettings() {
                                         className="font-mono h-10 bg-gray-50/50 dark:bg-gray-950/50 focus-visible:ring-primary"
                                     />
                                     <p className="text-xs text-gray-500 mt-1.5">
-                                        The ID of the group where announcements will be sent to.
+                                        {t('global_chat_id_desc')}
                                     </p>
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                        Global Topic ID <span className="text-gray-400 font-normal">(Optional)</span>
+                                        {t('global_topic_id_label')} <span className="text-gray-400 font-normal">({t('global_topic_id_optional')})</span>
                                     </Label>
                                     <Input
                                         value={form.global_topic_id}
@@ -327,7 +333,7 @@ export default function TelegramSettings() {
                                         className="font-mono h-10 bg-gray-50/50 dark:bg-gray-950/50 focus-visible:ring-primary"
                                     />
                                     <p className="text-xs text-gray-500 mt-1.5">
-                                        Leave empty unless using a Forum group.
+                                        {t('global_topic_id_desc')}
                                     </p>
                                 </div>
                             </div>
@@ -342,7 +348,7 @@ export default function TelegramSettings() {
                                 <IconSettings className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                             </div>
                             <div className="space-y-3">
-                                <h3 className="font-semibold text-amber-800 dark:text-amber-300">Targeted Branch & Department Setup</h3>
+                                <h3 className="font-semibold text-amber-800 dark:text-amber-300">{t('targeted_setup_title')}</h3>
                                 <p className="text-sm text-amber-700/80 dark:text-amber-500 text-pretty">
                                     You can also set up granular Telegram notifications that go exclusively to specific branches or departments.
                                 </p>

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { Button } from '../../../components/ui/button';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
@@ -17,8 +17,11 @@ import { Badge } from '../../../components/ui/badge';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { IconHierarchy } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
+import { useTranslation } from 'react-i18next';
 
 const DepartmentIndex = () => {
+    const { t } = useTranslation();
     const [departments, setDepartments] = useState<any[]>([]);
     const [branches, setBranches] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -151,14 +154,14 @@ const DepartmentIndex = () => {
             });
 
             if (response.ok) {
-                toast.success('Department deleted successfully');
+                toast.success(t('success_delete_dept'));
                 fetchDepartments();
             } else {
-                toast.error('Failed to delete department');
+                toast.error(t('failed_delete_dept'));
             }
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
+            toast.error(t('error_occurred'));
         } finally {
             setIsDeleting(false);
             setDeleteModalOpen(false);
@@ -200,18 +203,18 @@ const DepartmentIndex = () => {
             const data = await response.json();
 
             if (response.ok) {
-                toast.success(`Department ${editingDepartment ? 'updated' : 'created'} successfully`);
+                toast.success(editingDepartment ? t('success_update_dept') : t('success_create_dept'));
                 setModalOpen(false);
                 fetchDepartments();
             } else {
                 if (response.status === 401) {
                     window.location.href = '/login';
                 }
-                toast.error(data.message || `Failed to ${editingDepartment ? 'update' : 'create'} department`);
+                toast.error(data.message || (editingDepartment ? t('failed_update_dept') : t('failed_create_dept')));
             }
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
+            toast.error(t('error_occurred'));
         } finally {
             setIsSaving(false);
         }
@@ -261,14 +264,14 @@ const DepartmentIndex = () => {
         <div>
             <FilterBar
                 icon={<IconHierarchy className="w-6 h-6 text-primary" />}
-                title="Departments"
-                description="Manage your organizational departments"
+                title={t('dept_title')}
+                description={t('dept_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={handleCreate}
-                addLabel="Add Department"
+                addLabel={t('add_dept')}
                 onRefresh={fetchDepartments}
                 hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'}
                 onClearFilters={() => {
@@ -281,9 +284,9 @@ const DepartmentIndex = () => {
                 <TableSkeleton columns={4} rows={5} />
             ) : departments.length === 0 ? (
                 <EmptyState
-                    title="No Departments Found"
-                    description="Get started by creating your first department."
-                    actionLabel="Add Department"
+                    title={t('no_depts_found')}
+                    description={t('start_adding_dept_desc')}
+                    actionLabel={t('add_dept')}
                     onAction={handleCreate}
                 />
             ) : filteredAndSortedDepartments.length === 0 ? (
@@ -301,22 +304,24 @@ const DepartmentIndex = () => {
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
-                                <SortableHeader label="Name" value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Branch" value="branch" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-right">Action</th>
+                                <SortableHeader label={t('name_label')} value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('branch_label')} value="branch" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('status_label')} value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="text-right">{t('actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {paginatedDepartments.map((dept: any) => (
                                 <tr key={dept.id}>
-                                    <td className="whitespace-nowrap font-medium">{dept.name}</td>
+                                    <td className="whitespace-nowrap font-medium">
+                                        <HighlightText text={dept.name} highlight={search} />
+                                    </td>
                                     <td>
                                         <div className="flex flex-wrap gap-1">
                                             {dept.branches && dept.branches.length > 0 ? (
                                                 dept.branches.map((b: any) => (
                                                     <span key={`branch-${dept.id}-${b.id}`} className="text-xs text-gray-500 whitespace-nowrap">
-                                                        {b.name}{dept.branches.length > 1 ? ',' : ''}
+                                                        <HighlightText text={b.name} highlight={search} />{dept.branches.length > 1 ? ',' : ''}
                                                     </span>
                                                 ))
                                             ) : (
@@ -329,7 +334,7 @@ const DepartmentIndex = () => {
                                         dot={true}
                                         size='sm'
                                         variant={dept.status === 'active' ? 'success' : 'destructive'}>
-                                            {dept.status}
+                                            {dept.status === 'active' ? t('active') : t('inactive')}
                                         </Badge>
                                     </td>
                                     <td>
@@ -356,7 +361,7 @@ const DepartmentIndex = () => {
             )}
 
 <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+  <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
     {/* Header */}
     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
       <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -364,27 +369,27 @@ const DepartmentIndex = () => {
       </div>
       <div>
         <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-          {editingDepartment ? 'Edit Department' : 'Create New Department'}
+          {editingDepartment ? t('edit_dept_title') : t('create_dept_title')}
         </DialogTitle>
         <p className="text-sm text-gray-500 mt-1">
           {editingDepartment 
-            ? 'Update the department details below.' 
-            : 'Fill in the details to add a new department.'}
+            ? t('update_dept_detail_desc') 
+            : t('fill_dept_detail_desc')}
         </p>
       </div>
     </div>
 
-    <ScrollArea className="flex-1 min-h-0">
+    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
       <form id="department-form" onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Basic Information
+            {t('basic_info_title')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Department Name <span className="text-red-500">*</span>
+                {t('dept_name_label')} <span className="text-red-500">*</span>
               </label>
               <Input
                 id="name"
@@ -392,13 +397,13 @@ const DepartmentIndex = () => {
                 type="text"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="e.g. Human Resources"
+                placeholder={t('dept_name_placeholder')}
                 required
               />
             </div>
             <div className="space-y-0">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Branches
+                {t('branches_label')}
               </label>
               <SearchableMultiSelect
                 options={branches.map((b: any) => ({
@@ -407,7 +412,7 @@ const DepartmentIndex = () => {
                 }))}
                 value={formData.branch_ids}
                 onChange={(val) => handleSelectChange(val, 'branch_ids')}
-                placeholder="Select Branches"
+                placeholder={t('select_branches_placeholder')}
               />
             </div>
           </div>
@@ -416,18 +421,18 @@ const DepartmentIndex = () => {
         {/* Description */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Additional Details
+            {t('additional_details_title')}
           </h3>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
+              {t('description_label')}
             </label>
             <Textarea
               id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Describe the department's purpose and responsibilities..."
+              placeholder={t('dept_desc_placeholder')}
               rows={4}
               className="bg-gray-50 dark:bg-gray-800/50 resize-none"
             />
@@ -437,12 +442,12 @@ const DepartmentIndex = () => {
         {/* Telegram Notifications */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Telegram Notifications
+            {t('telegram_notifications_title')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Telegram Chat ID <span className="text-gray-400 text-xs">(Optional)</span>
+                {t('telegram_chat_id_label')} <span className="text-gray-400 text-xs">{t('optional_label')}</span>
               </label>
               <Input
                 id="telegram_chat_id"
@@ -455,7 +460,7 @@ const DepartmentIndex = () => {
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Telegram Topic ID <span className="text-gray-400 text-xs">(Optional)</span>
+                {t('telegram_topic_id_label')} <span className="text-gray-400 text-xs">{t('optional_label')}</span>
               </label>
               <Input
                 id="telegram_topic_id"
@@ -472,28 +477,28 @@ const DepartmentIndex = () => {
         {/* Status */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Status
+            {t('status_label')}
           </h3>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Status <span className="text-red-500">*</span>
+              {t('status_label')} <span className="text-red-500">*</span>
             </label>
             <Select
               onValueChange={(value) => handleSelectChange(value, 'status')}
               value={formData.status}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select Status" />
+                <SelectValue placeholder={t('select_status_placeholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="active">{t('active')}</SelectItem>
+                <SelectItem value="inactive">{t('inactive')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
       </form>
-    </ScrollArea>
+    </PerfectScrollbar>
 
     {/* Sticky Footer */}
     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
@@ -503,7 +508,7 @@ const DepartmentIndex = () => {
         className="px-5"
         onClick={() => setModalOpen(false)}
       >
-        Cancel
+        {t('cancel_btn_label')}
       </Button>
       <Button
         type="submit"
@@ -511,7 +516,7 @@ const DepartmentIndex = () => {
         disabled={isSaving}
         className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
       >
-        {isSaving ? 'Saving...' : (editingDepartment ? 'Save Changes' : 'Create Department')}
+        {isSaving ? t('saving_dots') : (editingDepartment ? t('save_changes_btn_label') : t('create_dept_btn_label'))}
       </Button>
     </div>
   </DialogContent>
@@ -522,8 +527,8 @@ const DepartmentIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Department"
-                message="Are you sure you want to delete this department? This action cannot be undone."
+                title={t('delete_dept_title')}
+                message={t('delete_dept_message')}
             />
         </div>
     );

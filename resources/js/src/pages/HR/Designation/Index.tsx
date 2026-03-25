@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import FilterBar from '../../../components/ui/FilterBar';
 import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
@@ -16,8 +16,11 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import SearchableMultiSelect from '../../../components/ui/SearchableMultiSelect';
 import { Badge } from '../../../components/ui/badge';
 import { IconBadge } from '@tabler/icons-react';
+import HighlightText from '@/components/ui/HighlightText';
+import { useTranslation } from 'react-i18next';
 
 const DesignationIndex = () => {
+    const { t } = useTranslation();
     const [designations, setDesignations] = useState<any[]>([]);
     const [departments, setDepartments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -146,14 +149,14 @@ const DesignationIndex = () => {
             });
 
             if (response.ok) {
-                toast.success('Designation deleted successfully');
+                toast.success(t('success_delete_desig'));
                 fetchDesignations();
             } else {
-                toast.error('Failed to delete designation');
+                toast.error(t('failed_delete_desig'));
             }
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
+            toast.error(t('error_occurred'));
         } finally {
             setIsDeleting(false);
             setDeleteModalOpen(false);
@@ -195,18 +198,18 @@ const DesignationIndex = () => {
             const data = await response.json();
 
             if (response.ok) {
-                toast.success(`Designation ${editingDesignation ? 'updated' : 'created'} successfully`);
+                toast.success(editingDesignation ? t('success_update_desig') : t('success_create_desig'));
                 setModalOpen(false);
                 fetchDesignations();
             } else {
                 if (response.status === 401) {
                     window.location.href = '/login';
                 }
-                toast.error(data.message || `Failed to ${editingDesignation ? 'update' : 'create'} designation`);
+                toast.error(data.message || (editingDesignation ? t('failed_update_desig') : t('failed_create_desig')));
             }
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
+            toast.error(t('error_occurred'));
         } finally {
             setIsSaving(false);
         }
@@ -271,14 +274,14 @@ const DesignationIndex = () => {
         <div>
             <FilterBar
                 icon={<IconBadge className="w-6 h-6 text-primary" />}
-                title="Designations"
-                description="Manage your organizational roles and job titles"
+                title={t('desig_title')}
+                description={t('desig_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={handleCreate}
-                addLabel="Add Designation"
+                addLabel={t('add_desig')}
                 onRefresh={fetchDesignations}
                 hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'}
                 onClearFilters={() => {
@@ -291,9 +294,9 @@ const DesignationIndex = () => {
                 <TableSkeleton columns={5} rows={5} />
             ) : designations.length === 0 ? (
                 <EmptyState
-                    title="No Designations Found"
-                    description="Get started by creating your first designation."
-                    actionLabel="Add Designation"
+                    title={t('no_desigs_found')}
+                    description={t('start_adding_desig_desc')}
+                    actionLabel={t('add_desig')}
                     onAction={handleCreate}
                 />
             ) : filteredAndSortedDesignations.length === 0 ? (
@@ -311,27 +314,29 @@ const DesignationIndex = () => {
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
-                                <SortableHeader label="Name" value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Department" value="department" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Branch" value="branch" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-right">Action</th>
+                                <SortableHeader label={t('name_label')} value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('department_label')} value="department" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('branch_label')} value="branch" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('status_label')} value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="text-right">{t('actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {paginatedDesignations.map((desig: any) => (
                                 <tr key={desig.id}>
-                                    <td className="whitespace-nowrap font-medium">{desig.name}</td>
+                                    <td className="whitespace-nowrap font-medium">
+                                        <HighlightText text={desig.name} highlight={search} />
+                                    </td>
                                     <td>
                                         <div className="flex flex-wrap gap-1">
                                             {desig.departments && desig.departments.length > 0 ? (
                                                 desig.departments.map((dept: any) => (
                                                     <span key={dept.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary whitespace-nowrap">
-                                                        {dept.name}
+                                                        <HighlightText text={dept.name} highlight={search} />
                                                     </span>
                                                 ))
                                             ) : (
-                                                <span className="text-gray-400 italic text-sm">No Departments</span>
+                                                <span className="text-gray-400 italic text-sm">{t('no_depts_italics')}</span>
                                             )}
                                         </div>
                                     </td>
@@ -340,7 +345,7 @@ const DesignationIndex = () => {
                                             {desig.departments && desig.departments.length > 0 ? (
                                                 desig.departments.map((dept: any) => (
                                                     <span key={`branch-${dept.id}`} className="text-xs text-gray-500 whitespace-nowrap">
-                                                        {dept.branches?.map((b: any) => b.name).join(', ')}{desig.departments.length > 1 ? ' | ' : ''}
+                                                        <HighlightText text={dept.branches?.map((b: any) => b.name).join(', ')} highlight={search} />{desig.departments.length > 1 ? ' | ' : ''}
                                                     </span>
                                                 ))
                                             ) : (
@@ -353,7 +358,7 @@ const DesignationIndex = () => {
                                         dot={true}
                                         size='sm'
                                         variant={desig.status === 'active' ? 'success' : 'destructive'}>
-                                            {desig.status}
+                                            {desig.status === 'active' ? t('active') : t('inactive')}
                                         </Badge>
                                     </td>
                                     <td>
@@ -380,7 +385,7 @@ const DesignationIndex = () => {
             )}
 
 <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-  <DialogContent className="sm:max-w-[700px] w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+  <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
     {/* Header */}
     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
       <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -388,27 +393,27 @@ const DesignationIndex = () => {
       </div>
       <div>
         <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-          {editingDesignation ? 'Edit Designation' : 'Create New Designation'}
+          {editingDesignation ? t('edit_desig_title') : t('create_desig_title')}
         </DialogTitle>
         <p className="text-sm text-gray-500 mt-1">
           {editingDesignation 
-            ? 'Update the designation details below.' 
-            : 'Fill in the details to add a new designation.'}
+            ? t('update_desig_detail_desc') 
+            : t('fill_desig_detail_desc')}
         </p>
       </div>
     </div>
 
-    <ScrollArea className="flex-1 min-h-0">
+    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
       <form id="designation-form" onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Basic Information
+            {t('basic_info_title')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Designation Name <span className="text-red-500">*</span>
+                {t('desig_name_label')} <span className="text-red-500">*</span>
               </label>
               <Input
                 id="name"
@@ -416,13 +421,13 @@ const DesignationIndex = () => {
                 type="text"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="e.g. Senior Software Engineer"
+                placeholder={t('desig_name_placeholder')}
                 required
               />
             </div>
             <div className="space-y-0">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Departments
+                {t('departments_label')}
               </label>
               <SearchableMultiSelect
                 options={departments.map((dept: any) => ({
@@ -431,7 +436,7 @@ const DesignationIndex = () => {
                 }))}
                 value={formData.department_ids}
                 onChange={(val) => handleSelectChange(val, 'department_ids')}
-                placeholder="Select Departments"
+                placeholder={t('select_depts_placeholder')}
               />
             </div>
           </div>
@@ -440,18 +445,18 @@ const DesignationIndex = () => {
         {/* Description */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Additional Details
+            {t('additional_details_title')}
           </h3>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
+              {t('description_label')}
             </label>
             <Textarea
               id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Describe the responsibilities and scope of this designation..."
+              placeholder={t('desig_desc_placeholder')}
               rows={4}
               className="bg-gray-50 dark:bg-gray-800/50 resize-none"
             />
@@ -461,28 +466,28 @@ const DesignationIndex = () => {
         {/* Status */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Status
+            {t('status_label')}
           </h3>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Status <span className="text-red-500">*</span>
+              {t('status_label')} <span className="text-red-500">*</span>
             </label>
             <Select
               onValueChange={(value) => handleSelectChange(value, 'status')}
               value={formData.status}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select Status" />
+                <SelectValue placeholder={t('select_status_placeholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="active">{t('active')}</SelectItem>
+                <SelectItem value="inactive">{t('inactive')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
       </form>
-    </ScrollArea>
+    </PerfectScrollbar>
 
     {/* Sticky Footer */}
     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
@@ -492,7 +497,7 @@ const DesignationIndex = () => {
         className="px-5"
         onClick={() => setModalOpen(false)}
       >
-        Cancel
+        {t('cancel_btn_label')}
       </Button>
       <Button
         type="submit"
@@ -500,7 +505,7 @@ const DesignationIndex = () => {
         disabled={isSaving}
         className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
       >
-        {isSaving ? 'Saving...' : (editingDesignation ? 'Save Changes' : 'Create Designation')}
+        {isSaving ? t('saving_dots') : (editingDesignation ? t('save_changes_btn_label') : t('create_desig_btn_label'))}
       </Button>
     </div>
   </DialogContent>
@@ -511,8 +516,8 @@ const DesignationIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Designation"
-                message="Are you sure you want to delete this designation? This action cannot be undone."
+                title={t('delete_desig_title')}
+                message={t('delete_desig_message')}
             />
         </div>
     );

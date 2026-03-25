@@ -10,6 +10,7 @@ import MediaSelector, { MediaFile } from '../../../components/MediaSelector';
 import { format } from 'date-fns';
 import { IconArrowNarrowLeft, IconArrowNarrowRight } from '@tabler/icons-react';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { useTranslation } from 'react-i18next';
 
 const getCookie = (name: string) => {
     const value = `; ${document.cookie}`;
@@ -21,7 +22,7 @@ interface EmployeeFormProps {
     employeeId?: number; // if provided → edit mode
 }
 
-const SECTIONS = ['Basic Information', 'Employment Details', 'Contact Information', 'Banking Information', 'Documents'];
+const SECTIONS_KEYS = ['basic_info_tab', 'employment_details_tab', 'contact_info_tab', 'banking_info_tab', 'documents_tab'];
 
 const initialFormState = {
     // Basic
@@ -62,6 +63,7 @@ const initialFormState = {
 };
 
 const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
+    const { t } = useTranslation();
     const isEdit = Boolean(employeeId);
     const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState(0);
@@ -215,7 +217,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
-    const handleSelect = (value: string, name: string) => {
+    const handleSelect = (value: any, name: string) => {
         setFormData(prev => {
             const next = { ...prev, [name]: value };
             if (name === 'branch_id') {
@@ -244,7 +246,13 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                 // Keep FormData for Edit (legacy support and file uploads)
                 const body = new FormData();
                 Object.entries(formData).forEach(([key, val]) => {
-                    if (val !== '') body.append(key, val);
+                    if (val !== '') {
+                        if (typeof val === 'boolean') {
+                            body.append(key, String(val));
+                        } else {
+                            body.append(key, val as string);
+                        }
+                    }
                 });
                 if (profileImageFile) body.append('profile_image', profileImageFile);
                 body.append('_method', 'PUT');
@@ -257,11 +265,11 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                 });
 
                 if (response.ok) {
-                    toast.success('Employee updated successfully');
+                    toast.success(t('success_update_employee'));
                     navigate('/hr/employees');
                 } else {
                     const data = await response.json();
-                    toast.error(data.errors ? Object.values(data.errors).flat().join(', ') : data.message || 'Error');
+                    toast.error(data.errors ? Object.values(data.errors).flat().join(', ') : data.message || t('error_occurred'));
                 }
             } else {
                 // Use JSON for Create to easily handle nested documents
@@ -287,16 +295,16 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                 });
 
                 if (response.ok) {
-                    toast.success('Employee created successfully');
+                    toast.success(t('success_create_employee'));
                     navigate('/hr/employees');
                 } else {
                     const data = await response.json();
-                    toast.error(data.errors ? Object.values(data.errors).flat().join(', ') : data.message || 'Error');
+                    toast.error(data.errors ? Object.values(data.errors).flat().join(', ') : data.message || t('error_occurred'));
                 }
             }
         } catch (err) {
             console.error(err);
-            toast.error('An error occurred');
+            toast.error(t('error_occurred'));
         } finally {
             setIsSaving(false);
         }
@@ -304,7 +312,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
 
     const handleSelectDocument = async (file: MediaFile) => {
         if (!docTypeId) {
-            toast.error('Please select a Document Type first');
+            toast.error(t('select_type_first'));
             return;
         }
 
@@ -321,7 +329,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
             };
             setPendingDocuments(prev => [...prev, newDoc]);
             setDocTypeId('');
-            toast.success('Document added to list');
+            toast.success(t('doc_added_to_list'));
             return;
         }
 
@@ -345,23 +353,23 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
             });
             const data = await res.json();
             if (res.ok) {
-                toast.success('Document linked successfully');
+                toast.success(t('doc_linked_success'));
                 setDocuments(prev => [...prev, data]);
                 setDocTypeId('');
             } else {
-                toast.error(data.message || 'Linking failed');
+                toast.error(data.message || t('doc_link_failed'));
             }
-        } catch (err) { toast.error('An error occurred'); }
+        } catch (err) { toast.error(t('error_occurred')); }
         finally { setIsUploadingDoc(false); }
     };
 
     const handleDeleteDocument = async (docId: any) => {
-        if (!confirm('Delete this document?')) return;
+        if (!confirm(t('delete_doc_confirm'))) return;
 
         // If it's a pending document (creation mode)
         if (pendingDocuments.some(d => d.id === docId)) {
             setPendingDocuments(prev => prev.filter(d => d.id !== docId));
-            toast.success('Document removed from list');
+            toast.success(t('doc_removed_from_list'));
             return;
         }
 
@@ -373,12 +381,12 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                 credentials: 'include',
             });
             if (res.ok) {
-                toast.success('Document deleted');
+                toast.success(t('doc_deleted'));
                 setDocuments(prev => prev.filter(d => d.id !== docId));
             } else {
-                toast.error('Failed to delete document');
+                toast.error(t('failed_delete_doc'));
             }
-        } catch { toast.error('An error occurred'); }
+        } catch { toast.error(t('error_occurred')); }
     };
 
     const handleCreateDocType = async (e: React.FormEvent) => {
@@ -400,42 +408,42 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
             });
             const data = await res.json();
             if (res.ok) {
-                toast.success('Document Type created');
+                toast.success(t('doc_type_created'));
                 setDocumentTypes(prev => [...prev, data]);
                 setDocTypeId(String(data.id));
                 setIsDocTypeDialogOpen(false);
                 setNewDocTypeName('');
                 setNewDocTypeRequired(true);
             } else {
-                toast.error(data.message || 'Failed to create Document Type');
+                toast.error(data.message || t('failed_create_doc_type'));
             }
         } catch (err) {
-            toast.error('An error occurred');
+            toast.error(t('error_occurred'));
         } finally {
             setIsSavingDocType(false);
         }
     };
 
-    if (loading) return <div className="flex items-center justify-center h-40 text-sm text-gray-500">Loading employee data...</div>;
+    if (loading) return <div className="flex items-center justify-center h-40 text-sm text-gray-500">{t('loading_employee_data')}</div>;
 
     return (
         <div>
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-xl font-bold">{isEdit ? 'Edit Employee' : 'Add New Employee'}</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Fill in the information across all sections</p>
+                    <h1 className="text-xl font-bold">{isEdit ? t('edit_employee') : t('add_new_employee')}</h1>
+                    <p className="text-sm text-gray-500 mt-0.5">{t('fill_info_cross_sections')}</p>
                 </div>
                 <Button className='flex items-center gap-2' variant="outline" type="button" onClick={() => navigate('/hr/employees')}>
-                    <IconArrowNarrowLeft size={16} /> Back
+                    <IconArrowNarrowLeft size={16} /> {t('back_btn_label')}
                 </Button>
             </div>
 
             {/* Section Tabs */}
             <div className="flex gap-1 flex-wrap mb-6 border-b border-gray-200 dark:border-gray-700">
-                {SECTIONS.map((s, i) => (
+                {SECTIONS_KEYS.map((key, i) => (
                     <button
-                        key={s}
+                        key={key}
                         type="button"
                         onClick={() => setActiveSection(i)}
                         className={`px-4 py-2 text-sm font-medium rounded-t transition-colors ${activeSection === i
@@ -443,7 +451,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                             : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                             }`}
                     >
-                        {s}
+                        {t(key)}
                     </button>
                 ))}
             </div>
@@ -457,7 +465,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                         <div className="flex items-center gap-5 mb-2">
                             <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700 flex-shrink-0">
                                 {profileImagePreview ? (
-                                    <img src={profileImagePreview} alt="Profile" className="w-full h-full object-cover" />
+                                    <img src={profileImagePreview} alt={t('profile_alt')} className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-2xl font-bold text-gray-400">
                                         {formData.full_name?.charAt(0)?.toUpperCase() || '?'}
@@ -471,30 +479,30 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                     type="button"
                                     onClick={() => setIsProfileImageSelectorOpen(true)}
                                 >
-                                    Select Photo
+                                    {t('select_photo_btn')}
                                 </Button>
-                                <p className="text-xs text-gray-400 mt-1">Pick from Media Library</p>
+                                <p className="text-xs text-gray-400 mt-1">{t('pick_media_library')}</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label htmlFor="full_name">Full Name <span className="text-danger">*</span></label>
+                                <label htmlFor="full_name">{t('full_name_label')} <span className="text-danger">*</span></label>
                                 <Input id="full_name" name="full_name" type="text" value={formData.full_name} onChange={handleChange} required />
                             </div>
                             <div>
-                                <label htmlFor="employee_id">Employee ID <span className="text-danger">*</span></label>
+                                <label htmlFor="employee_id">{t('employee_id_label')} <span className="text-danger">*</span></label>
                                 <Input id="employee_id" name="employee_id" type="text" value={formData.employee_id} onChange={handleChange} required />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label htmlFor="employee_code">Employee Code</label>
+                                <label htmlFor="employee_code">{t('employee_code_label')}</label>
                                 <Input id="employee_code" name="employee_code" type="text" value={formData.employee_code} onChange={handleChange} />
                             </div>
                             <div>
-                                <label htmlFor="email">Email <span className="text-danger">*</span></label>
+                                <label htmlFor="email">{t('email_label')} <span className="text-danger">*</span></label>
                                 <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
                             </div>
                         </div>
@@ -502,7 +510,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
                                 <label htmlFor="password">
-                                    Password {isEdit ? <span className="text-xs text-gray-400">(leave blank to keep current)</span> : <span className="text-danger">*</span>}
+                                    {t('password_label')} {isEdit ? <span className="text-xs text-gray-400">{t('leave_blank_password')}</span> : <span className="text-danger">*</span>}
                                 </label>
                                 <Input id="password" name="password" type="password" value={formData.password} onChange={handleChange} required={!isEdit} />
                             </div>
@@ -510,25 +518,25 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
-                                <label htmlFor="phone">Phone Number</label>
+                                <label htmlFor="phone">{t('phone_label')}</label>
                                 <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} />
                             </div>
                             <div>
-                                <label>Date of Birth</label>
+                                <label>{t('dob_label')}</label>
                                 <DatePicker
                                     value={formData.date_of_birth}
                                     onChange={(dt) => handleSelect(dt ? format(dt, 'yyyy-MM-dd') : '', 'date_of_birth')}
-                                    placeholder="Select Date of Birth"
+                                    placeholder={t('select_dob_placeholder')}
                                 />
                             </div>
                             <div>
-                                <label htmlFor="gender">Gender</label>
+                                <label htmlFor="gender">{t('gender_label')}</label>
                                 <Select onValueChange={v => handleSelect(v, 'gender')} value={formData.gender}>
-                                    <SelectTrigger><SelectValue placeholder="Select Gender" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t('select_gender_placeholder')} /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="male">Male</SelectItem>
-                                        <SelectItem value="female">Female</SelectItem>
-                                        <SelectItem value="other">Other</SelectItem>
+                                        <SelectItem value="male">{t('male')}</SelectItem>
+                                        <SelectItem value="female">{t('female')}</SelectItem>
+                                        <SelectItem value="other">{t('other')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -541,36 +549,35 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                     <div className="space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label>Branch</label>
+                                <label>{t('branch_label')}</label>
                                 <Select onValueChange={v => handleSelect(v, 'branch_id')} value={formData.branch_id}>
-                                    <SelectTrigger><SelectValue placeholder="Select Branch" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t('select_branch_placeholder')} /></SelectTrigger>
                                     <SelectContent>
                                         {loadingDropdowns.branches ? (
-                                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                            <SelectItem value="loading" disabled>{t('loading_dots')}</SelectItem>
                                         ) : branches.length === 0 ? (
-                                            <SelectItem value="empty" disabled>No branches available</SelectItem>
+                                            <SelectItem value="empty" disabled>{t('no_branches_available')}</SelectItem>
                                         ) : (
                                             branches.map((b: any) => <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>)
                                         )}
                                     </SelectContent>
                                 </Select>
-                            </div>
-                            <div>
-                                <label>Department</label>
+                                     <div>
+                                <label>{t('department_label')}</label>
                                 <Select onValueChange={v => handleSelect(v, 'department_id')} value={formData.department_id}>
-                                    <SelectTrigger><SelectValue placeholder="Select Department" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t('select_department_placeholder')} /></SelectTrigger>
                                     <SelectContent>
                                         {loadingDropdowns.departments ? (
-                                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                            <SelectItem value="loading" disabled>{t('loading_dots')}</SelectItem>
                                         ) : (() => {
                                             const filteredDepartments = formData.branch_id
                                                 ? departments.filter((d: any) =>
                                                     d.branches?.some((branch: any) => String(branch.id) === formData.branch_id)
                                                 )
                                                 : departments;
-
+ 
                                             if (filteredDepartments.length === 0) {
-                                                return <SelectItem value="empty" disabled>No departments available</SelectItem>;
+                                                return <SelectItem value="empty" disabled>{t('no_departments_available')}</SelectItem>;
                                             }
                                             return filteredDepartments.map((d: any) => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>);
                                         })()}
@@ -578,24 +585,23 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                 </Select>
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label>Designation</label>
+                                <label>{t('designation_label')}</label>
                                 <Select onValueChange={v => handleSelect(v, 'designation_id')} value={formData.designation_id}>
-                                    <SelectTrigger><SelectValue placeholder="Select Designation" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t('select_designation_placeholder')} /></SelectTrigger>
                                     <SelectContent>
                                         {loadingDropdowns.designations ? (
-                                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                            <SelectItem value="loading" disabled>{t('loading_dots')}</SelectItem>
                                         ) : (() => {
                                             const filteredDesignations = formData.department_id
                                                 ? designations.filter((d: any) =>
                                                     d.departments?.some((dept: any) => String(dept.id) === formData.department_id)
                                                 )
                                                 : designations;
-
+ 
                                             if (filteredDesignations.length === 0) {
-                                                return <SelectItem value="empty" disabled>No designations available</SelectItem>;
+                                                return <SelectItem value="empty" disabled>{t('no_designations_available')}</SelectItem>;
                                             }
                                             return filteredDesignations.map((d: any) => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>);
                                         })()}
@@ -603,7 +609,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                 </Select>
                             </div>
                             <div>
-                                <label>Line Manager</label>
+                                <label>{t('line_manager_label')}</label>
                                 <SearchableSelect
                                     options={allEmployees
                                         .filter(e => !isEdit || String(e.id) !== String(employeeId))
@@ -611,43 +617,44 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                     }
                                     value={formData.line_manager_id}
                                     onChange={(val) => handleSelect(String(val), 'line_manager_id')}
-                                    placeholder="Select Manager"
+                                    placeholder={t('select_manager_placeholder')}
                                 />
                             </div>
                         </div>
+                   </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label>Date of Joining</label>
+                                <label>{t('doj_label')}</label>
                                 <DatePicker
                                     value={formData.date_of_joining}
                                     onChange={(dt) => handleSelect(dt ? format(dt, 'yyyy-MM-dd') : '', 'date_of_joining')}
-                                    placeholder="Select Date of Joining"
+                                    placeholder={t('select_doj_placeholder')}
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label>Employment Type</label>
+                                <label>{t('employment_type_label')}</label>
                                 <Select onValueChange={v => handleSelect(v, 'employment_type')} value={formData.employment_type}>
-                                    <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t('select_type_placeholder')} /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="full_time">Full Time</SelectItem>
-                                        <SelectItem value="part_time">Part Time</SelectItem>
-                                        <SelectItem value="contract">Contract</SelectItem>
-                                        <SelectItem value="intern">Intern</SelectItem>
-                                        <SelectItem value="freelance">Freelance</SelectItem>
+                                        <SelectItem value="full_time">{t('full_time')}</SelectItem>
+                                        <SelectItem value="part_time">{t('part_time')}</SelectItem>
+                                        <SelectItem value="contract">{t('contract')}</SelectItem>
+                                        <SelectItem value="intern">{t('intern')}</SelectItem>
+                                        <SelectItem value="freelance">{t('freelance')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div>
-                                <label>Active Status</label>
+                                <label>{t('active_status_label')}</label>
                                 <Select onValueChange={v => handleSelect(v === 'true' ? true : false, 'is_active')} value={String(formData.is_active)}>
-                                    <SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t('select_status_placeholder')} /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="true">Active</SelectItem>
-                                        <SelectItem value="false">Inactive</SelectItem>
+                                        <SelectItem value="true">{t('active')}</SelectItem>
+                                        <SelectItem value="false">{t('inactive')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -655,14 +662,14 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label>Working Shift</label>
+                                <label>{t('working_shift_label')}</label>
                                 <Select onValueChange={v => handleSelect(v, 'working_shift_id')} value={formData.working_shift_id}>
-                                    <SelectTrigger><SelectValue placeholder="Select Shift" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t('select_shift_placeholder')} /></SelectTrigger>
                                     <SelectContent>
                                         {loadingDropdowns.workingShifts ? (
-                                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                            <SelectItem value="loading" disabled>{t('loading_dots')}</SelectItem>
                                         ) : workingShifts.length === 0 ? (
-                                            <SelectItem value="empty" disabled>No shifts available</SelectItem>
+                                            <SelectItem value="empty" disabled>{t('no_shifts_available')}</SelectItem>
                                         ) : (
                                             workingShifts.map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)
                                         )}
@@ -670,14 +677,14 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                 </Select>
                             </div>
                             <div>
-                                <label>Attendance Policy</label>
+                                <label>{t('attendance_policy_label')}</label>
                                 <Select onValueChange={v => handleSelect(v, 'attendance_policy_id')} value={formData.attendance_policy_id}>
-                                    <SelectTrigger><SelectValue placeholder="Select Policy" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t('select_policy_placeholder')} /></SelectTrigger>
                                     <SelectContent>
                                         {loadingDropdowns.attendancePolicies ? (
-                                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                            <SelectItem value="loading" disabled>{t('loading_dots')}</SelectItem>
                                         ) : attendancePolicies.length === 0 ? (
-                                            <SelectItem value="empty" disabled>No policies available</SelectItem>
+                                            <SelectItem value="empty" disabled>{t('no_policies_available')}</SelectItem>
                                         ) : (
                                             attendancePolicies.map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)
                                         )}
@@ -693,51 +700,51 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                     <div className="space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label htmlFor="address_line_1">Address Line 1</label>
+                                <label htmlFor="address_line_1">{t('address_line_1_label')}</label>
                                 <Input id="address_line_1" name="address_line_1" type="text" value={formData.address_line_1} onChange={handleChange} />
                             </div>
                             <div>
-                                <label htmlFor="address_line_2">Address Line 2</label>
+                                <label htmlFor="address_line_2">{t('address_line_2_label')}</label>
                                 <Input id="address_line_2" name="address_line_2" type="text" value={formData.address_line_2} onChange={handleChange} />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
-                                <label htmlFor="city">City</label>
+                                <label htmlFor="city">{t('city_label')}</label>
                                 <Input id="city" name="city" type="text" value={formData.city} onChange={handleChange} />
                             </div>
                             <div>
-                                <label htmlFor="state">State / Province</label>
+                                <label htmlFor="state">{t('state_province_label')}</label>
                                 <Input id="state" name="state" type="text" value={formData.state} onChange={handleChange} />
                             </div>
                             <div>
-                                <label htmlFor="country">Country</label>
+                                <label htmlFor="country">{t('country_label')}</label>
                                 <Input id="country" name="country" type="text" value={formData.country} onChange={handleChange} />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label htmlFor="postal_code">Postal / ZIP Code</label>
+                                <label htmlFor="postal_code">{t('postal_code_label')}</label>
                                 <Input id="postal_code" name="postal_code" type="text" value={formData.postal_code} onChange={handleChange} />
                             </div>
                         </div>
 
                         <hr className="border-gray-200 dark:border-gray-700" />
-                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">Emergency Contact</p>
+                        <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">{t('emergency_contact_title')}</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
-                                <label htmlFor="emergency_contact_name">Contact Name</label>
+                                <label htmlFor="emergency_contact_name">{t('contact_name_label')}</label>
                                 <Input id="emergency_contact_name" name="emergency_contact_name" type="text" value={formData.emergency_contact_name} onChange={handleChange} />
                             </div>
                             <div>
-                                <label htmlFor="emergency_contact_relationship">Relationship</label>
-                                <Input id="emergency_contact_relationship" name="emergency_contact_relationship" type="text" placeholder="e.g. Spouse, Parent" value={formData.emergency_contact_relationship} onChange={handleChange} />
+                                <label htmlFor="emergency_contact_relationship">{t('relationship_label')}</label>
+                                <Input id="emergency_contact_relationship" name="emergency_contact_relationship" type="text" placeholder={t('relationship_placeholder')} value={formData.emergency_contact_relationship} onChange={handleChange} />
                             </div>
                             <div>
-                                <label htmlFor="emergency_contact_phone">Phone Number</label>
+                                <label htmlFor="emergency_contact_phone">{t('phone_label')}</label>
                                 <Input id="emergency_contact_phone" name="emergency_contact_phone" type="tel" value={formData.emergency_contact_phone} onChange={handleChange} />
                             </div>
                         </div>
@@ -749,26 +756,26 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                     <div className="space-y-5">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             <div>
-                                <label htmlFor="bank_name">Bank Name</label>
+                                <label htmlFor="bank_name">{t('bank_name_label')}</label>
                                 <Input id="bank_name" name="bank_name" type="text" value={formData.bank_name} onChange={handleChange} />
                             </div>
                             <div>
-                                <label htmlFor="account_holder_name">Account Holder Name</label>
+                                <label htmlFor="account_holder_name">{t('account_holder_label')}</label>
                                 <Input id="account_holder_name" name="account_holder_name" type="text" value={formData.account_holder_name} onChange={handleChange} />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             <div>
-                                <label htmlFor="account_number">Account Number</label>
+                                <label htmlFor="account_number">{t('account_number_label')}</label>
                                 <Input id="account_number" name="account_number" type="text" value={formData.account_number} onChange={handleChange} />
                             </div>
                             <div>
-                                <label htmlFor="tax_payer_id">Tax Payer ID</label>
+                                <label htmlFor="tax_payer_id">{t('tax_id_label')}</label>
                                 <Input id="tax_payer_id" name="tax_payer_id" type="text" value={formData.tax_payer_id} onChange={handleChange} />
                             </div>
                             <div>
-                                <label htmlFor="base_salary">Base Salary</label>
+                                <label htmlFor="base_salary">{t('base_salary_label')}</label>
                                 <Input id="base_salary" name="base_salary" type="number" min="0" step="0.01" value={formData.base_salary} onChange={handleChange} />
                             </div>
                         </div>
@@ -782,22 +789,22 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                             <div>
                                 <div className="flex justify-between items-center mb-1">
-                                    <label className="mb-0">Document Type</label>
+                                    <label className="mb-0">{t('doc_type_label')}</label>
                                     <button
                                         type="button"
                                         onClick={() => setIsDocTypeDialogOpen(true)}
                                         className="text-xs text-primary hover:underline"
                                     >
-                                        + Create New
+                                        {t('create_new_link')}
                                     </button>
                                 </div>
                                 <Select onValueChange={v => setDocTypeId(v)} value={docTypeId}>
-                                    <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder={t('select_type_placeholder')} /></SelectTrigger>
                                     <SelectContent>
                                         {loadingDropdowns.documentTypes ? (
-                                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                            <SelectItem value="loading" disabled>{t('loading_dots')}</SelectItem>
                                         ) : documentTypes.length === 0 ? (
-                                            <SelectItem value="empty" disabled>No types found</SelectItem>
+                                            <SelectItem value="empty" disabled>{t('no_types_found')}</SelectItem>
                                         ) : (
                                             documentTypes.map((dt: any) => (
                                                 <SelectItem key={dt.id} value={String(dt.id)}>{dt.name}</SelectItem>
@@ -807,14 +814,14 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                 </Select>
                             </div>
                             <div>
-                                <label className="block mb-1.5 text-sm font-medium">File Upload</label>
+                                <label className="block mb-1.5 text-sm font-medium">{t('file_upload')}</label>
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => setIsMediaSelectorOpen(true)}
                                     className="w-full h-10 justify-start text-left font-normal text-muted-foreground"
                                 >
-                                    Browse Media Library...
+                                    {t('browse_media_library')}
                                 </Button>
                             </div>
                             <div>
@@ -824,7 +831,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                     disabled={isUploadingDoc || !docTypeId}
                                     className="w-full h-10"
                                 >
-                                    {isUploadingDoc ? 'Linking...' : 'Select File'}
+                                    {isUploadingDoc ? t('linking_dots') : t('select_file_btn')}
                                 </Button>
                             </div>
                         </div>
@@ -836,9 +843,9 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                     <thead>
                                         <tr>
                                             <th>#</th>
-                                            <th>Document Type</th>
-                                            <th>File Name</th>
-                                            <th>Action</th>
+                                            <th>{t('document_type')}</th>
+                                            <th>{t('file_name')}</th>
+                                            <th>{t('actions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -863,7 +870,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                                         size="sm"
                                                         onClick={() => handleDeleteDocument(doc.id)}
                                                     >
-                                                        Delete
+                                                        {t('delete_btn_label')}
                                                     </Button>
                                                 </td>
                                             </tr>
@@ -872,7 +879,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                 </table>
                             </div>
                         ) : (
-                            <p className="text-sm text-gray-400 text-center py-6">No documents uploaded yet.</p>
+                            <p className="text-sm text-gray-400 text-center py-6">{t('no_documents_uploaded')}</p>
                         )}
                     </div>
                 )}
@@ -882,21 +889,21 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                     <div className="flex gap-2">
                         {activeSection > 0 && (
                             <Button className='flex items-center gap-2' variant="outline" type="button" onClick={() => setActiveSection(s => s - 1)}>
-                                <IconArrowNarrowLeft size={16} /> Previous
+                                <IconArrowNarrowLeft size={16} /> {t('previous_btn_label')}
                             </Button>
                         )}
-                        {activeSection < SECTIONS.length - 1 && (
+                        {activeSection < SECTIONS_KEYS.length - 1 && (
                             <Button className='flex items-center gap-2' type="button" onClick={() => setActiveSection(s => s + 1)}>
-                                Next <IconArrowNarrowRight size={16} />
+                                {t('next_btn_label')} <IconArrowNarrowRight size={16} />
                             </Button>
                         )}
                     </div>
                     <div className="flex gap-3">
                         <Button variant="outline" className="" type="button" onClick={() => navigate('/hr/employees')}>
-                            Cancel
+                            {t('cancel_btn_label')}
                         </Button>
                         <Button type="submit" disabled={isSaving}>
-                            {isSaving ? 'Saving...' : isEdit ? 'Update Employee' : 'Create Employee'}
+                            {isSaving ? t('saving_dots') : isEdit ? t('edit_employee') : t('add_new_employee')}
                         </Button>
                     </div>
                 </div>
@@ -905,11 +912,11 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
             <Dialog open={isDocTypeDialogOpen} onOpenChange={setIsDocTypeDialogOpen}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>Create Document Type</DialogTitle>
+                        <DialogTitle>{t('create_doc_type_title')}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleCreateDocType} className="space-y-4 pt-4">
                         <div>
-                            <label htmlFor="newDocTypeName">Name <span className="text-danger">*</span></label>
+                            <label htmlFor="newDocTypeName">{t('name_label')} <span className="text-danger">*</span></label>
                             <Input
                                 id="newDocTypeName"
                                 type="text"
@@ -926,12 +933,12 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                                 checked={newDocTypeRequired}
                                 onChange={e => setNewDocTypeRequired(e.target.checked)}
                             />
-                            <label htmlFor="newDocTypeRequired" className="mb-0 cursor-pointer">Is Required</label>
+                            <label htmlFor="newDocTypeRequired" className="mb-0 cursor-pointer">{t('is_required_label')}</label>
                         </div>
                         <DialogFooter className="mt-6">
-                            <Button variant="outline" type="button" onClick={() => setIsDocTypeDialogOpen(false)}>Cancel</Button>
+                            <Button variant="outline" type="button" onClick={() => setIsDocTypeDialogOpen(false)}>{t('cancel_btn_label')}</Button>
                             <Button type="submit" disabled={isSavingDocType}>
-                                {isSavingDocType ? 'Saving...' : 'Create'}
+                                {isSavingDocType ? t('saving_dots') : t('create_btn_label')}
                             </Button>
                         </DialogFooter>
                     </form>

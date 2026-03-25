@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../../components/ui/button';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from '../../../components/ui/input';
@@ -25,6 +26,7 @@ import DateRangePicker from '../../../components/ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
+import HighlightText from '../../../components/ui/HighlightText';
 import { 
     usePurchaseReceives, 
     usePurchaseOrders, 
@@ -78,6 +80,7 @@ const apiFetch = (url: string, options: RequestInit = {}) =>
     });
 
 export default function PurchaseReceivesPage() {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const queryClient = useQueryClient();
     const { formatDate, formatDateTime } = useFormatDate();
@@ -132,8 +135,8 @@ export default function PurchaseReceivesPage() {
     const submitting = receiveMutation.isPending;
 
     useEffect(() => {
-        dispatch(setPageTitle('Purchase Receives'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('purchase_receives')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         if (pendingItemsData) {
@@ -168,8 +171,8 @@ export default function PurchaseReceivesPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedPoId) { toast.error('Select a Purchase Order'); return; }
-        if (!formData.location_id) { toast.error('Select a destination location'); return; }
+        if (!selectedPoId) { toast.error(t('select_po_placeholder')); return; }
+        if (!formData.location_id) { toast.error(t('select_receiving_location')); return; }
 
         const itemsPayload = pendingItems
             .filter(it => parseFloat(receiveQtys[it.id] || '0') > 0)
@@ -248,33 +251,33 @@ export default function PurchaseReceivesPage() {
         <div>
             <FilterBar
                 icon={<PackageCheck className="w-6 h-6 text-primary" />}
-                title="Purchase Receives"
-                description="Record and track goods received from Purchase Orders"
+                title={t('purchase_receives')}
+                description={t('record_track_goods_received_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={openCreate}
-                addLabel="New Receive"
+                addLabel={t('new_receive')}
                 onRefresh={() => queryClient.invalidateQueries({ queryKey: ['purchase-receives'] })}
                 hasActiveFilters={sortBy !== 'receive_date' || sortDirection !== 'desc' || search !== '' || dateRange !== undefined || locationId !== 'all' || statusFilter !== 'all'}
                 onClearFilters={clearFilters}
             >
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('date_range')}</span>
                     <DateRangePicker
                         value={dateRange}
                         onChange={setDateRange}
-                        placeholder="All Dates"
+                        placeholder={t('all_dates')}
                     />
                 </div>
 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Location</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('physical_location')}</span>
                     <SearchableSelect
                         options={[
-                            { value: 'all', label: 'All Locations' },
-                            ...locations.map(l => ({ value: l.id, label: l.name }))
+                            { value: 'all', label: t('all_locations') },
+                            ...locations.map((l: any) => ({ value: l.id, label: l.name }))
                         ]}
                         value={locationId}
                         onChange={setLocationId}
@@ -283,13 +286,13 @@ export default function PurchaseReceivesPage() {
                 </div>
 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('status')}</span>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                         <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
-                            <SelectValue placeholder="All Status" />
+                            <SelectValue placeholder={t('all_status')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all" className="font-medium">All Status</SelectItem>
+                            <SelectItem value="all" className="font-medium">{t('all_status')}</SelectItem>
                             {Object.keys(STATUS_CLASS).map(s => (
                                 <SelectItem key={s} value={s} className="font-medium">{s}</SelectItem>
                             ))}
@@ -302,9 +305,9 @@ export default function PurchaseReceivesPage() {
                 <TableSkeleton columns={7} rows={5} />
             ) : receives.length === 0 ? (
                 <EmptyState
-                    title="No Purchase Receives Found"
-                    description="Start by recording your first goods receipt."
-                    actionLabel="New Receive"
+                    title={t('no_purchase_receives_found_title')}
+                    description={t('start_recording_first_goods_receipt')}
+                    actionLabel={t('new_receive')}
                     onAction={openCreate}
                 />
             ) : filteredAndSortedReceives.length === 0 ? (
@@ -319,43 +322,43 @@ export default function PurchaseReceivesPage() {
                         <thead>
                             <tr>
                                 <SortableHeader
-                                    label="PO Reference"
+                                    label={t('po_reference_label')}
                                     value="po_reference"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Supplier"
+                                    label={t('supplier_label')}
                                     value="supplier"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Receive Date"
+                                    label={t('receive_date_label')}
                                     value="receive_date"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Location"
+                                    label={t('physical_location')}
                                     value="location"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
                                 <SortableHeader
-                                    label="Reference"
+                                    label={t('reference_label')}
                                     value="reference_number"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
                                     onSort={setSortBy}
                                 />
-                                <th>Items</th>
+                                <th>{t('items')}</th>
                                 <SortableHeader
-                                    label="Status"
+                                    label={t('status')}
                                     value="status"
                                     currentSortBy={sortBy}
                                     currentDirection={sortDirection}
@@ -366,15 +369,23 @@ export default function PurchaseReceivesPage() {
                         <tbody>
                             {paginatedReceives.map(r => (
                                 <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                    <td className="font-mono font-semibold text-primary">{r.purchase_order?.po_number}</td>
-                                    <td className="text-gray-700 dark:text-gray-200">{r.purchase_order?.supplier?.name}</td>
+                                    <td className="font-mono font-semibold text-primary">
+                                        <HighlightText text={r.purchase_order?.po_number || ''} highlight={search} />
+                                    </td>
+                                    <td className="text-gray-700 dark:text-gray-200">
+                                        <HighlightText text={r.purchase_order?.supplier?.name || ''} highlight={search} />
+                                    </td>
                                     <td className="text-gray-600 dark:text-gray-300">{formatDateTime(r.receive_date)}</td>
-                                    <td className="text-gray-600 dark:text-gray-300">{r.location?.name}</td>
-                                    <td className="text-gray-600 dark:text-gray-300">{r.reference_number || '—'}</td>
-                                    <td className="text-gray-600 dark:text-gray-300">{r.items?.length || 0} products</td>
+                                    <td className="text-gray-600 dark:text-gray-300">
+                                        <HighlightText text={r.location?.name || ''} highlight={search} />
+                                    </td>
+                                    <td className="text-gray-600 dark:text-gray-300">
+                                        <HighlightText text={r.reference_number || '—'} highlight={search} />
+                                    </td>
+                                    <td className="text-gray-600 dark:text-gray-300">{r.items?.length || 0} {t('products')}</td>
                                     <td>
                                         <span className={`badge ${STATUS_CLASS[r.status] || ''}`}>
-                                            {r.status}
+                                            {t(r.status.toLowerCase()) || r.status}
                                         </span>
                                     </td>
                                 </tr>
@@ -395,7 +406,7 @@ export default function PurchaseReceivesPage() {
             )}
 
 {/* Create PR Modal */}
-<Dialog open={modalOpen} onOpenChange={setModalOpen}>
+ <Dialog open={modalOpen} onOpenChange={setModalOpen}>
   <DialogContent className="sm:max-w-4xl w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
     {/* Header */}
     <div className="shrink-0 bg-gradient-to-r from-green-600/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
@@ -404,10 +415,10 @@ export default function PurchaseReceivesPage() {
       </div>
       <div>
         <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-          Record Goods Received
+          {t('record_goods_received')}
         </DialogTitle>
         <p className="text-sm text-gray-500 mt-1">
-          Record items received from a purchase order into a specific location.
+          {t('record_items_received_from_po_into_loc_desc')}
         </p>
       </div>
     </div>
@@ -416,46 +427,46 @@ export default function PurchaseReceivesPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Purchase Order - takes more space */}
         <div className="md:col-span-3 space-y-1">
-          <Label className="text-sm font-medium">Purchase Order <span className="text-red-500">*</span></Label>
+          <Label className="text-sm font-medium">{t('purchase_order')} <span className="text-red-500">*</span></Label>
           <SearchableSelect
-            options={pendingOrders.map(po => ({ 
+            options={pendingOrders.map((po: any) => ({ 
               value: String(po.id), 
               label: `${po.po_number} — ${po.supplier?.name}` 
             }))}
             value={selectedPoId}
             onChange={(val) => handlePoChange(String(val))}
-            placeholder="Select a Purchase Order..."
+            placeholder={t('select_po_placeholder')}
           />
         </div>
 
         {/* Destination Location */}
         <div className="md:col-span-1 space-y-1">
-          <Label className="text-sm font-medium">Destination Location <span className="text-red-500">*</span></Label>
+          <Label className="text-sm font-medium">{t('physical_location')} <span className="text-red-500">*</span></Label>
           <SearchableSelect
-            options={locations.map(l => ({ value: String(l.id), label: l.name }))}
+            options={locations.map((l: any) => ({ value: String(l.id), label: l.name }))}
             value={formData.location_id}
-            onChange={(val) => setFormData(p => ({ ...p, location_id: String(val) }))}
-            placeholder="Select location..."
+            onChange={(val) => setFormData((p: any) => ({ ...p, location_id: String(val) }))}
+            placeholder={t('select_location_placeholder')}
           />
         </div>
 
         {/* Reference Number */}
         <div className="md:col-span-2 space-y-1">
-          <Label className="text-sm font-medium">Reference Number</Label>
+          <Label className="text-sm font-medium">{t('reference_label')}</Label>
           <Input 
             value={formData.reference_number} 
-            onChange={e => setFormData(p => ({ ...p, reference_number: e.target.value }))} 
-            placeholder="e.g. Supplier Invoice / Delivery Note" 
+            onChange={e => setFormData((p: any) => ({ ...p, reference_number: e.target.value }))} 
+            placeholder={t('ref_number_placeholder')} 
           />
         </div>
 
         {/* Receiving Note */}
         <div className="md:col-span-2 space-y-1">
-          <Label className="text-sm font-medium">Receiving Note</Label>
+          <Label className="text-sm font-medium">{t('note')}</Label>
           <Input 
             value={formData.receiving_note} 
-            onChange={e => setFormData(p => ({ ...p, receiving_note: e.target.value }))} 
-            placeholder="Optional note about this receipt" 
+            onChange={e => setFormData((p: any) => ({ ...p, receiving_note: e.target.value }))} 
+            placeholder={t('optional_note_receipt_placeholder')} 
           />
         </div>
       </div>
@@ -467,13 +478,13 @@ export default function PurchaseReceivesPage() {
     {/* Header with title and receive date/time */}
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-        Items to Receive
+        {t('items_to_receive')}
       </h3>
 
       {/* Receive Date & Time moved here */}
       <div className="flex items-center gap-2">
         <Label className="text-sm font-medium whitespace-nowrap">
-          Receive Date <span className="text-red-500">*</span>
+          {t('receive_date_label')} <span className="text-red-500">*</span>
         </Label>
         <DatePicker
           value={formData.receive_date ? new Date(formData.receive_date) : undefined}
@@ -481,7 +492,7 @@ export default function PurchaseReceivesPage() {
             if (!date) return;
             const time = formData.receive_date ? formData.receive_date.split('T')[1]?.slice(0, 5) || '00:00' : '00:00';
             const newDate = format(date, 'yyyy-MM-dd') + 'T' + time;
-            setFormData(p => ({ ...p, receive_date: newDate }));
+            setFormData((p: any) => ({ ...p, receive_date: newDate }));
           }}
         />
         <TimePicker
@@ -489,7 +500,7 @@ export default function PurchaseReceivesPage() {
           onChange={(time) => {
             const date = formData.receive_date ? formData.receive_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
             const newDate = date + 'T' + time;
-            setFormData(p => ({ ...p, receive_date: newDate }));
+            setFormData((p: any) => ({ ...p, receive_date: newDate }));
           }}
         />
       </div>
@@ -502,11 +513,11 @@ export default function PurchaseReceivesPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
               <tr>
-                <th className="px-4 py-3 text-left">Product</th>
-                <th className="px-3 py-3 text-right">Ordered</th>
-                <th className="px-3 py-3 text-right">Received</th>
-                <th className="px-3 py-3 text-right text-primary">Remaining</th>
-                <th className="px-4 py-3 text-right w-40">Qty Receiving Now</th>
+                <th className="px-4 py-3 text-left">{t('product')}</th>
+                <th className="px-3 py-3 text-right">{t('ordered')}</th>
+                <th className="px-3 py-3 text-right">{t('received')}</th>
+                <th className="px-3 py-3 text-right text-primary">{t('remaining')}</th>
+                <th className="px-4 py-3 text-right w-40">{t('qty_receiving_now')}</th>
               </tr>
             </thead>
             <tbody className="divide-y dark:divide-gray-700">
@@ -538,8 +549,8 @@ export default function PurchaseReceivesPage() {
         <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/20 p-6 flex items-center gap-4 text-green-700 dark:text-green-400">
           <CheckCircle2 className="h-6 w-6 shrink-0" />
           <div>
-            <p className="font-semibold">All caught up!</p>
-            <p className="text-sm">All items on this Purchase Order have been fully received.</p>
+            <p className="font-semibold">{t('all_caught_up')}</p>
+            <p className="text-sm">{t('all_items_received_desc')}</p>
           </div>
         </div>
       ) : (
@@ -547,11 +558,11 @@ export default function PurchaseReceivesPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
               <tr>
-                <th className="px-4 py-3 text-left">Product</th>
-                <th className="px-3 py-3 text-right">Ordered</th>
-                <th className="px-3 py-3 text-right">Received</th>
-                <th className="px-3 py-3 text-right text-primary">Remaining</th>
-                <th className="px-4 py-3 text-right w-40">Qty Receiving Now</th>
+                <th className="px-4 py-3 text-left">{t('product')}</th>
+                <th className="px-3 py-3 text-right">{t('ordered')}</th>
+                <th className="px-3 py-3 text-right">{t('received')}</th>
+                <th className="px-3 py-3 text-right text-primary">{t('remaining')}</th>
+                <th className="px-4 py-3 text-right w-40">{t('qty_receiving_now')}</th>
               </tr>
             </thead>
             <tbody className="divide-y dark:divide-gray-700">
@@ -571,7 +582,7 @@ export default function PurchaseReceivesPage() {
                       min="0"
                       max={it.remaining_qty}
                       value={receiveQtys[it.id] || ''}
-                      onChange={e => setReceiveQtys(prev => ({ ...prev, [it.id]: e.target.value }))}
+                      onChange={e => setReceiveQtys((prev: Record<number, string>) => ({ ...prev, [it.id]: e.target.value }))}
                       className="text-right font-semibold"
                     />
                   </td>
@@ -589,7 +600,7 @@ export default function PurchaseReceivesPage() {
     {/* Footer */}
     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
       <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
-        Cancel
+        {t('cancel')}
       </Button>
       <Button 
         type="submit" 
@@ -597,7 +608,7 @@ export default function PurchaseReceivesPage() {
         disabled={submitting || pendingItems.length === 0}
         className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
       >
-        {submitting ? 'Processing...' : 'Confirm Receipt & Update Stock'}
+        {submitting ? t('processing') : t('confirm_receipt_update_stock')}
       </Button>
     </div>
   </DialogContent>
