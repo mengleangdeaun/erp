@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { IRootState } from '@/store';
-import { setUserPreferences } from '@/store/themeConfigSlice';
+import { setUserPreferences, setAccentColor } from '@/store/themeConfigSlice';
+import { hexToHsl, applyAccentColor } from '@/utils/themeUtils';
 import api from '@/utils/api';
 import { toast } from 'sonner';
 import {
@@ -65,38 +66,7 @@ const TIME_FORMATS = [
 ];
 
 
-// Helper: convert hex to HSL object
-function hexToHsl(hex: string): { h: number; s: number; l: number } {
-    let r = 0, g = 0, b = 0;
-    if (hex.length === 4) {
-        r = parseInt(hex[1] + hex[1], 16);
-        g = parseInt(hex[2] + hex[2], 16);
-        b = parseInt(hex[3] + hex[3], 16);
-    } else if (hex.length === 7) {
-        r = parseInt(hex[1] + hex[2], 16);
-        g = parseInt(hex[3] + hex[4], 16);
-        b = parseInt(hex[5] + hex[6], 16);
-    }
-    r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
-    if (max !== min) {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-            case g: h = (b - r) / d + 2; break;
-            case b: h = (r - g) / d + 4; break;
-        }
-        h /= 6;
-    }
-    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
-}
-
-// Helper: HSL to CSS string
-function hslToString(h: number, s: number, l: number): string {
-    return `${h} ${s}% ${l}%`;
-}
+// Helpers moved to @/utils/themeUtils
 
 /* ─────────────────────────────────────────────────────────
    Section Card
@@ -165,77 +135,33 @@ export default function UserPreferences() {
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
     const [saving, setSaving] = useState(false);
 
-    // Custom color state
-    const [customColor, setCustomColor] = useState<{ h: number; s: number; l: number } | null>(() => {
-        const saved = localStorage.getItem('customPrimaryColor');
-        if (saved) {
-            try {
-                return JSON.parse(saved);
-            } catch { return null; }
-        }
-        return null;
-    });
-    const [isCustom, setIsCustom] = useState(() => {
-        const accent = localStorage.getItem('accentColor');
-        return accent === 'custom';
-    });
+    // Redux sync and local state
+    const [customColor, setCustomColor] = useState(themeConfig.customPrimaryColor);
+    const [isCustom, setIsCustom] = useState(themeConfig.accentColor === 'custom');
 
     const [preferences, setPreferences] = useState({
         font_family: themeConfig.fontFamily || 'Google Sans',
         date_format: themeConfig.dateFormat || 'DD MMM YYYY',
         time_format: themeConfig.timeFormat || '12h',
-        accent_color: isCustom ? 'custom' : (localStorage.getItem('accentColor') || 'red'),
+        accent_color: themeConfig.accentColor || 'blue',
+        custom_primary_color: themeConfig.customPrimaryColor || null,
     });
 
-    // Apply accent color CSS variables
-    const applyAccentColor = (colorValue: string, customHsl?: { h: number; s: number; l: number }) => {
-        let primaryHsl: string;
-        let secondaryHsl: string, accentHsl: string, ringHsl: string;
-        const isDark = document.body.classList.contains('dark');
+    // Use reactive application in App.tsx but apply locally for instant feedback if needed
+    // However, App.tsx now monitors themeConfig.accentColor and customPrimaryColor.
+    // So we just need to update Redux on change if we want instant feedback OR wait for Save.
+    // The previous implementation was applying it locally during interaction.
+    // Let's keep it consistent: local preview applies locally, Save persists to DB and Redux.
 
-        if (colorValue === 'custom' && customHsl) {
-            // Generate derived shades using fixed saturation/lightness pattern
-            const h = customHsl.h;
-            primaryHsl = hslToString(h, customHsl.s, customHsl.l);
-            if (isDark) {
-                secondaryHsl = hslToString(h, 30, 18);
-                accentHsl = hslToString(h, 35, 20);
-                ringHsl = primaryHsl;
-            } else {
-                secondaryHsl = hslToString(h, 40, 94);
-                accentHsl = hslToString(h, 50, 90);
-                ringHsl = primaryHsl;
-            }
-        } else {
-            const color = THEME_COLORS.find(c => c.value === colorValue);
-            if (!color) return;
-            primaryHsl = isDark ? color.darkPrimary : color.primary;
-            secondaryHsl = isDark ? color.darkSecondary : color.secondary;
-            accentHsl = isDark ? color.darkAccent : color.accent;
-            ringHsl = isDark ? color.darkRing : color.ring;
-        }
-
-        const targets = [document.documentElement, document.body];
-        targets.forEach(el => {
-            el.style.setProperty('--primary', primaryHsl);
-            el.style.setProperty('--primary-foreground', '0 0% 100%');
-            el.style.setProperty('--secondary', secondaryHsl);
-            el.style.setProperty('--accent', accentHsl);
-            el.style.setProperty('--ring', ringHsl);
-        });
-        localStorage.setItem('accentColor', colorValue);
-        if (colorValue === 'custom' && customHsl) {
-            localStorage.setItem('customPrimaryColor', JSON.stringify(customHsl));
-        } else {
-            localStorage.removeItem('customPrimaryColor');
-        }
+    const applyTempAccent = (colorValue: string, customHsl?: any) => {
+        applyAccentColor(colorValue, customHsl);
     };
 
     useEffect(() => {
         if (preferences.accent_color === 'custom' && customColor) {
-            applyAccentColor('custom', customColor);
+            applyTempAccent('custom', customColor);
         } else if (preferences.accent_color !== 'custom') {
-            applyAccentColor(preferences.accent_color);
+            applyTempAccent(preferences.accent_color);
         }
     }, [preferences.accent_color, customColor, themeConfig.theme]);
 
@@ -248,6 +174,8 @@ export default function UserPreferences() {
         try {
             const res = await api.put('/user/preferences', { preferences });
             dispatch(setUserPreferences(res.data.preferences));
+            // Also sync accent color to Redux for global persistency between reloads
+            dispatch(setAccentColor({ color: preferences.accent_color, customHsl: customColor }));
             toast.success('Preferences saved successfully!');
         } catch (error) {
             console.error('Failed to save preferences:', error);
@@ -259,7 +187,8 @@ export default function UserPreferences() {
 
     const handleCustomColorChange = (newHsl: { h: number; s: number; l: number }) => {
         setCustomColor(newHsl);
-        applyAccentColor('custom', newHsl);
+        setPreferences(prev => ({ ...prev, custom_primary_color: newHsl }));
+        applyTempAccent('custom', newHsl);
     };
 
     const currentFont = FONTS.find(f => f.value === preferences.font_family);

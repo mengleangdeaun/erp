@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { IRootState } from '../../store';
-import { toggleRTL, toggleTheme, toggleSidebar } from '../../store/themeConfigSlice';
+import { toggleRTL, toggleTheme, toggleSidebar, setUserPreferences } from '../../store/themeConfigSlice';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
 import Dropdown from '../Dropdown';
@@ -28,6 +28,9 @@ const Header = () => {
                 if (data && !data.message) {
                     setUser(data);
                     localStorage.setItem('user_info', JSON.stringify(data));
+                    if (data.preferences) {
+                        dispatch(setUserPreferences(data.preferences));
+                    }
                 }
             })
             .catch(err => console.error('Failed to fetch user', err));

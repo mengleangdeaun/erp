@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { IRootState } from './store';
 import { toggleRTL, toggleTheme, toggleLocale, toggleMenu, toggleLayout, toggleAnimation, toggleNavbar, toggleSemidark } from './store/themeConfigSlice';
 import store from './store';
+import { applyAccentColor } from './utils/themeUtils';
 
 function App({ children }: PropsWithChildren) {
     const themeConfig = useSelector((state: IRootState) => state.themeConfig);
@@ -19,6 +20,10 @@ function App({ children }: PropsWithChildren) {
         dispatch(toggleLocale(localStorage.getItem('i18nextLng') || themeConfig.locale));
         dispatch(toggleSemidark(localStorage.getItem('semidark') || themeConfig.semidark));
     }, [dispatch, themeConfig.theme, themeConfig.menu, themeConfig.layout, themeConfig.rtlClass, themeConfig.animation, themeConfig.navbar, themeConfig.locale, themeConfig.semidark]);
+
+    useEffect(() => {
+        applyAccentColor(themeConfig.accentColor, themeConfig.customPrimaryColor);
+    }, [themeConfig.accentColor, themeConfig.customPrimaryColor, themeConfig.theme]);
 
     return (
         <div

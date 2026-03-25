@@ -27,8 +27,9 @@ const TableSkeleton: React.FC<TableSkeletonProps> = ({ columns, rows = 5, rowsOn
         let progress = 0;
         let lastTime = 0;
 
-        const primaryColor = getComputedStyle(document.documentElement)
-            .getPropertyValue('-color-primary')?.trim() || '#ef4444';
+        const primaryHsl = getComputedStyle(document.documentElement)
+            .getPropertyValue('--primary')?.trim() || '239 84% 67%';
+        const primaryColor = `hsl(${primaryHsl})`;
 
         const resize = () => {
             const { width, height } = wrapper.getBoundingClientRect();

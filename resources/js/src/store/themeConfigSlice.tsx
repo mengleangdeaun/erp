@@ -43,6 +43,8 @@ const initialState = {
     fontFamily: 'Google Sans',
     dateFormat: 'DD MMM YYYY',
     timeFormat: '12h',
+    accentColor: localStorage.getItem('accentColor') || 'blue',
+    customPrimaryColor: localStorage.getItem('customPrimaryColor') ? JSON.parse(localStorage.getItem('customPrimaryColor')!) : null,
     cookieConsent: 'pending',
 };
 
@@ -55,6 +57,18 @@ const themeConfigSlice = createSlice({
                 state.fontFamily = payload.font_family || state.fontFamily;
                 state.dateFormat = payload.date_format || state.dateFormat;
                 state.timeFormat = payload.time_format || state.timeFormat;
+                state.accentColor = payload.accent_color || state.accentColor;
+                state.customPrimaryColor = payload.custom_primary_color || state.customPrimaryColor;
+            }
+        },
+        setAccentColor(state, { payload }) {
+            state.accentColor = payload.color;
+            state.customPrimaryColor = payload.customHsl || null;
+            localStorage.setItem('accentColor', payload.color);
+            if (payload.customHsl) {
+                localStorage.setItem('customPrimaryColor', JSON.stringify(payload.customHsl));
+            } else {
+                localStorage.removeItem('customPrimaryColor');
             }
         },
         toggleTheme(state, { payload }) {
@@ -127,6 +141,6 @@ const themeConfigSlice = createSlice({
     },
 });
 
-export const { setUserPreferences, toggleTheme, toggleMenu, toggleLayout, toggleRTL, toggleAnimation, toggleNavbar, toggleSemidark, toggleLocale, toggleSidebar, setPageTitle } = themeConfigSlice.actions;
+export const { setUserPreferences, setAccentColor, toggleTheme, toggleMenu, toggleLayout, toggleRTL, toggleAnimation, toggleNavbar, toggleSemidark, toggleLocale, toggleSidebar, setPageTitle } = themeConfigSlice.actions;
 
 export default themeConfigSlice.reducer;
