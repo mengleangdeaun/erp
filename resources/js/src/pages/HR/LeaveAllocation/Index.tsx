@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
@@ -34,6 +35,7 @@ import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
 
 const LeaveAllocationIndex = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
 
     // Filter & Sort & Pagination state
@@ -103,12 +105,12 @@ const LeaveAllocationIndex = () => {
 
         deleteMutation.mutate(itemToDelete, {
             onSuccess: () => {
-                toast.success('Leave Allocation deleted successfully');
+                toast.success(t('doc_deleted'));
                 setDeleteModalOpen(false);
                 setItemToDelete(null);
             },
             onError: () => {
-                toast.error('Failed to delete leave allocation');
+                toast.error(t('failed_delete_msg'));
             }
         });
     };
@@ -249,14 +251,14 @@ const LeaveAllocationIndex = () => {
         <div>
             <FilterBar
                 icon={<IconCalendar className="w-6 h-6 text-primary" />}
-                title="Leave Allocations"
-                description="Assign leave policies to employees"
+                title={t('leave_allocations_title')}
+                description={t('leave_allocations_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={handleCreate}
-                addLabel="Assign Leave Policy"
+                addLabel={t('assign_leave_policy_btn')}
                 onRefresh={() => queryClient.invalidateQueries({ queryKey: ['hr-leave-allocations'] })}
                 hasActiveFilters={sortBy !== 'employee' || sortDirection !== 'asc'}
                 onClearFilters={() => {
@@ -269,9 +271,9 @@ const LeaveAllocationIndex = () => {
                 <TableSkeleton columns={6} rows={itemsPerPage} />
             ) : allocations.length === 0 ? (
                 <EmptyState
-                    title="No Allocations Found"
-                    description="Get started by assigning a leave policy to an employee."
-                    actionLabel="Assign Leave Policy"
+                    title={t('no_allocations_found_title')}
+                    description={t('assign_leave_policy_desc')}
+                    actionLabel={t('assign_leave_policy_btn')}
                     onAction={handleCreate}
                 />
             ) : filteredAndSortedAllocations.length === 0 ? (
@@ -289,12 +291,12 @@ const LeaveAllocationIndex = () => {
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
-                                <SortableHeader label="Employee" value="employee" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Policy" value="policy" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Effective Date" value="effective_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Mng/Approver" value="approved_by" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Status" value="is_active" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-right">Action</th>
+                                <SortableHeader label={t('employee_sort_label')} value="employee" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('policy_sort_label')} value="policy" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('effective_date_label')} value="effective_date" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('mng_approver_sort_label')} value="approved_by" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('status_label')} value="is_active" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="text-right">{t('actions_label')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -328,7 +330,7 @@ const LeaveAllocationIndex = () => {
                                         <Badge 
                                           size='sm'
                                           variant={allocation.is_active ? 'success' : 'destructive'}>
-                                            {allocation.is_active ? 'Active' : 'Inactive'}
+                                            {allocation.is_active ? t('active_label') : t('inactive_label')}
                                         </Badge>
                                     </td>
                                     <td>
@@ -363,12 +365,12 @@ const LeaveAllocationIndex = () => {
       </div>
       <div>
         <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-          {editingAllocation ? 'Edit Leave Allocation' : 'Assign Leave Policy'}
+          {editingAllocation ? t('edit_leave_allocation_title') : t('assign_leave_policy_btn')}
         </DialogTitle>
         <p className="text-sm text-gray-500 mt-1">
           {editingAllocation
-            ? 'Update the allocation details below.'
-            : 'Select employees and configure policy settings.'}
+            ? t('update_allocation_detail_desc')
+            : t('select_employees_configure_policy_desc')}
         </p>
       </div>
     </div>
@@ -383,41 +385,41 @@ const LeaveAllocationIndex = () => {
                 {/* Build Roster Section */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                    Build Roster
+                    {t('build_roster_title')}
                   </h3>
 
                   <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800 space-y-4">
                     {/* Individual Search */}
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        1. Search Individuals
+                        {t('search_individuals_label')}
                       </Label>
                       <SearchableSelect
                         options={employees.map((emp: any) => ({ value: String(emp.id), label: emp.full_name }))}
                         value=""
                         onChange={(val) => handleEmployeeAdd(String(val))}
-                        placeholder="Search & add individual..."
-                        searchPlaceholder="Search employee name..."
+                        placeholder={t('search_add_individual_placeholder')}
+                        searchPlaceholder={t('search_employee_name_placeholder')}
                       />
                     </div>
 
                     {/* Quick Add Departments & Branches */}
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        2. Quick Add Groups
+                        {t('quick_add_groups_label')}
                       </Label>
                       <div className="grid grid-cols-2 gap-2">
                         <SearchableSelect
                           options={departments.map((dept: any) => ({ value: String(dept.id), label: dept.name }))}
                           value=""
                           onChange={(val) => handleQuickAssign('dept', val)}
-                          placeholder="Add Department..."
+                           placeholder={t('add_department_placeholder')}
                         />
                         <SearchableSelect
                           options={branches.map((branch: any) => ({ value: String(branch.id), label: branch.name }))}
                           value=""
                           onChange={(val) => handleQuickAssign('branch', val)}
-                          placeholder="Add Branch..."
+                           placeholder={t('add_branch_placeholder')}
                         />
                       </div>
                       <div className="flex gap-2 pt-2">
@@ -426,18 +428,18 @@ const LeaveAllocationIndex = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleQuickAssign('all')}
-                          className="flex-1 border-primary/20 hover:bg-primary/5 text-primary"
+                           className="flex-1 border-primary/20 hover:bg-primary/5 text-primary"
                         >
-                          Select All Staff
+                          {t('select_all_staff_btn')}
                         </Button>
                         <Button
                           type="button"
                           variant="destructive"
                           size="sm"
                           onClick={() => setFormData(prev => ({ ...prev, employee_ids: [] }))}
-                          className="w-24"
+                           className="w-24"
                         >
-                          Clear
+                          {t('clear_btn_label')}
                         </Button>
                       </div>
                     </div>
@@ -448,17 +450,17 @@ const LeaveAllocationIndex = () => {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Selected Employees <span className="text-red-500">*</span>
+                      {t('selected_employees_label')} <span className="text-red-500">*</span>
                     </Label>
                     <span className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                      {formData.employee_ids.length} selected
+                      {formData.employee_ids.length} {t('selected_label')}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg min-h-[100px] max-h-[200px] overflow-y-auto bg-white dark:bg-black">
                     {formData.employee_ids.length === 0 ? (
                       <div className="w-full flex flex-col items-center justify-center text-sm text-gray-400 py-6">
                         <IconUsers className="w-8 h-8 opacity-20 mb-2" />
-                        <p>No employees selected yet</p>
+                        <p>{t('no_employees_selected_msg')}</p>
                       </div>
                     ) : (
                       formData.employee_ids.map((id: string) => {
@@ -468,7 +470,7 @@ const LeaveAllocationIndex = () => {
                             key={id}
                             className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1.5 rounded-md text-sm border border-primary/20"
                           >
-                            <span className="truncate max-w-[120px]">{emp ? emp.full_name : 'Unknown Employee'}</span>
+                            <span className="truncate max-w-[120px]">{emp ? emp.full_name : t('unknown_employee_label')}</span>
                             <button
                               type="button"
                               onClick={() => handleEmployeeRemove(id)}
@@ -489,12 +491,12 @@ const LeaveAllocationIndex = () => {
                 <div className="bg-primary/10 p-4 rounded-full mb-4">
                   <IconUsers className="w-8 h-8 text-primary" />
                 </div>
-                <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">Editing Single Allocation</h3>
+                <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-200">{t('editing_single_allocation_title')}</h3>
                 <p className="text-sm text-gray-500 mt-1 max-w-xs">
-                  Bulk editing is not supported. Use creation for bulk assignment.
+                  {t('bulk_editing_not_supported_msg')}
                 </p>
                 <div className="mt-4 w-full">
-                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Target Employee</Label>
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('target_employee_label')}</Label>
                   <div className="mt-1 p-3 bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-md font-medium shadow-sm">
                     {employees.find((e: any) => String(e.id) === formData.employee_ids[0])?.full_name || 'Loading...'}
                   </div>
@@ -506,26 +508,26 @@ const LeaveAllocationIndex = () => {
           {/* Right Column: Policy Settings */}
           <div className="space-y-5">
             <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-              Policy Settings
+              {t('policy_settings_title')}
             </h3>
 
             <div className="space-y-4 bg-white dark:bg-black p-5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="space-y-1.5">
                 <Label htmlFor="leave_policy_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Leave Policy <span className="text-red-500">*</span>
+                  {t('leave_policy_label')} <span className="text-red-500">*</span>
                 </Label>
                 <SearchableSelect
                   options={policies.map((policy: any) => ({ value: String(policy.id), label: policy.name }))}
                   value={formData.leave_policy_id}
                   onChange={(val) => handleSelectChange(String(val), 'leave_policy_id')}
-                  placeholder="Select Leave Policy"
+                  placeholder={t('select_leave_policy_placeholder')}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="effective_date" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Effective Date <span className="text-red-500">*</span>
+                    {t('effective_date_label')} <span className="text-red-500">*</span>
                   </Label>
                   <DatePicker
                     value={formData.effective_date}
@@ -534,26 +536,26 @@ const LeaveAllocationIndex = () => {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="expiration_date" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Expiration <span className="text-gray-400 font-normal">(Optional)</span>
+                    {t('expiration_label')} <span className="text-gray-400 font-normal">{t('optional_suffix')}</span>
                   </Label>
                   <DatePicker
                     value={formData.expiration_date}
                     onChange={(date) => handleDateChange(date, 'expiration_date')}
-                    placeholder="No expiration"
+                     placeholder={t('no_expiration_placeholder')}
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="approved_by" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Specific Approver <span className="text-gray-400 font-normal">(Optional)</span>
+                  {t('specific_approver_label')} <span className="text-gray-400 font-normal">{t('optional_suffix')}</span>
                 </Label>
                 <SearchableSelect
                   options={employees.map((emp: any) => ({ value: String(emp.id), label: emp.full_name }))}
                   value={formData.approved_by}
                   onChange={(val) => handleSelectChange(String(val), 'approved_by')}
-                  placeholder="Select manager (default: Line Manager)"
-                  searchPlaceholder="Search approver name..."
+                  placeholder={t('select_manager_default_help')}
+                  searchPlaceholder={t('search_approver_name_placeholder')}
                 />
               </div>
 
@@ -565,11 +567,11 @@ const LeaveAllocationIndex = () => {
                     onCheckedChange={(checked) => setFormData({ ...formData, is_active: !!checked })}
                   />
                   <span className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 select-none">
-                    Allocation is Active
+                    {t('allocation_is_active_label')}
                   </span>
                 </label>
                 <p className="text-xs text-gray-500 mt-1.5 ml-6">
-                  Inactive allocations cannot be used to request leaves.
+                  {t('inactive_allocation_help')}
                 </p>
               </div>
             </div>
@@ -586,7 +588,7 @@ const LeaveAllocationIndex = () => {
         className="px-5"
         onClick={() => setModalOpen(false)}
       >
-        Cancel
+        {t('cancel_btn_label')}
       </Button>
       <Button
         type="submit"
@@ -594,7 +596,7 @@ const LeaveAllocationIndex = () => {
         disabled={isSaving}
         className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
       >
-        {isSaving ? 'Saving...' : (editingAllocation ? 'Save Changes' : 'Create Allocation')}
+        {isSaving ? t('saving_dots') : (editingAllocation ? t('save_changes_btn') : t('create_allocation_btn'))}
       </Button>
     </div>
   </DialogContent>
@@ -605,9 +607,9 @@ const LeaveAllocationIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Leave Allocation"
-                message="Are you sure you want to delete this leave allocation? This action cannot be undone."
-            />
+                 title={t('delete_leave_allocation_title')}
+                 message={t('delete_leave_allocation_confirm')}
+             />
         </div>
     );
 };

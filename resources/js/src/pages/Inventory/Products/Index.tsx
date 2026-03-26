@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
+import { ProductNotFoundIllustration } from '@/components/illustrations/ProductNotFound';
 import { ScrollArea } from '../../../components/ui/scroll-area';
 import { Button } from '../../../components/ui/button';
 import FilterBar from '../../../components/ui/FilterBar';
@@ -302,6 +303,7 @@ const ProductIndex = () => {
                 />
             ) : filteredAndSorted.length === 0 ? (
                 <EmptyState
+                    illustration={<ProductNotFoundIllustration />}
                     isSearch
                     searchTerm={search}
                     onClearFilter={() => {

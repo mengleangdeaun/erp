@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { IconClock, IconClockRecord } from '@tabler/icons-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../../components/ui/dialog';
@@ -27,6 +28,7 @@ import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function LeaveRecordIndex() {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     
     // Filtering & Pagination
@@ -85,12 +87,12 @@ export default function LeaveRecordIndex() {
         if (!itemToApprove) return;
         approveMutation.mutate(itemToApprove, {
             onSuccess: () => {
-                toast.success('Leave approved successfully!');
+                toast.success(t('leave_approved_success'));
                 setApproveModalOpen(false);
                 setItemToApprove(null);
             },
             onError: (err: any) => {
-                toast.error(err.response?.data?.message || 'Error approving request');
+                toast.error(err.response?.data?.message || t('error_approving_request'));
             }
         });
     };
@@ -106,7 +108,7 @@ export default function LeaveRecordIndex() {
         if (!activeRequest) return;
         rejectMutation.mutate({ id: activeRequest.id, reason: rejectionReason }, {
             onSuccess: () => {
-                toast.success('Leave request rejected');
+                toast.success(t('leave_request_rejected'));
                 setRejectModalOpen(false);
             },
             onError: (err: any) => {
@@ -114,7 +116,7 @@ export default function LeaveRecordIndex() {
                 if (data?.errors?.rejection_reason) {
                     toast.error(data.errors.rejection_reason[0]);
                 } else {
-                    toast.error(data?.message || 'Error rejecting request');
+                    toast.error(data?.message || t('error_rejecting_request'));
                 }
             }
         });
@@ -125,18 +127,18 @@ export default function LeaveRecordIndex() {
 
         const request = requests.find(r => r.id === itemToDelete);
         if (request?.status === 'approved') {
-            toast.error('Cannot delete an already approved request. Consider reverting it first.');
+            toast.error(t('cannot_delete_approved_request'));
             setDeleteModalOpen(false);
             return;
         }
 
         deleteMutation.mutate(itemToDelete, {
             onSuccess: () => {
-                toast.success('Record deleted successfully');
+                toast.success(t('record_deleted_success'));
                 setDeleteModalOpen(false);
             },
             onError: (err: any) => {
-                toast.error(err.response?.data?.message || 'Failed to delete record');
+                toast.error(err.response?.data?.message || t('failed_delete_record'));
             }
         });
     };
@@ -229,8 +231,8 @@ export default function LeaveRecordIndex() {
         <div>
             <FilterBar
                 icon={<IconClockRecord className="w-6 h-6 text-primary" />}
-                title="Leave Records"
-                description="Manage and approve organization leave applications."
+                title={t('leave_records_title')}
+                description={t('leave_records_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
@@ -245,41 +247,41 @@ export default function LeaveRecordIndex() {
                 onRefresh={handleRefresh}
             >
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('date_range_label')}</span>
                     <DateRangePicker
                         value={dateFilter}
                         onChange={setDateFilter}
-                        placeholder="Filter by date range..."
+                        placeholder={t('filter_by_date_range_placeholder')}
                     />
                 </div>
 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Employee</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('employee_label')}</span>
                     <SearchableSelect
                         options={employeeOptions}
                         value={employeeFilter}
                         onChange={(val) => setEmployeeFilter(String(val))}
-                        placeholder="All Employees"
-                        searchPlaceholder="Search employees..."
+                        placeholder={t('all_employees_placeholder')}
+                        searchPlaceholder={t('search_employees_placeholder')}
                         loading={loadingEmployees}
                     />
                 </div>
 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('status_label')}</span>
                     <Select
                         value={statusFilter}
                         onValueChange={setStatusFilter}
                     >
                         <SelectTrigger className="h-10 w-full bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all focus:ring-primary text-gray-800 dark:text-gray-200">
-                            <SelectValue placeholder="All Statuses" />
+                            <SelectValue placeholder={t('all_statuses_placeholder')} />
                         </SelectTrigger>
                         <SelectContent className="bg-white dark:bg-black border-slate-200 dark:border-slate-800">
-                            <SelectItem value="ALL_STATUSES" className="font-medium">All Statuses</SelectItem>
-                            <SelectItem value="pending" className="font-medium">Pending</SelectItem>
-                            <SelectItem value="approved" className="font-medium">Approved</SelectItem>
-                            <SelectItem value="rejected" className="font-medium">Rejected</SelectItem>
-                            <SelectItem value="cancelled" className="font-medium">Cancelled</SelectItem>
+                            <SelectItem value="ALL_STATUSES" className="font-medium">{t('all_statuses_label')}</SelectItem>
+                            <SelectItem value="pending" className="font-medium">{t('pending_label')}</SelectItem>
+                            <SelectItem value="approved" className="font-medium">{t('approved_label')}</SelectItem>
+                            <SelectItem value="rejected" className="font-medium">{t('rejected_label')}</SelectItem>
+                            <SelectItem value="cancelled" className="font-medium">{t('cancelled_label')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -299,13 +301,13 @@ export default function LeaveRecordIndex() {
                         <table className="w-full text-sm">
                             <thead className="border-b border-gray-100 dark:border-gray-800 text-gray-500 uppercase font-bold text-[11px] tracking-wider">
                                 <tr>
-                                    <SortableHeader label="Requested" value="created_at" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3 whitespace-nowrap" />
-                                    <SortableHeader label="Employee" value="employee" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3" />
-                                    <SortableHeader label="Leave Type" value="leave_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3" />
-                                    <th className="px-4 py-3 text-left whitespace-nowrap">Duration Detail</th>
-                                    <th className="px-4 py-3 text-left">Reason</th>
-                                    <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3 text-center" />
-                                    <th className="px-4 py-3 text-right pr-4">Action</th>
+                                    <SortableHeader label={t('requested_label')} value="created_at" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3 whitespace-nowrap" />
+                                    <SortableHeader label={t('employee_label')} value="employee" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3" />
+                                    <SortableHeader label={t('leave_type_label')} value="leave_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3" />
+                                    <th className="px-4 py-3 text-left whitespace-nowrap">{t('duration_detail_label')}</th>
+                                    <th className="px-4 py-3 text-left">{t('reason_label')}</th>
+                                    <SortableHeader label={t('status_label')} value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3 text-center" />
+                                    <th className="px-4 py-3 text-right pr-4">{t('actions_label')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -344,7 +346,7 @@ export default function LeaveRecordIndex() {
                                                 )}
                                             </div>
                                             <div className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full inline-block mt-1">
-                                                {req.total_days} {req.total_days == 1 ? 'day' : 'days'}
+                                                {req.total_days} {req.total_days == 1 ? t('day') : t('days')}
                                             </div>
                                             {req.start_time && (
                                                 <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
@@ -365,7 +367,7 @@ export default function LeaveRecordIndex() {
                                         </td>
                                         <td className="px-4 py-3 text-center">
                                             <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-full uppercase tracking-widest font-bold text-[11px] ${getStatusStyle(req.status)}`}>
-                                                {req.status}
+                                                {t(req.status + '_label')}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-right pr-4">
@@ -402,19 +404,19 @@ export default function LeaveRecordIndex() {
             <Dialog open={rejectModalOpen} onOpenChange={setRejectModalOpen}>
                 <DialogContent className="sm:max-w-[500px] bg-white dark:bg-black border-slate-200 dark:border-slate-800">
                     <DialogHeader>
-                        <DialogTitle className="text-gray-900 dark:text-gray-100">Reject Leave Request</DialogTitle>
+                        <DialogTitle className="text-gray-900 dark:text-gray-100">{t('reject_leave_request_title')}</DialogTitle>
                         <DialogDescription className="text-gray-500 dark:text-gray-400">
-                            Please provide a reason for rejecting this leave request for <span className="font-bold">{activeRequest?.employee?.full_name}</span>. This note will be visible to the employee.
+                            {t('reject_leave_request_desc', { name: activeRequest?.employee?.full_name })}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleReject} className="space-y-4 mt-4">
                         <div>
-                            <label className="text-sm font-semibold mb-2 block text-gray-800 dark:text-gray-200">Rejection Reason <span className="text-red-500">*</span></label>
+                            <label className="text-sm font-semibold mb-2 block text-gray-800 dark:text-gray-200">{t('rejection_reason_label')} <span className="text-red-500">*</span></label>
                             <Textarea
                                 value={rejectionReason}
                                 onChange={(e) => setRejectionReason(e.target.value)}
                                 className="w-full rounded-lg resize-none h-32 bg-white dark:bg-black border-gray-200 dark:border-gray-800"
-                                placeholder="E.g., Too many staff on leave on these dates..."
+                                placeholder={t('rejection_reason_placeholder')}
                                 required
                             />
                         </div>
@@ -425,7 +427,7 @@ export default function LeaveRecordIndex() {
                                 variant="outline"
                                 className="border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300"
                             >
-                                Cancel
+                                {t('cancel_btn_label')}
                             </Button>
                             <Button
                                 type="submit"
@@ -433,7 +435,7 @@ export default function LeaveRecordIndex() {
                                 variant="destructive"
                                 className="bg-rose-600 hover:bg-rose-700 text-white"
                             >
-                                {isProcessing ? 'Processing... ' : 'Confirm Rejection'}
+                                {isProcessing ? t('processing_dots') : t('confirm_rejection_btn')}
                             </Button>
                         </div>
                     </form>
@@ -443,8 +445,8 @@ export default function LeaveRecordIndex() {
             <DeleteModal
                 isOpen={deleteModalOpen}
                 setIsOpen={setDeleteModalOpen}
-                title="Delete Leave Record"
-                message="Are you sure you want to delete this leave record? This action cannot be undone."
+                title={t('delete_leave_record_title')}
+                message={t('delete_leave_record_confirm')}
                 onConfirm={executeDelete}
                 isLoading={deleteMutation.isPending}
             />
@@ -452,9 +454,9 @@ export default function LeaveRecordIndex() {
             <ConfirmationModal
                 isOpen={approveModalOpen}
                 setIsOpen={setApproveModalOpen}
-                title="Approve Leave Request"
-                description="Are you sure you want to approve this leave request? This will deduct the employee's leave balance automatically."
-                confirmText="Approve"
+                title={t('approve_leave_request_title')}
+                description={t('approve_leave_request_desc')}
+                confirmText={t('approve_btn_label')}
                 confirmVariant="success"
                 onConfirm={executeApprove}
                 loading={approveMutation.isPending}

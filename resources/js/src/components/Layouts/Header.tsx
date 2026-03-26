@@ -555,31 +555,31 @@ const Header = () => {
                             <Dropdown
                                 offset={[0, 8]}
                                 placement={`${isRtl ? 'bottom-start' : 'bottom-end'}`}
-                                btnClassName="relative group block"
-                                button={<img className="w-9 h-9 rounded-full object-cover saturate-50 group-hover:saturate-100"  src={user?.avatar ? `/storage/${user.avatar}` : "/assets/images/user-profile.jpeg"}
-                                                alt="userProfile"
-                                                onError={(e) => {
-                                                    e.currentTarget.src = "/assets/images/user-profile.jpeg";
-                                                }} />}
+                                button={
+                                    <img
+                                        className="w-9 h-9 rounded-full object-cover saturate-50 group-hover:saturate-100"
+                                        src={user?.avatar ? `/storage/${user.avatar}` : '/assets/images/user-profile.svg'}
+                                        alt="userProfile"
+                                        onError={(e) => {
+                                            e.currentTarget.src = '/assets/images/user-profile.svg';
+                                        }}
+                                    />
+                                }
                             >
                                 <ul className="text-dark dark:text-white-dark !py-0 w-[280px] font-semibold dark:text-white-light/90">
-                                     <li>
+                                     <li onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center px-4 py-4">
                                             <img
                                                 className="rounded-md w-10 h-10 object-cover"
-                                                src={user?.avatar ? `/storage/${user.avatar}` : "/assets/images/user-profile.jpeg"}
+                                                src={user?.avatar ? `/storage/${user.avatar}` : '/assets/images/user-profile.svg'}
                                                 alt="userProfile"
                                                 onError={(e) => {
-                                                    e.currentTarget.src = "/assets/images/user-profile.jpeg";
+                                                    e.currentTarget.src = '/assets/images/user-profile.svg';
                                                 }}
-                                                />
+                                            />
                                             <div className="ltr:pl-4 rtl:pr-4 truncate">
-                                                <h4 className="text-base text-primary">
-                                                    {user?.name || 'User'}
-                                                </h4>
-                                                <button type="button" className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white text-xs">
-                                                    {user?.email || ''}
-                                                </button>
+                                                <h4 className="text-base text-primary">{user?.name || 'User'}</h4>
+                                                <p className="text-black/60 hover:text-primary dark:text-dark-light/60 dark:hover:text-white text-xs">{user?.email || ''}</p>
                                             </div>
                                         </div>
                                     </li>

@@ -1,7 +1,7 @@
 export const NoDataFoundIllustration = () => (
 <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2" clip-rule="evenodd" viewBox="0 0 3000 2160" id="product-inspection">
   <g transform="matrix(2 0 0 2 -6400 0)">
-    <rect width="1500" height="80" x="80" fill="none"></rect>
+    <rect width="1500" height="120" x="120" fill="none"></rect>
     <g transform="translate(-424.34 -52.547)scale(1.0891)">
       <rect width="205.743" height="282.523" x="1513.87" y="2478.92" fill="#e1e3ee" transform="matrix(1.09089 -.62982 .62375 .36012 707.007 972.194)"></rect>
       <rect width="205.743" height="282.523" x="1513.87" y="2478.92" fill="#e1e3ee" transform="matrix(1.09089 -.62982 .48356 .27918 866.434 1127.79)"></rect>

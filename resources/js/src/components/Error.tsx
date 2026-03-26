@@ -21,17 +21,28 @@ const Error404 = () => {
 
             {/* ── Vertical column lines ── */}
             <div className="absolute inset-0 flex pointer-events-none" aria-hidden="true">
-                <div className="flex-1 border-r border-white/[0.25]" />
-                <div className="w-10 border-r border-white/[0.5]" />
-                <div className="w-10 border-r border-white/[0.25]" />
-                <div className="w-10 border-r border-white/[0.15]" />
+                <div className="flex-1 border-r border-primary/[0.77]" />
+                <div className="w-10 border-r border-primary/[0.75]" />
+                <div className="w-10 border-r border-primary/[0.65]" />
+                <div className="w-10 border-r border-primary/[0.55]" />
+                <div className="w-10 border-r border-primary/[0.5]" />
+                <div className="w-10 border-r border-primary/[0.5]" />
+                <div className="w-10 border-r border-primary/[0.25]" />
+                <div className="w-10 border-r border-primary/[0.15]" />
+                <div className="w-10 border-r border-primary/[0.15]" />
 
-                <div className="flex-1 border-r border-white/[0.01]" />
-                <div className="flex-1 border-r border-white/[0.01]" />
+                <div className="flex-1 border-r border-primary/[0.01]" />
+                <div className="flex-1 border-r border-primary/[0.01]" />
                 
-                <div className="flex-1 border-r border-white/[0.15]" />
-                <div className="w-10 border-r border-white/[0.25]" />
-                <div className="w-10 border-r border-white/[0.5]" />
+                <div className="flex-1 border-r border-primary/[0.15]" />
+                <div className="w-10 border-r border-primary/[0.15]" />
+                <div className="w-10 border-r border-primary/[0.25]" />
+                 <div className="w-10 border-r border-primary/[0.35]" />
+                <div className="w-10 border-r border-primary/[0.50]" />
+                <div className="w-10 border-r border-primary/[0.55]" />
+                <div className="w-10 border-r border-primary/[0.65]" />
+                <div className="w-10 border-r border-primary/[0.75]" />
+                <div className="w-10 border-r border-primary/[0.77]" />
                 <div className="flex-1" />
             </div>
 

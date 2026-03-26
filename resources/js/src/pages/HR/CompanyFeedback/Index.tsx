@@ -9,6 +9,7 @@ import Pagination from '../../../components/ui/Pagination';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import { Badge } from '../../../components/ui/badge';
+import { NoMessageIllustration } from '../../../components/illustrations/NoMessage';
 import { IconMessageHeart, IconMessageChatbot  } from '@tabler/icons-react';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -139,6 +140,7 @@ const CompanyFeedbackIndex = () => {
                         <TableSkeleton columns={4} rows={5} />
                     ) : filteredItems.length === 0 ? (
                         <EmptyState
+                            illustration={<NoMessageIllustration />}
                             isSearch={!!search}
                             searchTerm={search}
                             onClearFilter={() => setSearch('')}

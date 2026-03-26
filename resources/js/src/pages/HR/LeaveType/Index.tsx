@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -20,6 +21,7 @@ import HighlightText from '@/components/ui/HighlightText';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 
 const LeaveTypeIndex = () => {
+    const { t } = useTranslation();
     const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -139,7 +141,7 @@ const LeaveTypeIndex = () => {
             }
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
+            toast.error(t('error_occurred'));
         } finally {
             setIsDeleting(false);
             setDeleteModalOpen(false);
@@ -203,7 +205,7 @@ const LeaveTypeIndex = () => {
             }
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
+            toast.error(t('error_occurred'));
         } finally {
             setIsSaving(false);
         }
@@ -252,14 +254,14 @@ const LeaveTypeIndex = () => {
         <div>
             <FilterBar
                 icon={<IconClipboardHeart className="w-6 h-6 text-primary" />}
-                title="Leave Types"
-                description="Manage leave types available for employees"
+                title={t('leave_types_title')}
+                description={t('leave_types_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={handleCreate}
-                addLabel="Add Leave Type"
+                addLabel={t('add_leave_type_btn')}
                 onRefresh={fetchLeaveTypes}
                 hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'}
                 onClearFilters={() => {
@@ -272,9 +274,9 @@ const LeaveTypeIndex = () => {
                 <TableSkeleton columns={6} rows={5} />
             ) : leaveTypes.length === 0 ? (
                 <EmptyState
-                    title="No Leave Types Found"
-                    description="Get started by creating your first leave type."
-                    actionLabel="Add Leave Type"
+                    title={t('no_leave_types_found_title')}
+                    description={t('create_first_leave_type_desc')}
+                    actionLabel={t('add_leave_type_btn')}
                     onAction={handleCreate}
                 />
             ) : filteredAndSortedLeaveTypes.length === 0 ? (
@@ -292,12 +294,12 @@ const LeaveTypeIndex = () => {
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
-                                <SortableHeader label="Name" value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Max/Year" value="max_per_year" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Paid" value="is_paid" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Color" value="color" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-right">Action</th>
+                                <SortableHeader label={t('name_label')} value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('max_days_per_year_label')} value="max_per_year" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('paid_label')} value="is_paid" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('color_code_label')} value="color" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('status_label')} value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="text-right">{t('actions_label')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -311,7 +313,7 @@ const LeaveTypeIndex = () => {
                                         <Badge 
                                           size='sm'
                                           variant={type.is_paid ? 'success' : 'warning'}>
-                                            {type.is_paid ? 'Paid' : 'Unpaid'}
+                                            {type.is_paid ? t('paid_label') : t('unpaid_label')}
                                         </Badge>
                                     </td>
                                     <td>
@@ -324,7 +326,7 @@ const LeaveTypeIndex = () => {
                                         <Badge 
                                           size='sm'
                                           variant={type.status ? 'success' : 'destructive'}>
-                                            {type.status ? 'Active' : 'Inactive'}
+                                            {type.status ? t('active_label') : t('inactive_label')}
                                         </Badge>
                                     </td>
                                     <td>
@@ -360,26 +362,26 @@ const LeaveTypeIndex = () => {
       </div>
       <div>
         <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-          {editingLeaveType ? 'Edit Leave Type' : 'Create New Leave Type'}
+          {editingLeaveType ? t('edit_leave_type_title') : t('create_new_leave_type_title')}
         </DialogTitle>
         <p className="text-sm text-gray-500 mt-1">
           {editingLeaveType
-            ? 'Update the leave type details below.'
-            : 'Fill in the details to add a new leave type.'}
+            ? t('update_leave_type_detail_desc')
+            : t('fill_leave_type_detail_desc')}
         </p>
       </div>
     </div>
 
-    <PerfectScrollbar className="flex-1 min-h-0">
+    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
       <form id="leave-type-form" onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Basic Information
+            {t('basic_information_title')}
           </h3>
           <div className="space-y-1.5">
             <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Leave Name <span className="text-red-500">*</span>
+              {t('leave_name_label')} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="name"
@@ -388,12 +390,12 @@ const LeaveTypeIndex = () => {
               value={formData.name}
               onChange={handleChange}
               required
-              placeholder="e.g. Annual Leave, Sick Leave"
+              placeholder={t('leave_name_placeholder')}
             />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
+              {t('description_label')}
             </Label>
             <Textarea
               id="description"
@@ -401,7 +403,7 @@ const LeaveTypeIndex = () => {
               value={formData.description}
               onChange={handleChange}
               rows={3}
-              placeholder="Describe the leave type and any conditions..."
+              placeholder={t('leave_desc_placeholder')}
               className="bg-gray-50 dark:bg-gray-800/50 resize-none"
             />
           </div>
@@ -410,12 +412,12 @@ const LeaveTypeIndex = () => {
         {/* Leave Settings */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Leave Settings
+            {t('leave_settings_title')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1.5">
               <Label htmlFor="max_per_year" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Max Days Per Year
+                {t('max_days_per_year_label')}
               </Label>
               <Input
                 id="max_per_year"
@@ -426,11 +428,11 @@ const LeaveTypeIndex = () => {
                 min="0"
                 placeholder="e.g. 20"
               />
-              <p className="text-xs text-gray-500 mt-1">0 means unlimited</p>
+              <p className="text-xs text-gray-500 mt-1">{t('zero_means_unlimited_help')}</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="color" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Color Code
+                {t('color_code_label')}
               </Label>
               <div className="flex items-center gap-2">
                 <Input
@@ -446,7 +448,7 @@ const LeaveTypeIndex = () => {
                   value={formData.color}
                   name="color"
                   onChange={handleChange}
-                  placeholder="#000000"
+                  placeholder={t('color_placeholder')}
                   className="flex-1"
                 />
               </div>
@@ -460,7 +462,7 @@ const LeaveTypeIndex = () => {
               onCheckedChange={(checked) => setFormData({ ...formData, is_paid: !!checked })}
             />
             <Label htmlFor="is_paid" className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-              Is Paid Leave?
+              {t('is_paid_leave_label')}
             </Label>
           </div>
         </div>
@@ -468,7 +470,7 @@ const LeaveTypeIndex = () => {
         {/* Status */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Status
+            {t('status_label')}
           </h3>
           <div className="flex items-center gap-2 pt-1">
             <Checkbox
@@ -478,7 +480,7 @@ const LeaveTypeIndex = () => {
               onCheckedChange={(checked) => setFormData({ ...formData, status: !!checked })}
             />
             <Label htmlFor="status" className="text-sm mb-0 font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-              Active?
+              {t('is_active_label')}
             </Label>
           </div>
         </div>
@@ -493,7 +495,7 @@ const LeaveTypeIndex = () => {
         className="px-5"
         onClick={() => setModalOpen(false)}
       >
-        Cancel
+        {t('cancel_btn_label')}
       </Button>
       <Button
         type="submit"
@@ -501,7 +503,7 @@ const LeaveTypeIndex = () => {
         disabled={isSaving}
         className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
       >
-        {isSaving ? 'Saving...' : (editingLeaveType ? 'Save Changes' : 'Create Leave Type')}
+        {isSaving ? t('saving_dots') : (editingLeaveType ? t('save_changes_btn') : t('create_leave_type_btn'))}
       </Button>
     </div>
   </DialogContent>
@@ -512,8 +514,8 @@ const LeaveTypeIndex = () => {
                 setIsOpen={setDeleteModalOpen}
                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Leave Type"
-                message="Are you sure you want to delete this leave type? This action cannot be undone."
+                title={t('delete_leave_type_title')}
+                message={t('delete_leave_type_confirm')}
             />
         </div>
     );

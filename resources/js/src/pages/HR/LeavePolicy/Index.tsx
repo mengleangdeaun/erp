@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -21,6 +22,7 @@ import { IconClipboardHeart } from '@tabler/icons-react';
 import HighlightText from '@/components/ui/HighlightText';
 
 const LeavePolicyIndex = () => {
+    const { t } = useTranslation();
     const [leavePolicies, setLeavePolicies] = useState<any[]>([]);
     const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -161,14 +163,14 @@ const LeavePolicyIndex = () => {
             });
 
             if (response.ok) {
-                toast.success('Leave Policy deleted successfully');
+                toast.success(t('doc_deleted'));
                 fetchLeavePolicies();
             } else {
-                toast.error('Failed to delete leave policy');
+                toast.error(t('failed_delete_msg'));
             }
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
+            toast.error(t('error_label'));
         } finally {
             setIsDeleting(false);
             setDeleteModalOpen(false);
@@ -218,7 +220,7 @@ const LeavePolicyIndex = () => {
             const data = await response.json();
 
             if (response.ok) {
-                toast.success(`Leave Policy ${editingLeavePolicy ? 'updated' : 'created'} successfully`);
+                toast.success(t('doc_updated'));
                 setModalOpen(false);
                 fetchLeavePolicies();
             } else {
@@ -236,7 +238,7 @@ const LeavePolicyIndex = () => {
             }
         } catch (error) {
             console.error(error);
-            toast.error('An error occurred');
+            toast.error(t('error_label'));
         } finally {
             setIsSaving(false);
         }
@@ -286,14 +288,14 @@ const LeavePolicyIndex = () => {
         <div>
             <FilterBar
                 icon={<IconClipboardHeart className="w-6 h-6 text-primary" />}
-                title="Leave Policies"
-                description="Manage leave rules, limits, and approval policies"
+                title={t('leave_policies_title')}
+                description={t('leave_policies_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={handleCreate}
-                addLabel="Add Policy"
+                addLabel={t('add_policy_btn')}
                 onRefresh={fetchLeavePolicies}
                 hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'}
                 onClearFilters={() => {
@@ -306,9 +308,9 @@ const LeavePolicyIndex = () => {
                 <TableSkeleton columns={7} rows={5} />
             ) : leavePolicies.length === 0 ? (
                 <EmptyState
-                    title="No Leave Policies Found"
-                    description="Get started by creating your first leave policy."
-                    actionLabel="Add Leave Policy"
+                    title={t('no_leave_policies_found_title')}
+                    description={t('create_first_leave_policy_desc')}
+                    actionLabel={t('add_leave_policy_btn')}
                     onAction={handleCreate}
                 />
             ) : filteredAndSortedLeavePolicies.length === 0 ? (
@@ -326,13 +328,13 @@ const LeavePolicyIndex = () => {
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
-                                <SortableHeader label="Policy Name" value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Leave Type" value="leave_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Accrual" value="accrual_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Rate" value="accrual_rate" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Limit" value="max_days_per_app" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Status" value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-right">Action</th>
+                                <SortableHeader label={t('policy_name_label')} value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('leave_type_label')} value="leave_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('accrual_label')} value="accrual_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('rate_label')} value="accrual_rate" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('limit_label')} value="max_days_per_app" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('status_label')} value="status" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="text-right">{t('actions_label')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -349,14 +351,14 @@ const LeavePolicyIndex = () => {
                                             <HighlightText text={policy.leave_type?.name || 'N/A'} highlight={search} />
                                         </div>
                                     </td>
-                                    <td className="capitalize">{policy.accrual_type}</td>
-                                    <td>{parseFloat(policy.accrual_rate)} days</td>
-                                    <td>{policy.max_days_per_app > 0 ? `${policy.max_days_per_app} max` : 'No Limit'}</td>
+                                     <td className="capitalize">{t(policy.accrual_type + '_label')}</td>
+                                    <td>{parseFloat(policy.accrual_rate)} {t('days')}</td>
+                                    <td>{policy.max_days_per_app > 0 ? `${policy.max_days_per_app} ${t('max')}` : t('no_limit_label')}</td>
                                     <td>
-                                        <Badge 
+                                         <Badge 
                                           size='sm'
                                           variant={policy.status ? 'success' : 'destructive'}>
-                                            {policy.status ? 'Active' : 'Inactive'}
+                                            {policy.status ? t('active_label') : t('inactive_label')}
                                         </Badge>
                                     </td>
                                     <td>
@@ -395,12 +397,12 @@ const LeavePolicyIndex = () => {
       </div>
       <div>
         <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-          {editingLeavePolicy ? 'Edit Leave Policy' : 'Create New Leave Policy'}
+          {editingLeavePolicy ? t('edit_leave_policy_title') : t('create_new_leave_policy_title')}
         </DialogTitle>
         <p className="text-sm text-gray-500 mt-1">
           {editingLeavePolicy
-            ? 'Update the leave policy details below.'
-            : 'Fill in the details to create a new leave policy.'}
+            ? t('update_leave_policy_detail_desc')
+            : t('fill_leave_policy_detail_desc')}
         </p>
       </div>
     </div>
@@ -408,28 +410,28 @@ const LeavePolicyIndex = () => {
     <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
       <form id="leave-policy-form" onSubmit={handleSubmit} className="p-6 space-y-6">
         {/* Basic Information */}
-        <div className="space-y-4">
+         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Basic Information
+            {t('basic_information_title')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-1">
+             <div className="space-y-1">
               <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Policy Name <span className="text-red-500">*</span>
+                {t('policy_name_label')} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="name"
                 name="name"
                 type="text"
-                value={formData.name}
+                 value={formData.name}
                 onChange={handleChange}
                 required
-                placeholder="e.g. Standard Annual Leave"
+                placeholder={t('standard_annual_leave_placeholder')}
               />
             </div>
-            <div className="space-y-0">
+             <div className="space-y-0">
               <Label htmlFor="leave_type_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Leave Type <span className="text-red-500">*</span>
+                {t('leave_type_label')} <span className="text-red-500">*</span>
               </Label>
               <SearchableSelect
                 options={leaveTypes.map((type: any) => ({
@@ -437,78 +439,78 @@ const LeavePolicyIndex = () => {
                   label: type.name,
                   color: type.color || '#000000'
                 }))}
-                value={formData.leave_type_id}
+                 value={formData.leave_type_id}
                 onChange={(val) => handleSelectChange(String(val), 'leave_type_id')}
-                placeholder="Select Leave Type"
-                searchPlaceholder="Search leave types..."
+                placeholder={t('select_leave_type_placeholder')}
+                searchPlaceholder={t('search_leave_types_placeholder')}
               />
             </div>
           </div>
-          <div className="space-y-1.5">
+           <div className="space-y-1.5">
             <Label htmlFor="description" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
+              {t('description_label')}
             </Label>
             <Textarea
               id="description"
               name="description"
-              value={formData.description}
+               value={formData.description}
               onChange={handleChange}
               rows={2}
-              placeholder="Describe the policy details and conditions..."
+              placeholder={t('policy_details_conditions_placeholder')}
               className="bg-gray-50 dark:bg-gray-800/50 resize-none"
             />
           </div>
         </div>
 
         {/* Accrual Settings */}
-        <div className="space-y-4">
+         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Accrual Settings
+            {t('accrual_settings_title')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="space-y-1.5">
+             <div className="space-y-1.5">
               <Label htmlFor="accrual_type" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Accrual Type
+                {t('accrual_type_label')}
               </Label>
               <Select
                 onValueChange={(value) => handleSelectChange(value, 'accrual_type')}
                 value={formData.accrual_type}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Type" />
+                 <SelectTrigger>
+                  <SelectValue placeholder={t('select_type_placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fixed">Fixed</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
+                  <SelectItem value="fixed">{t('fixed_label')}</SelectItem>
+                  <SelectItem value="monthly">{t('monthly_label')}</SelectItem>
+                  <SelectItem value="yearly">{t('yearly_label')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+             <div className="space-y-1.5">
               <Label htmlFor="accrual_rate" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Accrual Rate (Days) <span className="text-red-500">*</span>
+                {t('accrual_rate_days_label')} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="accrual_rate"
                 name="accrual_rate"
                 type="number"
                 step="0.01"
-                value={formData.accrual_rate}
+                 value={formData.accrual_rate}
                 onChange={handleChange}
                 required
                 min="0"
-                placeholder="e.g. 1.5"
+                placeholder={t('accrual_rate_placeholder')}
               />
             </div>
-            <div className="space-y-1.5">
+             <div className="space-y-1.5">
               <Label htmlFor="carry_forward_limit" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Carry Forward Limit
+                {t('carry_forward_limit_label')}
               </Label>
               <Input
                 id="carry_forward_limit"
                 name="carry_forward_limit"
                 type="number"
-                value={formData.carry_forward_limit}
+                 value={formData.carry_forward_limit}
                 onChange={handleChange}
                 min="0"
                 placeholder="e.g. 5"
@@ -518,14 +520,14 @@ const LeavePolicyIndex = () => {
         </div>
 
         {/* Application Limits */}
-        <div className="space-y-4">
+         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Application Limits
+            {t('application_limits_title')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-1.5">
+             <div className="space-y-1.5">
               <Label htmlFor="min_days_per_app" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Min. Days Per Application
+                {t('min_days_per_app_label')}
               </Label>
               <Input
                 id="min_days_per_app"
@@ -537,9 +539,9 @@ const LeavePolicyIndex = () => {
                 placeholder="e.g. 0.5"
               />
             </div>
-            <div className="space-y-1.5">
+             <div className="space-y-1.5">
               <Label htmlFor="max_days_per_app" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Max. Days Per Application
+                {t('max_days_per_app_label')}
               </Label>
               <Input
                 id="max_days_per_app"
@@ -548,17 +550,17 @@ const LeavePolicyIndex = () => {
                 value={formData.max_days_per_app}
                 onChange={handleChange}
                 min="0"
-                placeholder="e.g. 10"
+                 placeholder="e.g. 10"
               />
-              <p className="text-xs text-gray-500 mt-1">0 means unlimited</p>
+              <p className="text-xs text-gray-500 mt-1">{t('zero_means_unlimited_help')}</p>
             </div>
           </div>
         </div>
 
         {/* Additional Options */}
-        <div className="space-y-4">
+         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Additional Options
+            {t('additional_options_title')}
           </h3>
           <div className="grid grid-cols-2 gap-5 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/30">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -568,9 +570,9 @@ const LeavePolicyIndex = () => {
                 onCheckedChange={(checked) => {
                   setFormData(prev => ({ ...prev, require_approval: !!checked }));
                 }}
-              />
+               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                Requires Approval
+                {t('requires_approval_label')}
               </span>
             </label>
 
@@ -581,9 +583,9 @@ const LeavePolicyIndex = () => {
                 onCheckedChange={(checked) => {
                   setFormData(prev => ({ ...prev, status: !!checked }));
                 }}
-              />
+               />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-                Status Active
+                {t('status_active_label')}
               </span>
             </label>
           </div>
@@ -597,17 +599,17 @@ const LeavePolicyIndex = () => {
         type="button"
         variant="ghost"
         className="px-5"
-        onClick={() => setModalOpen(false)}
+         onClick={() => setModalOpen(false)}
       >
-        Cancel
+        {t('cancel_btn_label')}
       </Button>
       <Button
         type="submit"
         form="leave-policy-form"
-        disabled={isSaving}
+         disabled={isSaving}
         className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
       >
-        {isSaving ? 'Saving...' : (editingLeavePolicy ? 'Save Changes' : 'Create Policy')}
+        {isSaving ? t('saving_dots') : (editingLeavePolicy ? t('save_changes_btn') : t('create_policy_btn'))}
       </Button>
     </div>
   </DialogContent>
@@ -616,10 +618,10 @@ const LeavePolicyIndex = () => {
             <DeleteModal
                 isOpen={deleteModalOpen}
                 setIsOpen={setDeleteModalOpen}
-                onConfirm={executeDelete}
+                 onConfirm={executeDelete}
                 isLoading={isDeleting}
-                title="Delete Leave Policy"
-                message="Are you sure you want to delete this leave policy? This action cannot be undone."
+                title={t('delete_leave_policy_title')}
+                message={t('delete_leave_policy_confirm')}
             />
 
         </div>

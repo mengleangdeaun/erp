@@ -3,8 +3,10 @@ import { IconDatabaseLeak, IconSearch } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { SearchNotFoundIllustration } from '@/components/illustrations/SearchNotFound';
 import { NoDataFoundIllustration } from '@/components/illustrations/NoDataFound';
+import { EmptyDataIllustration } from '@/components/illustrations/EmptyData';
 
 interface EmptyStateProps {
+    illustration?: React.ReactNode;
     isSearch?: boolean;
     searchTerm?: string;
     title?: string;
@@ -15,6 +17,7 @@ interface EmptyStateProps {
 }
 
 const EmptyState: React.FC<EmptyStateProps> = ({
+    illustration,
     isSearch = false,
     searchTerm = '',
     title,
@@ -27,17 +30,11 @@ const EmptyState: React.FC<EmptyStateProps> = ({
         <div className="group relative flex flex-col items-center justify-center p-12 text-center bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800">
             {/* Subtle decorative element */}
             <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-transparent via-gray-50/50 to-transparent dark:via-gray-900/20 pointer-events-none" />
-            
+
             {/* Icon container with animated floating effect */}
-                {isSearch ? (
-                    <div className="relative z-10 w-48">
-                        <SearchNotFoundIllustration />
-                    </div>
-                ) : (
-                    <div className="relative z-10 w-48">
-                        <NoDataFoundIllustration />
-                    </div>
-                )}
+            <div className="relative z-10">
+                {illustration || (isSearch ? <SearchNotFoundIllustration /> : <EmptyDataIllustration />)}
+            </div>
                 {/* Glow effect */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-primary/5 to-transparent dark:from-primary/10" />
 

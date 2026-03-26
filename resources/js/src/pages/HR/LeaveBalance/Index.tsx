@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { Checkbox } from '../../../components/ui/checkbox';
@@ -31,6 +32,7 @@ import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
 
 const LeaveBalanceIndex = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
 
     // Filter & Sort & Pagination state
@@ -130,7 +132,7 @@ const LeaveBalanceIndex = () => {
 
         mutation.mutate(payload, {
             onSuccess: () => {
-                toast.success(`Leave Balance ${editingBalance ? 'updated' : 'created'} successfully`);
+                toast.success(t('doc_updated'));
                 setModalOpen(false);
             },
             onError: (err: any) => {
@@ -206,14 +208,14 @@ const LeaveBalanceIndex = () => {
         <div>
             <FilterBar
                 icon={<IconBatteryVertical3 className=" h-6 w-6 text-primary" />}
-                title="Leave Balances"
-                description="Manage and calculate employee leave balances"
+                title={t('leave_balances_title')}
+                description={t('leave_balances_desc')}
                 search={search}
                 setSearch={setSearch}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
                 onAdd={handleCreate}
-                addLabel="Manual Adjust Balance"
+                addLabel={t('manual_adjust_balance_btn')}
                 onRefresh={() => queryClient.invalidateQueries({ queryKey: ['hr-leave-balances'] })}
                 hasActiveFilters={!!search || !!dateFilter?.from || !!leaveTypeFilter}
                 onClearFilters={() => {
@@ -228,16 +230,16 @@ const LeaveBalanceIndex = () => {
                 }}
             >
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Date Range</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('date_range_label')}</span>
                     <DateRangePicker
                         value={dateFilter}
                         onChange={setDateFilter}
-                        placeholder="Filter by date range..."
+                        placeholder={t('filter_by_date_range_placeholder')}
                     />
                 </div>
 
                 <div className="space-y-1.5 flex flex-col w-full">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Leave Type</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('leave_type_label')}</span>
                     <SearchableSelect
                         options={leaveTypes.map((type: any) => ({
                             value: String(type.id),
@@ -246,8 +248,8 @@ const LeaveBalanceIndex = () => {
                         }))}
                         value={leaveTypeFilter}
                         onChange={(val) => setLeaveTypeFilter(String(val))}
-                        placeholder="All Leave Types"
-                        searchPlaceholder="Search leave types..."
+                        placeholder={t('all_leave_types_placeholder')}
+                        searchPlaceholder={t('search_leave_types_placeholder')}
                     />
                 </div>
             </FilterBar>
@@ -256,9 +258,9 @@ const LeaveBalanceIndex = () => {
                 <TableSkeleton columns={6} rows={itemsPerPage} />
             ) : balances.length === 0 ? (
                 <EmptyState
-                    title="No Balances Found"
-                    description={`No leave balances recorded for the selected period.`}
-                    actionLabel="Add Manual Balance"
+                    title={t('no_balances_found_title')}
+                    description={t('no_balances_found_period_desc')}
+                    actionLabel={t('add_manual_balance_btn')}
                     onAction={handleCreate}
                 />
             ) : filteredAndSortedBalances.length === 0 ? (
@@ -276,12 +278,12 @@ const LeaveBalanceIndex = () => {
                     <table className="table-hover table-striped w-full table">
                         <thead>
                             <tr>
-                                <SortableHeader label="Employee" value="employee" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Leave Type" value="leave_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Total Accrued" value="total_accrued" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Total Taken" value="total_taken" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <SortableHeader label="Remaining Balance" value="balance" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
-                                <th className="text-right">Action</th>
+                                <SortableHeader label={t('employee_sort_label')} value="employee" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('leave_type_label')} value="leave_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('total_accrued_label')} value="total_accrued" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('total_taken_label')} value="total_taken" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label={t('remaining_balance_label')} value="balance" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <th className="text-right">{t('actions_label')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -324,7 +326,7 @@ const LeaveBalanceIndex = () => {
                                                 }`}>
                                                 {parseFloat(balance.balance)}
                                             </span>
-                                            <span className="text-xs text-gray-500 font-medium">days</span>
+                                            <span className="text-xs text-gray-500 font-medium">{t('days')}</span>
                                         </div>
                                     </td>
                                     <td>
@@ -359,12 +361,12 @@ const LeaveBalanceIndex = () => {
       </div>
       <div>
         <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
-          {editingBalance ? 'Edit Leave Balance' : 'Manual Initial Balance'}
+          {editingBalance ? t('edit_leave_balance_title') : t('manual_initial_balance_title')}
         </DialogTitle>
         <p className="text-sm text-gray-500 mt-1">
           {editingBalance
-            ? 'Update the leave balance details below.'
-            : 'Set initial balance for an employee’s leave type.'}
+            ? t('update_leave_balance_detail_desc')
+            : t('set_initial_balance_desc')}
         </p>
       </div>
     </div>
@@ -374,12 +376,12 @@ const LeaveBalanceIndex = () => {
         {/* Employee & Leave Type */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Employee & Leave Type
+            {t('employee_leave_type_title')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1">
               <Label htmlFor="employee_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Employee <span className="text-red-500">*</span>
+                {t('employee_label')} <span className="text-red-500">*</span>
               </Label>
               <SearchableSelect
                 options={employees.map((emp: any) => ({
@@ -389,12 +391,12 @@ const LeaveBalanceIndex = () => {
                 }))}
                 value={formData.employee_id}
                 onChange={(val) => handleSelectChange(String(val), 'employee_id')}
-                placeholder="Select Employee"
+                placeholder={t('select_employee_placeholder')}
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="leave_type_id" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Leave Type <span className="text-red-500">*</span>
+                {t('leave_type_label')} <span className="text-red-500">*</span>
               </Label>
               <SearchableSelect
                 options={leaveTypes.map((type: any) => ({
@@ -404,8 +406,8 @@ const LeaveBalanceIndex = () => {
                 }))}
                 value={formData.leave_type_id}
                 onChange={(val) => handleSelectChange(String(val), 'leave_type_id')}
-                placeholder="Select Leave Type"
-                searchPlaceholder="Search leave types..."
+                placeholder={t('select_leave_type_placeholder')}
+                searchPlaceholder={t('search_leave_types_placeholder')}
                 disabled={!!editingBalance}
               />
             </div>
@@ -415,12 +417,12 @@ const LeaveBalanceIndex = () => {
         {/* Balance Details */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Balance Details
+            {t('balance_details_title')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="space-y-1.5">
               <Label htmlFor="total_accrued" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Total Accrued <span className="text-red-500">*</span>
+                {t('total_accrued_label')} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="total_accrued"
@@ -436,7 +438,7 @@ const LeaveBalanceIndex = () => {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="total_taken" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Total Taken <span className="text-red-500">*</span>
+                {t('total_taken_label')} <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="total_taken"
@@ -452,7 +454,7 @@ const LeaveBalanceIndex = () => {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="balance" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Balance
+                {t('balance_label')}
               </Label>
               <Input
                 id="balance"
@@ -466,18 +468,18 @@ const LeaveBalanceIndex = () => {
             </div>
           </div>
           <p className="text-xs text-gray-500">
-            Balance is automatically calculated as Accrued - Taken.
+            {t('balance_auto_calc_help')}
           </p>
         </div>
 
         {/* Period */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-            Period
+            {t('period_title')}
           </h3>
           <div className="space-y-1.5">
             <Label htmlFor="year" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Year <span className="text-red-500">*</span>
+              {t('year_label')} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="year"
@@ -501,7 +503,7 @@ const LeaveBalanceIndex = () => {
         className="px-5"
         onClick={() => setModalOpen(false)}
       >
-        Cancel
+        {t('cancel_btn_label')}
       </Button>
       <Button
         type="submit"
@@ -509,7 +511,7 @@ const LeaveBalanceIndex = () => {
         disabled={isSaving}
         className="px-7 bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
       >
-        {isSaving ? 'Saving...' : (editingBalance ? 'Save Changes' : 'Create Balance')}
+        {isSaving ? t('saving_dots') : (editingBalance ? t('save_changes_btn') : t('create_balance_btn'))}
       </Button>
     </div>
   </DialogContent>
