@@ -1,84 +1,84 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import api from '../utils/api';
 
 // --- Fetchers ---
 
 // Attendance
 const fetchAttendanceRecords = async (filters: { start_date?: string; end_date?: string; employee_id?: string }) => {
-    const { data } = await axios.get('/api/attendance/records', { params: filters });
+    const { data } = await api.get('/attendance/records', { params: filters });
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 // Employees
 const fetchEmployees = async (params?: any) => {
-    const { data } = await axios.get('/api/hr/employees', { params });
+    const { data } = await api.get('/hr/employees', { params });
     return data;
 };
 
 // Activities
 const fetchActivities = async (params?: any) => {
-    const { data } = await axios.get('/api/hr/activities', { params });
+    const { data } = await api.get('/hr/activities', { params });
     return data;
 };
 
 // Announcements
 const fetchAnnouncements = async () => {
-    const { data } = await axios.get('/api/hr/announcements');
+    const { data } = await api.get('/hr/announcements');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 // Leave Records
 const fetchLeaveRecords = async () => {
-    const { data } = await axios.get('/api/hr/leave-requests');
+    const { data } = await api.get('/hr/leave-requests');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 // Leave Balances
 const fetchLeaveBalances = async (params?: any) => {
-    const { data } = await axios.get('/api/hr/leave-balances', { params });
+    const { data } = await api.get('/hr/leave-balances', { params });
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 // Leave Allocations
 const fetchLeaveAllocations = async () => {
-    const { data } = await axios.get('/api/hr/leave-allocations');
+    const { data } = await api.get('/hr/leave-allocations');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 // Supporting Data
 const fetchLeaveTypes = async () => {
-    const { data } = await axios.get('/api/hr/leave-types');
+    const { data } = await api.get('/hr/leave-types');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchLeavePolicies = async () => {
-    const { data } = await axios.get('/api/hr/leave-policies');
+    const { data } = await api.get('/hr/leave-policies');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchDepartments = async () => {
-    const { data } = await axios.get('/api/hr/departments');
+    const { data } = await api.get('/hr/departments');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchBranches = async () => {
-    const { data } = await axios.get('/api/hr/branches');
+    const { data } = await api.get('/hr/branches');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 // Attendance Employee Config
 const fetchEmployeeConfigs = async () => {
-    const { data } = await axios.get('/api/attendance/employee-config');
+    const { data } = await api.get('/attendance/employee-config');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchWorkingShifts = async () => {
-    const { data } = await axios.get('/api/attendance/working-shifts');
+    const { data } = await api.get('/attendance/working-shifts');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchAttendancePolicies = async () => {
-    const { data } = await axios.get('/api/attendance/attendance-policies');
+    const { data } = await api.get('/attendance/attendance-policies');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
@@ -209,7 +209,7 @@ export const useHRAttendancePolicies = () => {
 export const useHREmployeeQr = () => {
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.get(`/api/attendance/employee-qr/${id}`);
+            const { data } = await api.get(`/attendance/employee-qr/${id}`);
             return data;
         },
     });
@@ -219,7 +219,7 @@ export const useHRDeleteEmployee = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/hr/employees/${id}`);
+            const { data } = await api.delete(`/hr/employees/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -234,7 +234,7 @@ export const useHRUpdateActivityStatus = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, status, admin_note }: { id: number; status: string; admin_note: string }) => {
-            const { data } = await axios.put(`/api/hr/activities/${id}/status`, { status, admin_note });
+            const { data } = await api.put(`/hr/activities/${id}/status`, { status, admin_note });
             return data;
         },
         onSuccess: () => {
@@ -247,7 +247,7 @@ export const useHRDeleteActivity = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/hr/activities/${id}`);
+            const { data } = await api.delete(`/hr/activities/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -261,7 +261,7 @@ export const useHRUpdateAnnouncementStatus = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, is_published }: { id: number; is_published: boolean }) => {
-            const { data } = await axios.put(`/api/hr/announcements/${id}`, { is_published });
+            const { data } = await api.put(`/hr/announcements/${id}`, { is_published });
             return data;
         },
         onSuccess: () => {
@@ -274,7 +274,7 @@ export const useHRDeleteAnnouncement = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/hr/announcements/${id}`);
+            const { data } = await api.delete(`/hr/announcements/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -288,7 +288,7 @@ export const useApproveLeave = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.post(`/api/hr/leave-requests/${id}/approve`);
+            const { data } = await api.post(`/hr/leave-requests/${id}/approve`);
             return data;
         },
         onSuccess: () => {
@@ -301,7 +301,7 @@ export const useRejectLeave = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
-            const { data } = await axios.post(`/api/hr/leave-requests/${id}/reject`, { rejection_reason: reason });
+            const { data } = await api.post(`/hr/leave-requests/${id}/reject`, { rejection_reason: reason });
             return data;
         },
         onSuccess: () => {
@@ -314,7 +314,7 @@ export const useDeleteLeaveRecord = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/hr/leave-requests/${id}`);
+            const { data } = await api.delete(`/hr/leave-requests/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -328,7 +328,7 @@ export const useHRCreateLeaveBalance = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (payload: any) => {
-            const { data } = await axios.post('/api/hr/leave-balances', payload);
+            const { data } = await api.post('/hr/leave-balances', payload);
             return data;
         },
         onSuccess: () => {
@@ -341,7 +341,7 @@ export const useHRUpdateLeaveBalance = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, ...payload }: any) => {
-            const { data } = await axios.put(`/api/hr/leave-balances/${id}`, payload);
+            const { data } = await api.put(`/hr/leave-balances/${id}`, payload);
             return data;
         },
         onSuccess: () => {
@@ -355,7 +355,7 @@ export const useHRDeleteLeaveAllocation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/hr/leave-allocations/${id}`);
+            const { data } = await api.delete(`/hr/leave-allocations/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -368,7 +368,7 @@ export const useHRCreateLeaveAllocation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (payload: any) => {
-            const { data } = await axios.post('/api/hr/leave-allocations', payload);
+            const { data } = await api.post('/hr/leave-allocations', payload);
             return data;
         },
         onSuccess: () => {
@@ -381,7 +381,7 @@ export const useHRUpdateLeaveAllocation = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, ...payload }: any) => {
-            const { data } = await axios.put(`/api/hr/leave-allocations/${id}`, payload);
+            const { data } = await api.put(`/hr/leave-allocations/${id}`, payload);
             return data;
         },
         onSuccess: () => {
@@ -395,7 +395,7 @@ export const useHRAttendanceUpdateEmployeeConfig = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, ...payload }: { id: number; [key: string]: any }) => {
-            const { data } = await axios.put(`/api/attendance/employee-config/${id}`, payload);
+            const { data } = await api.put(`/attendance/employee-config/${id}`, payload);
             return data;
         },
         onSuccess: () => {
@@ -407,7 +407,7 @@ export const useHRAttendanceUpdateEmployeeConfig = () => {
 export const useHRAttendanceEmployeeQr = () => {
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.get(`/api/attendance/employee-qr/${id}`);
+            const { data } = await api.get(`/attendance/employee-qr/${id}`);
             return data;
         },
     });

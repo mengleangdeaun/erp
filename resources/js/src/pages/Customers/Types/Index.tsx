@@ -36,8 +36,8 @@ const CustomerTypeIndex = () => {
     const loading = useDelayedLoading(typesLoading);
 
     useEffect(() => {
-        dispatch(setPageTitle('Customer Types'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('customer_types', 'Customer Types')));
+    }, [dispatch, t]);
 
     const handleEdit = (type: any) => {
         setSelectedType(type);

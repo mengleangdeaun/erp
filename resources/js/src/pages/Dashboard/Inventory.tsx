@@ -40,8 +40,8 @@ const InventoryDashboard = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
-        dispatch(setPageTitle('Inventory Dashboard'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('inventory_dashboard')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         const timer = setInterval(() => {

@@ -3,8 +3,13 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { IconMapPin, IconLoader2, IconCheck, IconX, IconArrowLeft } from '@tabler/icons-react';
 import { Button } from '../../../../components/ui/button';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 export default function MobileEmployeeScan() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const branchCode = searchParams.get('b');
@@ -17,6 +22,10 @@ export default function MobileEmployeeScan() {
     // Grab cached token from local storage
     const authToken = localStorage.getItem('employee_auth_token');
     const employeeName = localStorage.getItem('employee_name');
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('attendance_scan', 'Attendance Scan')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         if (!authToken) {

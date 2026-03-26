@@ -17,8 +17,13 @@ import { format, isSameDay, parseISO, startOfMonth, startOfDay } from 'date-fns'
 import { EmployeeCalendar } from '@/components/ui/EmployeeCalendar';
 import PageHeader from '@/components/ui/PageHeader';
 import { NavLink } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 export default function EmployeePwaCalendar() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(startOfDay(new Date()));
     const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(new Date()));
@@ -68,6 +73,10 @@ export default function EmployeePwaCalendar() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('calendar', 'Calendar')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         fetchCalendarData(currentMonth);

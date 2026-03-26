@@ -2,20 +2,55 @@ import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '../store/themeConfigSlice';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const Error404 = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [mounted, setMounted] = useState(false);
+    const { t } = useTranslation();
 
     useEffect(() => {
-        dispatch(setPageTitle('Error 404'));
-        const t = setTimeout(() => setMounted(true), 50);
-        return () => clearTimeout(t);
-    }, [dispatch]);
+        dispatch(setPageTitle(t('error404.pageTitle')));
+        const timer = setTimeout(() => setMounted(true), 50);
+        return () => clearTimeout(timer);
+    }, [dispatch, t]);
 
     return (
         <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950">
+
+            {/* ── Vertical column lines ── */}
+            <div className="absolute inset-0 flex pointer-events-none" aria-hidden="true">
+                <div className="flex-1 border-r border-white/[0.25]" />
+                <div className="w-10 border-r border-white/[0.5]" />
+                <div className="w-10 border-r border-white/[0.25]" />
+                <div className="w-10 border-r border-white/[0.15]" />
+
+                <div className="flex-1 border-r border-white/[0.01]" />
+                <div className="flex-1 border-r border-white/[0.01]" />
+                
+                <div className="flex-1 border-r border-white/[0.15]" />
+                <div className="w-10 border-r border-white/[0.25]" />
+                <div className="w-10 border-r border-white/[0.5]" />
+                <div className="flex-1" />
+            </div>
+
+            {/* ── Horizontal row lines — top band ── */}
+            <div className="absolute inset-x-0 top-0 flex flex-col pointer-events-none" aria-hidden="true">
+                {/* Top border of first row */}
+                <div className="h-16 border-b border-white/[0.5]" />
+                <div className="h-10 border-b border-white/[0.25]" />
+                <div className="h-10 border-b border-white/[0.15]" />
+                 <div className="h-10 border-b border-white/[0.10]" />
+            </div>
+
+            {/* ── Horizontal row lines — bottom band ── */}
+            <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end pointer-events-none" aria-hidden="true">
+                <div className="h-10 border-t border-white/[0.10]" />
+                <div className="h-10 border-t border-white/[0.15]" />
+                <div className="h-10 border-t border-white/[0.25]" />
+                <div className="h-16 border-t border-white/[0.5]" />
+            </div>
 
             {/* Animated SVG dot grid background */}
             <svg
@@ -41,8 +76,6 @@ const Error404 = () => {
                 <rect width="100%" height="100%" fill="url(#vignette)" />
             </svg>
 
-
-
             {/* Top edge accent */}
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--primary)/0.5)] to-transparent" />
 
@@ -59,7 +92,7 @@ const Error404 = () => {
                 >
                     <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--primary))] animate-pulse" />
                     <span className="text-[11px] font-medium tracking-widest text-[hsl(var(--primary))] uppercase">
-                        Error 404
+                        {t('error404.badge')}
                     </span>
                 </div>
 
@@ -99,7 +132,7 @@ const Error404 = () => {
                         ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
                     `}
                 >
-                    Page not found
+                    {t('error404.heading')}
                 </h1>
 
                 {/* Description */}
@@ -110,8 +143,7 @@ const Error404 = () => {
                         ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
                     `}
                 >
-                    The page you're looking for doesn't exist or has been moved.
-                    Please check the URL or return to the login page.
+                    {t('error404.description')}
                 </p>
 
                 {/* Actions */}
@@ -142,7 +174,7 @@ const Error404 = () => {
                         >
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                         </svg>
-                        Return to Login
+                        {t('error404.returnToLogin')}
                     </button>
 
                     <button
@@ -156,7 +188,7 @@ const Error404 = () => {
                             active:translate-y-0
                         "
                     >
-                        Go back
+                        {t('error404.goBack')}
                     </button>
                 </div>
 
@@ -168,7 +200,7 @@ const Error404 = () => {
                         ${mounted ? 'opacity-100' : 'opacity-0'}
                     `}
                 >
-                    HTTP 404 · Resource Not Found
+                    {t('error404.footerNote')}
                 </p>
             </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Button } from '../../components/ui/button';
@@ -20,6 +21,7 @@ import { setPageTitle } from '@/store/themeConfigSlice';
 
 
 const RolesIndex = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const [roles, setRoles] = useState<any[]>([]);
     const [permissions, setPermissions] = useState<any>({});
@@ -86,8 +88,8 @@ const RolesIndex = () => {
     }, []);
 
     useEffect(() => {
-        dispatch(setPageTitle('Roles'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('roles_permissions', 'Roles & Permissions')));
+    }, [dispatch, t]);
 
     const handleCreate = () => {
         setEditingRole(null);

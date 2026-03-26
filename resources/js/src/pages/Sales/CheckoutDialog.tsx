@@ -188,7 +188,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-zinc-300 uppercase">USD</span>
                                     </div>
                                     {manualGrandTotal === null && (
-                                        <p className="text-[9px] text-zinc-400 font-bold pl-1 italic">Currently following system calc</p>
+                                        <p className="text-[9px] text-zinc-400 font-bold pl-1 italic">Currently following system calculation</p>
                                     )}
                                 </div>
 
@@ -417,8 +417,8 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                     </section>
 
                                     <section className="space-y-3 mb-4">
-                                        <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest flex items-center gap-2">
-                                            <IconPhoto size={14} className="text-primary" /> Invoice Image
+                                        <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-wider flex items-center gap-2">
+                                            <IconPhoto size={14} className="text-primary" /> Invoice Image (#Job Reference)
                                         </h3>
                                         
                                         <div className="space-y-2">

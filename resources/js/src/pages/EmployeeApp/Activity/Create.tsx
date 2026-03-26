@@ -7,10 +7,15 @@ import {
 } from '@tabler/icons-react';
 import PageHeader from '@/components/ui/PageHeader';
 import { cn } from '@/lib/utils';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 type Step = 'photo' | 'location' | 'comment';
 
 export default function EmployeePwaActivityCreate() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const fileRef = useRef<HTMLInputElement>(null);
     const token = localStorage.getItem('employee_auth_token');
@@ -22,6 +27,10 @@ export default function EmployeePwaActivityCreate() {
     const [location, setLocation] = useState<{ lat: number; lng: number; name?: string } | null>(null);
     const [locLoading, setLocLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('new_activity', 'New Activity')));
+    }, [dispatch, t]);
 
     // Auto-request GPS on mount
     useEffect(() => {

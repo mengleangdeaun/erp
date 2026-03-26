@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { IconReceipt, IconCar, IconDotsVertical, IconTrash, IconX, IconCoins, IconInfoCircle, IconFilter, IconHistory, IconEdit } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 import FilterBar from '@/components/ui/FilterBar';
 import Pagination from '@/components/ui/Pagination';
 import EmptyState from '@/components/ui/EmptyState';
@@ -32,6 +34,11 @@ import SalesOrderInfoDialog from './SalesOrderInfoDialog';
 const SalesOrderIndex: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('sales_orders', 'Sales Orders')));
+    }, [dispatch, t]);
     
     // Search and Pagination state
     const [search, setSearch] = useState('');

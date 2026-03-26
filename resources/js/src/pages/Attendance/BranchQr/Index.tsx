@@ -22,8 +22,13 @@ import TableSkeleton from '../../../components/ui/TableSkeleton';
 import EmptyState from '../../../components/ui/EmptyState';
 import Pagination from '../../../components/ui/Pagination';
 import SortableHeader from '../../../components/ui/SortableHeader';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 export default function BranchQrSetup() {
+  const { t } = useTranslation();
+  const dispatch = useDispatch();
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -75,6 +80,10 @@ export default function BranchQrSetup() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    dispatch(setPageTitle(t('branch_qr_setup', 'Branch QR Setup')));
+  }, [dispatch, t]);
 
   useEffect(() => {
     fetchBranches();

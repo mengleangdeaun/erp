@@ -34,8 +34,8 @@ const VehicleBrandIndex: React.FC = () => {
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
     useEffect(() => {
-        dispatch(setPageTitle('Vehicle Brands'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('vehicle_brands', 'Vehicle Brands')));
+    }, [dispatch, t]);
 
     const fetchBrands = async () => {
         setLoading(true);

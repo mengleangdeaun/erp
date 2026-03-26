@@ -42,8 +42,8 @@ const ServiceIndex: React.FC = () => {
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
     useEffect(() => {
-        dispatch(setPageTitle('Service Catalog'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('service_catalog', 'Service Catalog')));
+    }, [dispatch, t]);
 
     const fetchData = async () => {
         setLoading(true);

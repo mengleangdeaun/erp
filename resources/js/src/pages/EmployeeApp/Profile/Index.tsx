@@ -13,6 +13,9 @@ import MobileConfirmationModal from '@/components/MobileConfirmationModal';
 import { cn } from '@/lib/utils';
 import PageHeader from '@/components/ui/PageHeader';
 import { applyEmployeePreferences, storePreferences } from '@/utils/employeePreferences';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 // ─── Info Row Component ───────────────────────────────────────────────────────
 const InfoRow = ({ icon, label, value, last = false }: { icon: React.ReactNode, label: string, value?: string | null, last?: boolean }) => (
@@ -34,6 +37,8 @@ const SectionHeader = ({ icon, title }: { icon: React.ReactNode, title: string }
 );
 
 export default function EmployeePwaProfile() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const fileRef = useRef<HTMLInputElement>(null);
     const [loading, setLoading] = useState(true);
@@ -71,6 +76,10 @@ export default function EmployeePwaProfile() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('profile', 'Profile')));
+    }, [dispatch, t]);
 
     useEffect(() => { fetchData(); }, []);
 

@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import FilterBar from '../../../components/ui/FilterBar';
@@ -21,7 +23,12 @@ import { useTranslation } from 'react-i18next';
 const EmployeeIndex = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const queryClient = useQueryClient();
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('hr_employees')));
+    }, [dispatch, t]);
 
     // Filter & Sort & Pagination state
     const [search, setSearch] = useState('');

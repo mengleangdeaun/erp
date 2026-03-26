@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import PerfectScrollbar from 'react-perfect-scrollbar';
@@ -20,6 +21,7 @@ import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
 
 const CategoryIndex = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const { data: categories = [], isLoading: loading, refetch: refetchCategories } = useInventoryCategories();
     const createCategoryMutation = useCreateCategory();
@@ -45,8 +47,8 @@ const CategoryIndex = () => {
     const [formData, setFormData] = useState(initialFormState);
 
     useEffect(() => {
-        dispatch(setPageTitle('Categories'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('product_categories', 'Product Categories')));
+    }, [dispatch, t]);
 
     const handleCreate = () => { setEditingCategory(null); setFormData(initialFormState); setModalOpen(true); };
 

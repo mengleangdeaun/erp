@@ -1,69 +1,69 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import api from '../utils/api';
 import { toast } from 'sonner';
 
 // Basic Fetchers
 const fetchCustomers = async () => {
-    const { data } = await axios.get('/api/crm/customers?all=true');
+    const { data } = await api.get('/crm/customers?all=true');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchServices = async (branchId: number | null) => {
-    const url = `/api/services/list?all=true${branchId ? `&branch_id=${branchId}` : ''}`;
-    const { data } = await axios.get(url);
+    const url = `/services/list?all=true${branchId ? `&branch_id=${branchId}` : ''}`;
+    const { data } = await api.get(url);
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchProducts = async (branchId: number | null) => {
-    const url = `/api/inventory/products?all=true${branchId ? `&branch_id=${branchId}` : ''}`;
-    const { data } = await axios.get(url);
+    const url = `/inventory/products?all=true${branchId ? `&branch_id=${branchId}` : ''}`;
+    const { data } = await api.get(url);
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchBranches = async () => {
-    const { data } = await axios.get('/api/hr/branches');
+    const { data } = await api.get('/hr/branches');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchBrands = async () => {
-    const { data } = await axios.get('/api/services/vehicle-brands');
+    const { data } = await api.get('/services/vehicle-brands');
     return data;
 };
 
 const fetchCategories = async () => {
-    const { data } = await axios.get('/api/inventory/categories');
+    const { data } = await api.get('/inventory/categories');
     return data;
 };
 
 const fetchPaymentAccounts = async (branchId?: number | null) => {
-    const url = `/api/finance/payment-accounts?all=true${branchId ? `&branch_id=${branchId}` : ''}`;
-    const { data } = await axios.get(url);
+    const url = `/finance/payment-accounts?all=true${branchId ? `&branch_id=${branchId}` : ''}`;
+    const { data } = await api.get(url);
     return data;
 };
 
 const fetchCustomerVehicles = async (customerId: number | null) => {
     if (!customerId) return [];
-    const { data } = await axios.get(`/api/crm/customer-vehicles?customer_id=${customerId}`);
+    const { data } = await api.get(`/crm/customer-vehicles?customer_id=${customerId}`);
     return data;
 };
 
 const fetchSalesOrders = async (params: any = {}) => {
-    const { data } = await axios.get('/api/sales/orders', { params });
+    const { data } = await api.get('/sales/orders', { params });
     return data;
 };
 
 const cancelSalesOrder = async (id: number) => {
-    const { data } = await axios.post(`/api/sales/orders/${id}/cancel`);
+    const { data } = await api.post(`/sales/orders/${id}/cancel`);
     return data;
 };
 
 const fetchSalesOrder = async (id: number) => {
-    const { data } = await axios.get(`/api/sales/orders/${id}`);
+    const { data } = await api.get(`/sales/orders/${id}`);
     return data;
 };
 
 const addSalesOrderDeposit = async ({ id, formData }: { id: number, formData: FormData }) => {
-    const { data } = await axios.post(`/api/sales/orders/${id}/deposits`, formData, {
+    const { data } = await api.post(`/sales/orders/${id}/deposits`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
     return data;
@@ -74,14 +74,14 @@ const updateSalesOrderDeposit = async ({ id, formData }: { id: number, formData:
     if (formData instanceof FormData) {
         formData.append('_method', 'PUT');
     }
-    const { data } = await axios.post(`/api/sales/deposits/${id}`, formData, {
+    const { data } = await api.post(`/sales/deposits/${id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
     return data;
 };
 
 const deleteSalesOrderDeposit = async (id: number) => {
-    const { data } = await axios.delete(`/api/sales/deposits/${id}`);
+    const { data } = await api.delete(`/sales/deposits/${id}`);
     return data;
 };
 

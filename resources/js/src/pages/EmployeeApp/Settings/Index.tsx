@@ -7,6 +7,9 @@ import {
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import PageHeader from '@/components/ui/PageHeader';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 import { applyEmployeePreferences, storePreferences } from '@/utils/employeePreferences';
 
 // ─── Section Header ───────────────────────────────────────────────────────────
@@ -18,6 +21,8 @@ const SectionHeader = ({ icon, title }: { icon: React.ReactNode, title: string }
 );
 
 export default function EmployeePwaSettings() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [prefs, setPrefs] = useState<any>(null);
@@ -47,6 +52,10 @@ export default function EmployeePwaSettings() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('settings', 'Settings')));
+    }, [dispatch, t]);
 
     useEffect(() => { fetchData(); }, []);
 

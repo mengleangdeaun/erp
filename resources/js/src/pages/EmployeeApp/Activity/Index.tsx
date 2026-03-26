@@ -4,6 +4,9 @@ import { toast } from 'sonner';
 import { IconActivity, IconPlus, IconMapPin, IconCalendarEvent, IconCheck, IconAlertTriangle, IconClock } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import PageHeader from '@/components/ui/PageHeader';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
     submitted: { label: 'Submitted', color: 'text-blue-600 bg-blue-50 border-blue-200', icon: <IconClock className="w-3 h-3" /> },
@@ -12,6 +15,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 };
 
 export default function EmployeePwaActivity() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [activities, setActivities] = useState<any[]>([]);
@@ -31,6 +36,10 @@ export default function EmployeePwaActivity() {
         } catch { toast.error('Network error'); }
         finally { setLoading(false); }
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('activity', 'Activity')));
+    }, [dispatch, t]);
 
     useEffect(() => { fetchActivities(); }, []);
 

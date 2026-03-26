@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { IconSearch, IconX, IconPlus, IconFilter, IconFilterOff, IconRefresh, IconAdjustmentsHorizontal } from '@tabler/icons-react';
 
@@ -64,6 +65,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
             setTimeout(() => setIsRefreshing(false), 300);
         }
     };
+
+    const { t } = useTranslation();
 
     return (
         <div className="flex flex-col gap-4 mb-4">
@@ -140,7 +143,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                         
                         {/* 1. Global Search */}
                         <div className="space-y-1.5 flex flex-col w-full">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Search Keywords</span>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">{t('search_keywords')}</span>
                             <div className="relative group transition-all">
                                 <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
                                 <Input

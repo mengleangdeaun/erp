@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
 import { Label } from '../../../components/ui/label';
-import { ScrollArea } from '../../../components/ui/scroll-area';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import {
     IconCalendarStats,
@@ -40,8 +40,13 @@ import {
 } from '@/hooks/useHRData';
 import { useDelayedLoading } from '@/hooks/useDelayedLoading';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const EmployeeConfigIndex = () => {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
 
@@ -93,7 +98,7 @@ const EmployeeConfigIndex = () => {
         const payload: any = {};
         if (editModalType === 'shift') payload.working_shift_id = inputValue;
         if (editModalType === 'policy') payload.attendance_policy_id = inputValue;
-        if (editModalType === 'status') payload.status = inputValue;
+        if (editModalType === 'status') payload.is_active = inputValue;
         if (editModalType === 'telegram') payload.telegram_user_id = inputValue;
 
         updateConfigMutation.mutate({ id: activeEmployee.id, ...payload }, {
@@ -243,7 +248,7 @@ const EmployeeConfigIndex = () => {
         setEditModalType(type);
         if (type === 'shift') setInputValue(employee.working_shift_id?.toString() || '');
         else if (type === 'policy') setInputValue(employee.attendance_policy_id?.toString() || '');
-        else if (type === 'status') setInputValue(employee.status || '');
+        else if (type === 'status') setInputValue(employee.is_active ? '1' : '0');
         else if (type === 'telegram') setInputValue(employee.telegram_user_id || '');
     };
 
@@ -261,7 +266,7 @@ const EmployeeConfigIndex = () => {
         }
 
         if (statusFilter !== 'all') {
-            result = result.filter(e => e.status === statusFilter);
+            result = result.filter(e => (e.is_active ? 'active' : 'inactive') === statusFilter);
         }
 
         result.sort((a, b) => {
@@ -282,6 +287,10 @@ const EmployeeConfigIndex = () => {
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('employee_config', 'Employee Config')));
+    }, [dispatch, t]);
 
     useEffect(() => { setCurrentPage(1); }, [search, selectedEmployeeId, statusFilter]);
 
@@ -433,7 +442,7 @@ const EmployeeConfigIndex = () => {
 
             {/* Edit Modals */}
             <Dialog open={editModalType !== null} onOpenChange={(open) => !open && setEditModalType(null)}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md ">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             {editModalType === 'shift' && <><IconCalendarStats className="text-blue-500" /> Edit Working Shift</>}
@@ -493,8 +502,8 @@ const EmployeeConfigIndex = () => {
                                         <SelectValue placeholder="Choose status..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                        <SelectItem value="1">Active</SelectItem>
+                                        <SelectItem value="0">Inactive</SelectItem>
                                     </SelectContent>
                                 </Select>
                             )}
@@ -519,7 +528,7 @@ const EmployeeConfigIndex = () => {
 
             {/* QR Modal */}
             <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
-                <DialogContent className="sm:max-w-[600px] h-[90vh] p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+                <DialogContent className="sm:max-w-[600px] max-h-[90vh] h-auto p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                     <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4 print:hidden">
                         <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
                             <IconQrcode className="text-primary w-6 h-6" />
@@ -534,7 +543,7 @@ const EmployeeConfigIndex = () => {
                         </div>
                     </div>
 
-                    <ScrollArea className="flex-1 min-h-0">
+                    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
                         {loadingQr ? (
                             <div className="flex items-center justify-center py-16">
                                 <div className="flex flex-col items-center gap-4">
@@ -637,7 +646,7 @@ const EmployeeConfigIndex = () => {
                                 </div>
                             </div>
                         ) : null}
-                    </ScrollArea>
+                    </PerfectScrollbar>
 
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background print:hidden">
                         <Button variant="ghost" onClick={() => setQrModalOpen(false)} className="h-9 px-4 rounded-lg">

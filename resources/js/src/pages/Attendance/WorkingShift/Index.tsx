@@ -20,9 +20,11 @@ import PerfectScrollbar from 'react-perfect-scrollbar';
 import { IconClock, IconCalendarPlus, IconCoffee, IconRepeat, IconSeparator, IconTransferVertical } from '@tabler/icons-react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 
 const WorkingShiftIndex = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const [workingShifts, setWorkingShifts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -65,8 +67,8 @@ const WorkingShiftIndex = () => {
     };
 
     useEffect(() => {
-        dispatch(setPageTitle('Working Shifts'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('working_shifts', 'Working Shifts')));
+    }, [dispatch, t]);
 
     const fetchWorkingShifts = () => {
         setLoading(true);

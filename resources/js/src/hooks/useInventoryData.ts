@@ -1,108 +1,108 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import api from '../utils/api';
 import { toast } from 'sonner';
 
 // --- Fetchers ---
 
 const fetchProducts = async () => {
-    const { data } = await axios.get('/api/inventory/products?all=true');
+    const { data } = await api.get('/inventory/products?all=true');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchCategories = async () => {
-    const { data } = await axios.get('/api/inventory/categories');
+    const { data } = await api.get('/inventory/categories');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchUoms = async () => {
-    const { data } = await axios.get('/api/inventory/uoms');
+    const { data } = await api.get('/inventory/uoms');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchTags = async () => {
-    const { data } = await axios.get('/api/inventory/tags');
+    const { data } = await api.get('/inventory/tags');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchBranches = async () => {
-    const { data } = await axios.get('/api/hr/branches');
+    const { data } = await api.get('/hr/branches');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchBranchProducts = async (branchId: string | number) => {
-    const { data } = await axios.get(`/api/hr/branches/${branchId}/products`);
+    const { data } = await api.get(`/hr/branches/${branchId}/products`);
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchBranchServices = async (branchId: string | number) => {
-    const { data } = await axios.get(`/api/hr/branches/${branchId}/services`);
+    const { data } = await api.get(`/hr/branches/${branchId}/services`);
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchServices = async () => {
-    const { data } = await axios.get('/api/services/list');
+    const { data } = await api.get('/services/list');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchSuppliers = async () => {
-    const { data } = await axios.get('/api/inventory/suppliers');
+    const { data } = await api.get('/inventory/suppliers');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchLocations = async () => {
-    const { data } = await axios.get('/api/inventory/locations');
+    const { data } = await api.get('/inventory/locations');
     return Array.isArray(data) ? data : (data.data || []);
 };
 
 const fetchPurchaseOrders = async (params: any = {}) => {
-    const { data } = await axios.get('/api/inventory/purchase-orders', { params });
+    const { data } = await api.get('/inventory/purchase-orders', { params });
     return data;
 };
 
 const fetchPurchaseOrderPendingItems = async (poId: number | string) => {
-    const { data } = await axios.get(`/api/inventory/purchase-orders/${poId}/pending-items`);
+    const { data } = await api.get(`/inventory/purchase-orders/${poId}/pending-items`);
     return data;
 };
 
 const fetchPurchaseReceives = async (params: any = {}) => {
-    const { data } = await axios.get('/api/inventory/purchase-receives', { params });
+    const { data } = await api.get('/inventory/purchase-receives', { params });
     return data;
 };
 
 const fetchInventoryDashboard = async (branchId?: string | number | null) => {
-    const { data } = await axios.get('/api/inventory/dashboard', {
+    const { data } = await api.get('/inventory/dashboard', {
         params: { branch_id: branchId }
     });
     return data;
 };
 
 const fetchStockBalance = async (params: any = {}) => {
-    const { data } = await axios.get('/api/inventory/stock-balance', { params });
+    const { data } = await api.get('/inventory/stock-balance', { params });
     return data;
 };
 
 const fetchStocks = async () => {
-    const { data } = await axios.get('/api/inventory/stocks');
+    const { data } = await api.get('/inventory/stocks');
     return Array.isArray(data) ? data : [];
 };
 
 const fetchStockMovements = async (params: any = {}) => {
-    const { data } = await axios.get('/api/inventory/stock-movements', { params });
+    const { data } = await api.get('/inventory/stock-movements', { params });
     return Array.isArray(data) ? data : [];
 };
 
 const fetchSerialMovements = async (params: any = {}) => {
-    const { data } = await axios.get('/api/inventory/serial-movements', { params });
+    const { data } = await api.get('/inventory/serial-movements', { params });
     return Array.isArray(data) ? data : [];
 };
 
 const fetchStockAdjustments = async (params: any = {}) => {
-    const { data } = await axios.get('/api/inventory/stock-adjustments', { params });
+    const { data } = await api.get('/inventory/stock-adjustments', { params });
     return data;
 };
 
 const fetchStockTransfers = async (params: any = {}) => {
-    const { data } = await axios.get('/api/inventory/stock-transfers', { params });
+    const { data } = await api.get('/inventory/stock-transfers', { params });
     return data;
 };
 
@@ -257,7 +257,7 @@ export const useCreateProduct = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (formData: FormData) => {
-            const { data } = await axios.post('/api/inventory/products', formData, {
+            const { data } = await api.post('/inventory/products', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             return data;
@@ -278,7 +278,7 @@ export const useUpdateProduct = () => {
         mutationFn: async ({ id, formData }: { id: number; formData: FormData }) => {
             // Laravel requires _method=PUT for multipart/form-data POST requests to simulate PUT
             formData.append('_method', 'PUT');
-            const { data } = await axios.post(`/api/inventory/products/${id}`, formData, {
+            const { data } = await api.post(`/inventory/products/${id}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             return data;
@@ -297,7 +297,7 @@ export const useDeleteProduct = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/inventory/products/${id}`);
+            const { data } = await api.delete(`/inventory/products/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -316,7 +316,7 @@ export const useCreateCategory = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (payload: any) => {
-            const { data } = await axios.post('/api/inventory/categories', payload);
+            const { data } = await api.post('/inventory/categories', payload);
             return data;
         },
         onSuccess: () => {
@@ -333,7 +333,7 @@ export const useUpdateCategory = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, payload }: { id: number; payload: any }) => {
-            const { data } = await axios.put(`/api/inventory/categories/${id}`, payload);
+            const { data } = await api.put(`/inventory/categories/${id}`, payload);
             return data;
         },
         onSuccess: () => {
@@ -350,7 +350,7 @@ export const useDeleteCategory = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/inventory/categories/${id}`);
+            const { data } = await api.delete(`/inventory/categories/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -369,7 +369,7 @@ export const useCreateUom = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (payload: any) => {
-            const { data } = await axios.post('/api/inventory/uoms', payload);
+            const { data } = await api.post('/inventory/uoms', payload);
             return data;
         },
         onSuccess: () => {
@@ -386,7 +386,7 @@ export const useUpdateUom = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, payload }: { id: number; payload: any }) => {
-            const { data } = await axios.put(`/api/inventory/uoms/${id}`, payload);
+            const { data } = await api.put(`/inventory/uoms/${id}`, payload);
             return data;
         },
         onSuccess: () => {
@@ -403,7 +403,7 @@ export const useDeleteUom = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/inventory/uoms/${id}`);
+            const { data } = await api.delete(`/inventory/uoms/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -422,7 +422,7 @@ export const useCreateTag = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (payload: any) => {
-            const { data } = await axios.post('/api/inventory/tags', payload);
+            const { data } = await api.post('/inventory/tags', payload);
             return data;
         },
         onSuccess: () => {
@@ -439,7 +439,7 @@ export const useUpdateTag = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, payload }: { id: number; payload: any }) => {
-            const { data } = await axios.put(`/api/inventory/tags/${id}`, payload);
+            const { data } = await api.put(`/inventory/tags/${id}`, payload);
             return data;
         },
         onSuccess: () => {
@@ -456,7 +456,7 @@ export const useDeleteTag = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/inventory/tags/${id}`);
+            const { data } = await api.delete(`/inventory/tags/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -475,7 +475,7 @@ export const useSyncBranchProducts = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ branchId, products }: { branchId: string | number; products: Array<{ id: number; reorder_level: number }> }) => {
-            const { data } = await axios.post(`/api/hr/branches/${branchId}/products/sync`, { products });
+            const { data } = await api.post(`/hr/branches/${branchId}/products/sync`, { products });
             return data;
         },
         onSuccess: (_, { branchId }) => {
@@ -492,7 +492,7 @@ export const useSyncBranchServices = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ branchId, services }: { branchId: string | number; services: number[] }) => {
-            const { data } = await axios.post(`/api/hr/branches/${branchId}/services/sync`, { services });
+            const { data } = await api.post(`/hr/branches/${branchId}/services/sync`, { services });
             return data;
         },
         onSuccess: (_, { branchId }) => {
@@ -511,7 +511,7 @@ export const useCreatePurchaseOrder = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (payload: any) => {
-            const { data } = await axios.post('/api/inventory/purchase-orders', payload);
+            const { data } = await api.post('/inventory/purchase-orders', payload);
             return data;
         },
         onSuccess: () => {
@@ -528,7 +528,7 @@ export const useUpdatePurchaseOrder = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, payload }: { id: number; payload: any }) => {
-            const { data } = await axios.put(`/api/inventory/purchase-orders/${id}`, payload);
+            const { data } = await api.put(`/inventory/purchase-orders/${id}`, payload);
             return data;
         },
         onSuccess: () => {
@@ -545,7 +545,7 @@ export const useDeletePurchaseOrder = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/inventory/purchase-orders/${id}`);
+            const { data } = await api.delete(`/inventory/purchase-orders/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -564,7 +564,7 @@ export const useCreatePurchaseReceive = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (payload: any) => {
-            const { data } = await axios.post('/api/inventory/purchase-receives', payload);
+            const { data } = await api.post('/inventory/purchase-receives', payload);
             return data;
         },
         onSuccess: () => {
@@ -584,7 +584,7 @@ export const useAdjustStock = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (payload: any) => {
-            const { data } = await axios.post('/api/inventory/stocks', payload);
+            const { data } = await api.post('/inventory/stocks', payload);
             return data;
         },
         onSuccess: () => {
@@ -603,7 +603,7 @@ export const useDeleteStockAdjustment = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/inventory/stock-adjustments/${id}`);
+            const { data } = await api.delete(`/inventory/stock-adjustments/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -620,7 +620,7 @@ export const useApproveStockAdjustment = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.post(`/api/inventory/stock-adjustments/${id}/approve`);
+            const { data } = await api.post(`/inventory/stock-adjustments/${id}/approve`);
             return data;
         },
         onSuccess: () => {
@@ -637,7 +637,7 @@ export const useRejectStockAdjustment = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
-            const { data } = await axios.post(`/api/inventory/stock-adjustments/${id}/reject`, { reason });
+            const { data } = await api.post(`/inventory/stock-adjustments/${id}/reject`, { reason });
             return data;
         },
         onSuccess: () => {
@@ -656,7 +656,7 @@ export const useDeleteStockTransfer = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.delete(`/api/inventory/stock-transfers/${id}`);
+            const { data } = await api.delete(`/inventory/stock-transfers/${id}`);
             return data;
         },
         onSuccess: () => {
@@ -673,7 +673,7 @@ export const useApproveStockTransfer = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: number) => {
-            const { data } = await axios.post(`/api/inventory/stock-transfers/${id}/approve`);
+            const { data } = await api.post(`/inventory/stock-transfers/${id}/approve`);
             return data;
         },
         onSuccess: () => {
@@ -690,7 +690,7 @@ export const useRejectStockTransfer = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
-            const { data } = await axios.post(`/api/inventory/stock-transfers/${id}/reject`, { reason });
+            const { data } = await api.post(`/inventory/stock-transfers/${id}/reject`, { reason });
             return data;
         },
         onSuccess: () => {

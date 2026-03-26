@@ -3,15 +3,24 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { IconCalendar, IconTag, IconUsers, IconBell, IconPaperclip, IconDownload, IconFile } from '@tabler/icons-react';
 import PageHeader from '../../../components/ui/PageHeader';
 import dayjs from 'dayjs';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { IconInfoCircle, IconCircleCheck, IconAlertTriangle, IconAlertOctagon } from '@tabler/icons-react';
 export default function AnnouncementDetail() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [announcement, setAnnouncement] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
 
     const token = localStorage.getItem('employee_auth_token');
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('announcement_detail', 'Announcement Detail')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         const fetch_ = async () => {

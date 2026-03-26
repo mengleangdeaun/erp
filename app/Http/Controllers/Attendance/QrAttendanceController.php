@@ -87,9 +87,16 @@ class QrAttendanceController extends Controller
             'password' => 'required|string',
         ]);
 
+        \Illuminate\Support\Facades\Log::info('Login Attempt', ['email' => $request->email]);
         $employee = Employee::where('email', $request->email)->first();
 
-        if (!$employee || !Hash::check($request->password, $employee->password)) {
+        if (!$employee) {
+            \Illuminate\Support\Facades\Log::warning('Login Failed: Employee not found', ['email' => $request->email]);
+            return response()->json(['message' => 'Invalid email or password.'], 401);
+        }
+
+        if (!Hash::check($request->password, $employee->password)) {
+            \Illuminate\Support\Facades\Log::warning('Login Failed: Password mismatch', ['email' => $request->email]);
             return response()->json(['message' => 'Invalid email or password.'], 401);
         }
 

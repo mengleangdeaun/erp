@@ -1,5 +1,8 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -212,6 +215,8 @@ const PartConfigurationCard = ({
 );
 
 const SalesCreate = () => {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const { id } = useParams();
@@ -222,6 +227,10 @@ const SalesCreate = () => {
     const [loadingOrder, setLoadingOrder] = useState(false);
     const [loadingVehicles, setLoadingVehicles] = useState(false);
     const [activeTab, setActiveTab] = useState<'services' | 'products'>('services');
+
+    useEffect(() => {
+        dispatch(setPageTitle(isEdit ? `${t('edit_sale')} #${id}` : t('point_of_sale', 'Point of Sale')));
+    }, [dispatch, t, isEdit, id]);
     
     const [catalogSearch, setCatalogSearch] = useState('');
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
@@ -1065,9 +1074,6 @@ const SalesCreate = () => {
                                     <DialogTitle className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">
                                         Package Configuration
                                     </DialogTitle>
-                                    <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-0 font-black text-[9px] px-2 py-0.5 tracking-wider uppercase">
-                                        Optimization
-                                    </Badge>
                                 </div>
                                 <DialogDescription className="text-xs text-gray-400 tracking-wider flex items-center gap-2">
                                     {selectedServiceForItems?.name}

@@ -83,8 +83,8 @@ const ProductIndex = () => {
     const isDeleting = deleteProductMutation.isPending;
 
     useEffect(() => {
-        dispatch(setPageTitle('Products'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('products_catalog', 'Products Catalog')));
+    }, [dispatch, t]);
 
     // Cleanup object URLs on unmount or when imagePreview changes
     useEffect(() => {

@@ -5,8 +5,13 @@ import { IconCalendarEvent, IconPlus, IconClock, IconCheck, IconX, IconAlertCirc
 import dayjs from 'dayjs';
 import PageHeader from '@/components/ui/PageHeader';
 import MobileConfirmationModal from '@/components/MobileConfirmationModal';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 export default function LeaveIndex() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [requests, setRequests] = useState<any[]>([]);
@@ -62,6 +67,10 @@ export default function LeaveIndex() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('leave_requests', 'Leave Requests')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         fetchData();

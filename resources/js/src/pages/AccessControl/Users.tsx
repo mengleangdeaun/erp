@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Button } from '../../components/ui/button';
@@ -19,6 +20,7 @@ import { setPageTitle } from '@/store/themeConfigSlice';
 
 
 const UsersIndex = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const [users, setUsers] = useState<any[]>([]);
     const [roles, setRoles] = useState<any[]>([]);
@@ -74,8 +76,8 @@ const UsersIndex = () => {
     }, []);
 
     useEffect(() => {
-        dispatch(setPageTitle('Users'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('system_users', 'System Users')));
+    }, [dispatch, t]);
 
     const handleCreate = () => {
         setEditingUser(null);

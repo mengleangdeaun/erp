@@ -33,8 +33,8 @@ const JobPartIndex: React.FC = () => {
     const [itemsPerPage, setItemsPerPage] = useState(10);   
 
     useEffect(() => {
-        dispatch(setPageTitle('Installation Parts'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('installation_parts', 'Installation Parts')));
+    }, [dispatch, t]);
 
     const fetchParts = async () => {
         setLoading(true);

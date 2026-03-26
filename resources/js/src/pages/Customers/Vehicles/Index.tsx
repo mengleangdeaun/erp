@@ -137,7 +137,7 @@ const CustomerVehicleIndex = () => {
                 <div className="panel bg-white dark:bg-gray-900 border shadow-sm overflow-hidden p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50 dark:bg-white-dark/5 text-gray-500 uppercase text-[10px] font-bold tracking-wider border-b  border-gray-200 dark:border-gray-600">
+                            <thead className="bg-gray-50 dark:bg-white-dark/5 text-gray-500 uppercase text-[12px] font-bold tracking-wider border-b  border-gray-200 dark:border-gray-600">
                                 <tr>
                                     <th className="px-6 py-4 text-left">{t('plate_info')}</th>
                                     <th className="px-6 py-4 text-left">{t('brand_model')}</th>

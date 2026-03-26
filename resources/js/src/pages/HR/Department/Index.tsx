@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
@@ -22,7 +24,12 @@ import { useTranslation } from 'react-i18next';
 
 const DepartmentIndex = () => {
     const { t } = useTranslation();
+    const dispatch = useDispatch();
     const [departments, setDepartments] = useState<any[]>([]);
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('dept_title')));
+    }, [dispatch, t]);
     const [branches, setBranches] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);

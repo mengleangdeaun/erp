@@ -1,4 +1,7 @@
 import axios from 'axios';
+import nprogress from 'nprogress';
+
+nprogress.configure({ showSpinner: false });
 
 const api = axios.create({
     baseURL: '/api',
@@ -10,13 +13,26 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(config => {
-    // Optionally add auth token if needed
+    // @ts-ignore
+    if (config.showProgress !== false) {
+        nprogress.start();
+    }
     return config;
 });
 
 api.interceptors.response.use(
-    response => response,
+    response => {
+        // @ts-ignore
+        if (response.config.showProgress !== false) {
+            nprogress.done();
+        }
+        return response;
+    },
     error => {
+        // @ts-ignore
+        if (error.config?.showProgress !== false) {
+            nprogress.done();
+        }
         return Promise.reject(error);
     }
 );

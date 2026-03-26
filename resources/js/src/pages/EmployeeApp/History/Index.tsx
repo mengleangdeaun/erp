@@ -3,8 +3,13 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { IconHistory, IconCalendar, IconClock } from '@tabler/icons-react';
 import PageHeader from '@/components/ui/PageHeader';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 export default function EmployeePwaHistory() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [history, setHistory] = useState<any[]>([]);
@@ -43,6 +48,10 @@ export default function EmployeePwaHistory() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('attendance_history', 'Attendance History')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         fetchHistory();

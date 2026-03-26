@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '../../../components/ui/button';
@@ -64,8 +66,13 @@ const initialFormState = {
 
 const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
     const { t } = useTranslation();
+    const dispatch = useDispatch();
     const isEdit = Boolean(employeeId);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        dispatch(setPageTitle(isEdit ? t('edit_employee') : t('add_new_employee')));
+    }, [dispatch, t, isEdit]);
     const [activeSection, setActiveSection] = useState(0);
     const [formData, setFormData] = useState(initialFormState);
     const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
@@ -248,7 +255,7 @@ const EmployeeForm = ({ employeeId }: EmployeeFormProps) => {
                 Object.entries(formData).forEach(([key, val]) => {
                     if (val !== '') {
                         if (typeof val === 'boolean') {
-                            body.append(key, String(val));
+                            body.append(key, val ? '1' : '0');
                         } else {
                             body.append(key, val as string);
                         }

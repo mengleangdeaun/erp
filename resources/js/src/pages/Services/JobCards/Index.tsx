@@ -74,8 +74,8 @@ const JobCardIndex: React.FC = () => {
     }, [jobIdParam]);
 
     useEffect(() => {
-        dispatch(setPageTitle('Workshop Jobs'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('workshop_jobs', 'Workshop Jobs')));
+    }, [dispatch, t]);
 
     const filteredJobs = jobs; 
 

@@ -16,8 +16,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 const AttendanceRecordIndex = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const queryClient = useQueryClient();
     
@@ -109,8 +111,8 @@ const AttendanceRecordIndex = () => {
     }, [search, dateFilter, employeeFilter]);
 
     useEffect(() => {
-        dispatch(setPageTitle('Attendance Records'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('attendance_records', 'Attendance Records')));
+    }, [dispatch, t]);
 
     const employeeOptions = useMemo(() => 
         employees.map((emp: any) => ({

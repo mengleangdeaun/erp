@@ -17,8 +17,10 @@ import PerfectScrollbar from 'react-perfect-scrollbar';
 import { IconShieldCheck } from '@tabler/icons-react';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 const AttendancePolicyIndex = () => {
+    const { t } = useTranslation();
     const dispatch = useDispatch();
     const [policies, setPolicies] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -54,8 +56,8 @@ const AttendancePolicyIndex = () => {
     };
 
     useEffect(() => {
-        dispatch(setPageTitle('Attendance Policies'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('attendance_policies', 'Attendance Policies')));
+    }, [dispatch, t]);
 
     const fetchPolicies = () => {
         setLoading(true);

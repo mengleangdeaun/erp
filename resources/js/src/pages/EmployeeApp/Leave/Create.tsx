@@ -11,8 +11,13 @@ import {
 import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
 import PageHeader from '@/components/ui/PageHeader';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 export default function LeaveCreate() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [submitting, setSubmitting] = useState(false);
     const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
@@ -26,6 +31,10 @@ export default function LeaveCreate() {
         end_time: '18:00',
         reason: ''
     });
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('new_leave', 'New Leave')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         const token = localStorage.getItem('employee_auth_token');

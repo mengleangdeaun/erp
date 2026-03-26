@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconBell, IconBellOff, IconChevronRight, IconCalendarPlus, IconCircleCheck, IconCircleX, IconCheck, IconPaperclip } from '@tabler/icons-react';
 import PageHeader from '../../../components/ui/PageHeader';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -25,6 +28,8 @@ const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
 };
 
 export default function NotificationIndex() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
@@ -45,6 +50,10 @@ export default function NotificationIndex() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('notifications', 'Notifications')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         fetchNotifications();

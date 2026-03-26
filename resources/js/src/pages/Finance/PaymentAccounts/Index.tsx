@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { IconWallet, IconBuilding } from '@tabler/icons-react';
 import FilterBar from '@/components/ui/FilterBar';
@@ -10,8 +11,12 @@ import DeleteModal from '@/components/DeleteModal';
 import ActionButtons from '@/components/ui/ActionButtons';
 import { Badge } from '@/components/ui/badge';
 import AccountDialog from './AccountDialog';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const PaymentAccountIndex = () => {
+    const dispatch = useDispatch();
+    const { t } = useTranslation();
     const [accounts, setAccounts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -47,6 +52,10 @@ const PaymentAccountIndex = () => {
                 setLoading(false);
             });
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('payment_accounts', 'Payment Accounts')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         fetchAccounts();

@@ -4,6 +4,7 @@ import DefaultLayout from '../components/Layouts/DefaultLayout';
 import MobileLayout from '../components/Layouts/MobileLayout';
 import Error from '../components/Error';
 import { routes } from './routes';
+import NProgressHandler from '../components/NProgressHandler';
 
 const finalRoutes = routes.map((route) => {
     return {
@@ -22,7 +23,12 @@ const finalRoutes = routes.map((route) => {
 const router = createBrowserRouter([
     {
         errorElement: <BlankLayout><Error /></BlankLayout>,
-        children: finalRoutes
+        children: [
+            {
+                element: <NProgressHandler />,
+            },
+            ...finalRoutes
+        ]
     }
 ]);
 

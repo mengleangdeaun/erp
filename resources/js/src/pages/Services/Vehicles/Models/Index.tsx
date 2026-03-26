@@ -42,8 +42,8 @@ const VehicleModelIndex: React.FC = () => {
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
     useEffect(() => {
-        dispatch(setPageTitle('Vehicle Models'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('vehicle_models', 'Vehicle Models')));
+    }, [dispatch, t]);
 
     const fetchModels = async () => {
         setLoading(true);

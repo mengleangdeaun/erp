@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import api from '@/utils/api';
 import { Badge } from '@/components/ui/badge';
 import {
     Tooltip,
@@ -41,9 +41,11 @@ const SystemHealthIndicator = () => {
     const checkHealth = useCallback(async () => {
         const start = performance.now();
         try {
-            const response = await axios.get<HealthResponse>('/api/health', {
+            // @ts-ignore
+            const response = await api.get<HealthResponse>('/health', {
                 timeout: 5000,
-                headers: { 'Cache-Control': 'no-cache' }
+                headers: { 'Cache-Control': 'no-cache' },
+                showProgress: false
             });
             const end = performance.now();
             const currentLatency = Math.round(end - start);

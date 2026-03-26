@@ -29,14 +29,14 @@ class EmployeeConfigController extends Controller
         $request->validate([
             'working_shift_id'     => 'nullable|exists:working_shifts,id',
             'attendance_policy_id' => 'nullable|exists:attendance_policies,id',
-            'status'               => 'nullable|in:active,inactive,on_leave,terminated',
+            'is_active'            => 'nullable|boolean',
             'telegram_user_id'     => 'nullable|string|max:255',
         ]);
 
         $employee->update($request->only([
             'working_shift_id',
             'attendance_policy_id',
-            'status',
+            'is_active',
             'telegram_user_id'
         ]));
 

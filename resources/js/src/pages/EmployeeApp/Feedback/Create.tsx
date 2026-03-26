@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { IconArrowLeft, IconMessageHeart, IconChevronRight, IconSend, IconThumbUp, IconThumbDown } from '@tabler/icons-react';
@@ -6,8 +6,13 @@ import PageHeader from '../../../components/ui/PageHeader';
 import MobileLayout from '../../../components/Layouts/MobileLayout';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 const FeedbackCreate = () => {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -15,6 +20,10 @@ const FeedbackCreate = () => {
         message: '',
         recommendation: '',
     });
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('feedback', 'Feedback')));
+    }, [dispatch, t]);
 
     const getCookie = (name: string) => {
         const value = `; ${document.cookie}`;

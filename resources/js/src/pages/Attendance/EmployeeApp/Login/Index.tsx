@@ -6,8 +6,13 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { Input } from '../../../../components/ui/input';
 import { Label } from '../../../../components/ui/label';
 import { Button } from '../../../../components/ui/button';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 export default function MobileEmployeeLogin() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const payload = searchParams.get('payload');
@@ -103,6 +108,10 @@ export default function MobileEmployeeLogin() {
             setLoggingIn(false);
         }
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('employee_login', 'Employee Login')));
+    }, [dispatch, t]);
 
     useEffect(() => {
         // Initial Persistence Check: If token exists, go to dashboard

@@ -11,8 +11,13 @@ import {
     IconBell
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
+import { useTranslation } from 'react-i18next';
 
 export default function EmployeePwaDashboard() {
+    const { t } = useTranslation();
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -20,6 +25,10 @@ export default function EmployeePwaDashboard() {
     const [featured, setFeatured] = useState<any>(null);
     const [showFeatured, setShowFeatured] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('dashboard', 'Dashboard')));
+    }, [dispatch, t]);
 
     // Live clock ticker
     useEffect(() => {
