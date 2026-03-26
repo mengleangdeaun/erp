@@ -8,7 +8,7 @@ import {
     IconPackage, IconTools, IconDeviceFloppy, IconLoader2, 
     IconX, IconSearch, IconChevronRight, IconFilter,
     IconShoppingCart, IconArrowLeft, IconBuildingWarehouse, IconBoxSeam,
-    IconCreditCard, IconCheck, IconCoins
+    IconCreditCard, IconCheck, IconCoins, IconSearchOff, IconInfoCircle
 } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -69,6 +69,148 @@ interface SalesOrderItem {
 
 import { useQueryClient } from '@tanstack/react-query';
 
+
+// Integrated Quick Add Sub-component
+const QuickAddFooter = ({ label, onAdd, isSaving }: { label: string, onAdd: (name: string) => void, isSaving: boolean }) => {
+    const [isInputVisible, setIsInputVisible] = useState(false);
+    const [name, setName] = useState('');
+
+    if (isSaving) {
+        return (
+            <div className="flex items-center gap-2 px-4 py-3 text-[10px] font-black uppercase text-primary/50 animate-pulse">
+                <IconLoader2 size={14} className="animate-spin" />
+                <span>Saving {label}...</span>
+            </div>
+        );
+    }
+
+    if (!isInputVisible) {
+        return (
+            <button 
+                onClick={(e) => { e.stopPropagation(); setIsInputVisible(true); }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-black uppercase text-primary hover:bg-primary/5 transition-colors"
+            >
+                <IconPlus size={14} stroke={3} />
+                <span>Add New {label}</span>
+            </button>
+        );
+    }
+
+    return (
+        <div className="p-3 space-y-3 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80" onClick={(e) => e.stopPropagation()}>
+            <Input 
+                autoFocus
+                placeholder={`Enter ${label} Name...`}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        onAdd(name);
+                        setName('');
+                        setIsInputVisible(false);
+                    }
+                    if (e.key === 'Escape') setIsInputVisible(false);
+                }}
+                className="h-9 text-[11px] font-bold rounded-lg border-primary/20 bg-white dark:bg-dark shadow-sm"
+            />
+            <div className="flex items-center gap-2">
+                <Button 
+                    size="sm" 
+                    className="h-8 text-[9px] font-black uppercase rounded-lg px-4 bg-primary hover:bg-primary/90 text-white"
+                    onClick={() => {
+                        if (name.trim()) onAdd(name);
+                        setName('');
+                        setIsInputVisible(false);
+                    }}
+                >Save</Button>
+                <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 text-[9px] font-black uppercase rounded-lg px-4 hover:bg-red-50 hover:text-red-500"
+                    onClick={() => setIsInputVisible(false)}
+                >Cancel</Button>
+            </div>
+        </div>
+    );
+};
+
+
+// Sub-component for Package Configuration Parts
+const PartConfigurationCard = ({ 
+    p, 
+    tempSelectedParts, 
+    setTempSelectedParts, 
+    tempPartProductMap, 
+    setTempPartProductMap, 
+    products, 
+    materials 
+}: any) => (
+    <div 
+        onClick={() => setTempSelectedParts((prev: any) => prev.includes(p.id) ? prev.filter((x: any) => x !== p.id) : [...prev, p.id])}
+        className={`group relative overflow-hidden rounded-2xl border transition-all duration-500 p-0.5 cursor-pointer select-none ${
+            tempSelectedParts.includes(p.id) 
+                ? 'border-primary ring-2 ring-primary/10 bg-primary/[0.02]' 
+                : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-primary/40'
+        }`}
+    >
+        <div className="p-5 space-y-5">
+            <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                    <div 
+                        className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all duration-300 ${
+                            tempSelectedParts.includes(p.id) 
+                                ? 'bg-primary border-primary text-white scale-110 shadow-lg shadow-primary/20' 
+                                : 'bg-transparent border-gray-200 dark:border-gray-700 group-hover:border-primary/50'
+                        }`}
+                    >
+                        {tempSelectedParts.includes(p.id) && <IconCheck size={16} stroke={4} />}
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="font-bold text-gray-900 dark:text-white text-[11px] tracking-tight leading-none mb-1.5">{p.name}</span>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[7px] font-bold border-gray-200 dark:border-gray-800 text-gray-400 px-1.5 py-0.5 leading-none uppercase tracking-tighter">{p.code}</Badge>
+                            {tempSelectedParts.includes(p.id) && <span className="text-[7px] font-bold text-primary animate-pulse tracking-widest uppercase">Active</span>}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {tempSelectedParts.includes(p.id) && (
+                <div className="pt-2 space-y-3 animate-in slide-in-from-top-4 duration-500">
+                    {materials?.length > 0 ? (
+                        <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+                            <SearchableSelect 
+                                options={materials.map((m: any) => {
+                                    const prod = products.find((x: any) => x.id === m.product_id);
+                                    return { 
+                                        value: prod?.id, 
+                                        label: prod ? `${prod.name} (${prod.code}) - $${prod.price}` : 'Unknown Product' 
+                                    };
+                                }).filter((x: any) => x.value)}
+                                value={tempPartProductMap[p.id]}
+                                onChange={(val) => setTempPartProductMap((prev: any) => ({ ...prev, [p.id]: val as number }))}
+                                placeholder="Select Product..."
+                                className="h-9 text-[10px] font-bold rounded-xl border-primary/20 bg-white dark:bg-dark shadow-sm"
+                            />
+                            {tempPartProductMap[p.id] && (
+                                <p className="text-[8px] text-primary/60 italic ml-1 flex items-center gap-1.5 font-bold uppercase tracking-widest animate-in fade-in duration-300">
+                                    <IconBoxSeam size={10} className="text-primary" />
+                                    Allocated
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50/50 dark:bg-gray-900/50 border border-dashed border-gray-200 dark:border-gray-800">
+                            <IconInfoCircle size={12} className="text-gray-400" />
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">No consumables defined</span>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    </div>
+);
+
 const SalesCreate = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
@@ -118,8 +260,11 @@ const SalesCreate = () => {
     const { data: paymentAccounts = [], isLoading: isLoadingAccounts } = usePaymentAccounts(selectedBranchId);
     const { data: vehicles = [], isLoading: isLoadingVehicles } = useCustomerVehicles(form.customer_id);
 
-    const isLoading = isLoadingCustomers || isLoadingBranches || isLoadingCategories || isLoadingAccounts;
-    const isCatalogLoading = isLoadingServices || isLoadingProducts;
+    const activeBranches = useMemo(() => branches.filter((b: any) => b.status === 'active'), [branches]);
+
+    const isLoading = isLoadingCustomers || isLoadingBranches || isLoadingCategories;
+    const isCatalogLoading = !selectedBranchId || isLoadingServices || isLoadingProducts;
+    const isAccountsLoading = !selectedBranchId || isLoadingAccounts;
 
     // Inline Vehicle Registration state
     const [showAddVehicle, setShowAddVehicle] = useState(false);
@@ -136,15 +281,74 @@ const SalesCreate = () => {
     const [tempSelectedParts, setTempSelectedParts] = useState<number[]>([]);
     const [tempPartProductMap, setTempPartProductMap] = useState<Record<number, number>>({}); // part_id -> product_id
     
+    // Quick Add Brand/Model states
+    const [isSavingBrand, setIsSavingBrand] = useState(false);
+    const [isSavingModel, setIsSavingModel] = useState(false);
+    
+    const handleAddBrand = async (name: string) => {
+        if (!name) return;
+        setIsSavingBrand(true);
+        try {
+            const res = await fetch('/api/services/vehicle-brands', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                },
+                body: JSON.stringify({ name, is_active: true })
+            });
+            if (res.ok) {
+                const created = await res.json();
+                toast.success(`Brand "${name}" created successfully`);
+                queryClient.invalidateQueries({ queryKey: ['brands'] });
+                setNewVehicle((prev: any) => ({ ...prev, brand_id: created.id, model_id: null }));
+            } else {
+                const err = await res.json();
+                toast.error(err.message || 'Failed to create brand');
+            }
+        } catch (error) {
+            toast.error('Error creating brand');
+        } finally {
+            setIsSavingBrand(false);
+        }
+    };
+
+    const handleAddModel = async (brandId: number, name: string) => {
+        if (!name || !brandId) return;
+        setIsSavingModel(true);
+        try {
+            const res = await fetch('/api/services/vehicle-models', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                },
+                body: JSON.stringify({ brand_id: brandId, name, is_active: true })
+            });
+            if (res.ok) {
+                const created = await res.json();
+                toast.success(`Model "${name}" created successfully`);
+                queryClient.invalidateQueries({ queryKey: ['brands'] });
+                setNewVehicle((prev: any) => ({ ...prev, model_id: created.id }));
+            } else {
+                const err = await res.json();
+                toast.error(err.message || 'Failed to create model');
+            }
+        } catch (error) {
+            toast.error('Error creating model');
+        } finally {
+            setIsSavingModel(false);
+        }
+    };
     const [isEditingService, setIsEditingService] = useState(false);
     const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
 
     // Default branch selection
     useEffect(() => {
-        if (!selectedBranchId && branches.length > 0 && !isEdit) {
-            setSelectedBranchId(branches[0].id);
+        if (!selectedBranchId && activeBranches.length > 0 && !isEdit) {
+            setSelectedBranchId(activeBranches[0].id);
         }
-    }, [branches, selectedBranchId, isEdit]);
+    }, [activeBranches, selectedBranchId, isEdit]);
 
     // Fetch existing order for editing
     useEffect(() => {
@@ -435,7 +639,7 @@ const SalesCreate = () => {
         try {
             const formData = new FormData();
             formData.append('customer_id', form.customer_id.toString());
-            formData.append('branch_id', (selectedBranchId || branches[0]?.id || 1).toString());
+            formData.append('branch_id', (selectedBranchId || activeBranches[0]?.id || 1).toString());
             if (form.vehicle_id) formData.append('vehicle_id', form.vehicle_id.toString());
             if ((form as any).payment_account_id) formData.append('payment_account_id', (form as any).payment_account_id.toString());
             formData.append('order_date', form.order_date);
@@ -610,14 +814,22 @@ const SalesCreate = () => {
                             placeholder={`Search ${activeTab}...`} 
                             value={catalogSearch}
                             onChange={e => setCatalogSearch(e.target.value)}
-                            className="pl-9 h-9 text-[11p]"
+                            className="pl-9 pr-8 h-9 text-[11px] font-bold"
                         />
+                        {catalogSearch && (
+                            <button 
+                                onClick={() => setCatalogSearch('')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <IconX size={12} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
                     <SearchableSelect 
-                        options={branches.map((b: any) => ({ value: b.id, label: b.name }))}
+                        options={activeBranches.map((b: any) => ({ value: b.id, label: b.name }))}
                         value={selectedBranchId}
                         onChange={(val) => setSelectedBranchId(val as number)}
                         placeholder="Select Branch..."
@@ -667,81 +879,136 @@ const SalesCreate = () => {
                                 </div>
                             </div>
                         ) : activeTab === 'services' ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {filteredServices.length > 0 ? filteredServices.map((s: any) => (
-                                    <button 
-                                        key={s.id}
-                                        onClick={() => handleAddItem('service', s.id)}
-                                        className="group relative flex flex-col p-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 text-left overflow-hidden"
-                                    >
-                                        <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-                                            <IconTools size={60} stroke={1} />
-                                        </div>
-                                        <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                            <IconTools size={20} />
-                                        </div>
-                                        <h3 className="font-bold text-gray-900 dark:text-white text-sm leading-tight mb-2">{s.name}</h3>
-                                        <div className="mt-auto flex items-center justify-between">
-                                            <span className="text-lg font-bold text-primary tracking-tighter">${parseFloat(s.base_price || 0).toLocaleString()}</span>
-                                            <div className="p-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:bg-primary group-hover:text-white transition-colors">
-                                                <IconPlus size={14} stroke={3} />
+                            <div className="grid mt-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {filteredServices.length > 0 ? (
+                                    filteredServices.map((s: any) => (
+                                        <button 
+                                            key={s.id}
+                                            onClick={() => handleAddItem('service', s.id)}
+                                            className="group relative flex flex-col p-4 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 text-left overflow-hidden hover:-translate-y-1 active:scale-95"
+                                        >
+                                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                                <IconTools size={80} stroke={1} />
                                             </div>
+                                            <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform shadow-inner">
+                                                <IconTools size={24} />
+                                            </div>
+                                            <h3 className="font-black text-gray-900 dark:text-white text-sm leading-snug mb-2 tracking-tight line-clamp-2">{s.name}</h3>
+                                            <div className="mt-auto flex items-center justify-between">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest leading-none mb-1">Standard Rate</span>
+                                                    <span className="text-xl font-black text-primary tracking-tighter">${parseFloat(s.base_price || 0).toLocaleString()}</span>
+                                                </div>
+                                                <div className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                                                    <IconPlus size={16} stroke={4} />
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full py-24 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="w-20 h-20 rounded-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center mb-6 shadow-inner ring-1 ring-gray-100 dark:ring-gray-800">
+                                            {catalogSearch ? <IconSearchOff size={32} className="text-primary/40" /> : <IconTools size={32} className="text-primary/40" />}
                                         </div>
-                                    </button>
-                                )) : (
-                                    <div className="col-span-full py-20 text-center animate-in fade-in duration-500">
-                                        <IconSearch size={40} className="mx-auto text-gray-200 mb-4" />
-                                        <p className="text-sm font-bold text-gray-400">No services match your search</p>
+                                        <div className="max-w-xs space-y-2">
+                                            <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                                                {catalogSearch ? 'No Results Found' : 'Service Catalog Empty'}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 font-bold leading-relaxed px-4">
+                                                {catalogSearch 
+                                                    ? `We couldn't find any services matching "${catalogSearch}". Try broadening your search terms.` 
+                                                    : 'This category does not contain any services yet. Please check again later or switch categories.'
+                                                }
+                                            </p>
+                                        </div>
+                                        <div className="mt-8 flex gap-3">
+                                            {catalogSearch && (
+                                                <Button variant="outline" size="sm" onClick={() => setCatalogSearch('')} className="h-8 text-[9px] font-black rounded-full px-5 border-primary/20 text-primary hover:bg-primary/5 shadow-sm">
+                                                    CLEAR SEARCH
+                                                </Button>
+                                            )}
+                                            {selectedCategoryId !== 'all' && (
+                                                <Button variant="ghost" size="sm" onClick={() => setSelectedCategoryId('all')} className="h-8 text-[9px] font-black rounded-full px-5 text-gray-400 hover:text-gray-600">
+                                                    RESET FILTERS
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                                {filteredProducts.length > 0 ? filteredProducts.map((p: any) => (
-                                    <button 
-                                        key={p.id}
-                                        onClick={() => handleAddItem('product', p.id)}
-                                        className="group flex flex-col p-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300 text-left"
-                                    >
-                                        <div className="aspect-square rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center mb-3 overflow-hidden relative">
-                                            {p.img ? (
-                                                <img 
-                                                    src={p.img} 
-                                                    alt={p.name} 
-                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).src = '/images/invalid-image.svg';
-                                                    }}
-                                                />
-                                            ) : (
-                                                <IconPackage size={24} className="text-gray-200 dark:text-gray-700" />
-                                            )}
-                                            
-                                            {selectedBranchId && (
-                                                <div className="absolute top-1.5 right-1.5 flex flex-col gap-1 items-end">
-                                                    {(p.branch_stock_qty === null || p.branch_stock_qty <= 0) ? (
-                                                        <Badge variant="destructive" className="text-[7px] px-1 py-0 shadow-sm border-0 font-black uppercase">OUT</Badge>
-                                                    ) : p.branch_stock_qty <= (p.reorder_level || 5) && (
-                                                        <Badge variant="warning" className="text-[7px] px-1 py-0 shadow-sm border-0 font-black uppercase bg-amber-500 text-white hover:bg-amber-600">LOW</Badge>
-                                                    )}
-                                                    <span className="bg-black/40 backdrop-blur-md text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
-                                                        {p.branch_stock_qty || 0}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <h3 className="font-bold text-gray-900 dark:text-white text-[10px] leading-tight line-clamp-2 min-h-[24px]">{p.name}</h3>
-                                        <div className="mt-2 flex items-center justify-between">
-                                            <span className="text-xs font-bold text-emerald-600 tracking-tight">${parseFloat(p.price || 0).toLocaleString()}</span>
-                                            <div className="p-1 rounded-lg bg-gray-50 dark:bg-gray-850 text-gray-400 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                                                <IconPlus size={12} stroke={3} />
+                            <div className="grid mt-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                {filteredProducts.length > 0 ? (
+                                    filteredProducts.map((p: any) => (
+                                        <button 
+                                            key={p.id}
+                                            onClick={() => handleAddItem('product', p.id)}
+                                            className="group flex flex-col p-3 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 hover:border-emerald-500/40 hover:shadow-2xl hover:shadow-emerald-500/5 transition-all duration-300 text-left hover:-translate-y-1 active:scale-95"
+                                        >
+                                            <div className="aspect-square rounded-xl bg-gray-50 dark:bg-gray-850 flex items-center justify-center mb-4 overflow-hidden relative shadow-inner ring-1 ring-gray-100/50 dark:ring-gray-800/50">
+                                                {p.img ? (
+                                                    <img 
+                                                        src={p.img} 
+                                                        alt={p.name} 
+                                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = '/images/invalid-image.svg';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <IconPackage size={32} className="text-gray-200 dark:text-gray-700 group-hover:scale-110 transition-transform" />
+                                                )}
+                                                
+                                                {selectedBranchId && (
+                                                    <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                                                        {(p.branch_stock_qty === null || p.branch_stock_qty <= 0) ? (
+                                                            <Badge variant="destructive" className="text-[7px] px-1.5 py-0.5 shadow-xl border-0 font-black uppercase ring-2 ring-white dark:ring-gray-900">OUT</Badge>
+                                                        ) : p.branch_stock_qty <= (p.reorder_level || 5) && (
+                                                            <Badge variant="warning" className="text-[7px] px-1.5 py-0.5 shadow-xl border-0 font-black uppercase bg-amber-500 text-white hover:bg-amber-600 ring-2 ring-white dark:ring-gray-900">LOW</Badge>
+                                                        )}
+                                                        <span className="bg-black/60 backdrop-blur-md text-white text-[8px] font-black px-2 py-0.75 rounded-full shadow-lg border border-white/10">
+                                                            {p.branch_stock_qty || 0}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
+                                            <h3 className="font-black text-gray-900 dark:text-white text-[10px] leading-tight line-clamp-2 min-h-[24px] tracking-tight group-hover:text-emerald-600 transition-colors uppercase opacity-80">{p.name}</h3>
+                                            <div className="mt-3 flex items-center justify-between pt-2 border-t border-gray-50 dark:border-gray-800/50">
+                                                <span className="text-xs font-black text-emerald-600 tracking-tighter shadow-emerald-500/10">${parseFloat(p.price || 0).toLocaleString()}</span>
+                                                <div className="p-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-400 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
+                                                    <IconPlus size={12} stroke={4} />
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))
+                                ) : (
+                                    <div className="col-span-full py-24 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="w-20 h-20 rounded-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center mb-6 shadow-inner ring-1 ring-gray-100 dark:ring-gray-800">
+                                            {catalogSearch ? <IconSearchOff size={32} className="text-emerald-600/40" /> : <IconPackage size={32} className="text-emerald-600/40" />}
                                         </div>
-                                    </button>
-                                )) : (
-                                    <div className="col-span-full py-20 text-center animate-in fade-in duration-500">
-                                        <IconSearch size={40} className="mx-auto text-gray-200 mb-4" />
-                                        <p className="text-sm font-bold text-gray-400">No products match your search</p>
+                                        <div className="max-w-xs space-y-2">
+                                            <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                                                {catalogSearch ? 'No Products Found' : 'Inventory Catalog Empty'}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 font-bold leading-relaxed px-4">
+                                                {catalogSearch 
+                                                    ? `We couldn't find any products matching "${catalogSearch}". Try broadening your search terms.` 
+                                                    : 'This category does not contain any physical inventory products yet.'
+                                                }
+                                            </p>
+                                        </div>
+                                        <div className="mt-8 flex gap-3">
+                                            {catalogSearch && (
+                                                <Button variant="outline" size="sm" onClick={() => setCatalogSearch('')} className="h-8 text-[9px] font-black rounded-full px-5 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/5 shadow-sm">
+                                                    CLEAR SEARCH
+                                                </Button>
+                                            )}
+                                            {selectedCategoryId !== 'all' && (
+                                                <Button variant="ghost" size="sm" onClick={() => setSelectedCategoryId('all')} className="h-8 text-[9px] font-black rounded-full px-5 text-gray-400 hover:text-gray-600">
+                                                    RESET FILTERS
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -775,7 +1042,9 @@ const SalesCreate = () => {
                 setReceiptFile={setReceiptFile}
                 invoiceImageFile={invoiceImageFile}
                 setInvoiceImageFile={setInvoiceImageFile}
-                loadingVehicles={loadingVehicles}
+                loadingVehicles={isLoadingVehicles}
+                loadingCustomers={isLoadingCustomers}
+                loadingAccounts={isAccountsLoading}
                 onEditPackage={handleEditPackage}
                 isEdit={isEdit}
             />
@@ -785,22 +1054,22 @@ const SalesCreate = () => {
                 open={!!selectedServiceForItems} 
                 onOpenChange={(open) => !open && setSelectedServiceForItems(null)}
             >
-                <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-none bg-white dark:bg-gray-950 shadow-2xl rounded-3xl animate-in fade-in zoom-in-95 duration-300">
-                    <DialogHeader className="p-8 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+                <DialogContent className="sm:max-w-6xl p-0 overflow-hidden border-none bg-white dark:bg-gray-950 shadow-2xl rounded-3xl animate-in fade-in zoom-in-95 duration-300">
+                    <DialogHeader className="p-6 border-b dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
                         <div className="flex items-center gap-5">
-                            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-inner">
-                                <IconTools size={28} />
+                            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-inner">
+                                <IconTools size={24} />
                             </div>
                             <div className="space-y-1">
                                 <div className="flex items-center gap-3">
-                                    <DialogTitle className="text-xl font-black tracking-tight text-gray-900 dark:text-white">
+                                    <DialogTitle className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">
                                         Package Configuration
                                     </DialogTitle>
                                     <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-0 font-black text-[9px] px-2 py-0.5 tracking-wider uppercase">
                                         Optimization
                                     </Badge>
                                 </div>
-                                <DialogDescription className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <DialogDescription className="text-xs text-gray-400 tracking-wider flex items-center gap-2">
                                     {selectedServiceForItems?.name}
                                     <span className="w-1 h-1 rounded-full bg-gray-300" />
                                     Configure service components
@@ -809,98 +1078,111 @@ const SalesCreate = () => {
                         </div>
                     </DialogHeader>
                     
-                    <ScrollArea className="max-h-[60vh]">
-                        <div className="p-8 space-y-10 !pt-0">
+                    <ScrollArea className="max-h-[70vh]">
+                        <div className="p-6 space-y-10 !pt-0">
                             {/* Implementation Parts Section */}
                             {selectedServiceForItems?.parts?.length > 0 && (
-                                <section className="space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-[11px] font-black uppercase tracking-widest text-primary flex items-center gap-3">
-                                            <div className="w-2 h-2 rounded-full bg-primary" /> 
-                                        Select Products & Installation Parts
+                                <section className="space-y-4">
+                                    <div className="flex items-center justify-between border-b pb-4 dark:border-gray-800">
+                                        <h4 className="text-[11px] font-bold uppercase tracking-widest text-primary flex items-center gap-3">
+                                            <IconTools size={16} className="animate-pulse" /> 
+                                            Configure Package Components
                                         </h4>
-                                        <Badge variant="outline" className="text-[9px] font-black border-primary/20 text-primary px-2">
-                                            {selectedServiceForItems.parts.length} Parts
+                                        <Badge variant="outline" className="text-[9px] font-bold border-primary/20 text-primary px-3 py-1 rounded-full bg-primary/5">
+                                            {selectedServiceForItems.parts.length} Total Components
                                         </Badge>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {selectedServiceForItems.parts.map((p: any) => (
-                                            <div 
-                                                key={p.id} 
-                                                className={`group relative overflow-hidden rounded-xl border transition-all duration-500 p-0.5 ${
-                                                    tempSelectedParts.includes(p.id) 
-                                                        ? 'border-primary ring-2 ring-primary/10 bg-primary/[0.02]' 
-                                                        : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-primary/40'
-                                                }`}
-                                            >
-                                                <div className="p-6 space-y-6">
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex items-center gap-4">
-                                                            <div 
-                                                                onClick={() => setTempSelectedParts((prev: any) => prev.includes(p.id) ? prev.filter((x: any) => x !== p.id) : [...prev, p.id])}
-                                                                className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center cursor-pointer transition-all duration-300 ${
-                                                                    tempSelectedParts.includes(p.id) 
-                                                                        ? 'bg-primary border-primary text-white scale-110 shadow-lg shadow-primary/20' 
-                                                                        : 'bg-transparent border-gray-200 dark:border-gray-700 hover:border-primary/50'
-                                                                }`}
-                                                            >
-                                                                {tempSelectedParts.includes(p.id) && <IconCheck size={16} stroke={4} />}
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <span className="font-black text-gray-900 dark:text-white text-[13px] tracking-tight leading-none mb-1.5">{p.name}</span>
-                                                                <div className="flex items-center gap-2">
-                                                                    <Badge variant="outline" className="text-[8px] font-black border-gray-200 dark:border-gray-800 text-gray-400 px-1.5 py-1 leading-none">{p.code}</Badge>
-                                                                    {tempSelectedParts.includes(p.id) && <span className="text-[8px] font-black text-primary animate-pulse tracking-widest uppercase">Active Selection</span>}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    {tempSelectedParts.includes(p.id) && (
-                                                        <div className="pt-2 space-y-4 animate-in slide-in-from-top-4 duration-500">
-                                                            
-                                                            <div>
-                                                                
-                                                                {selectedServiceForItems.materials?.length > 0 ? (
-                                                                    <div className="space-y-4">
-                                                                        <SearchableSelect 
-                                                                            options={selectedServiceForItems.materials.map((m: any) => {
-                                                                                const prod = products.find(x => x.id === m.product_id);
-                                                                                return { 
-                                                                                    value: prod?.id, 
-                                                                                    label: prod ? `${prod.name} (${prod.code}) - $${prod.price}` : 'Unknown Product' 
-                                                                                };
-                                                                            }).filter(x => x.value)}
-                                                                            value={tempPartProductMap[p.id]}
-                                                                            onChange={(val) => setTempPartProductMap(prev => ({ ...prev, [p.id]: val as number }))}
-                                                                            placeholder="Search products..."
-                                                                            className="h-10 text-[10px] font-bold rounded-lg border-primary/20 bg-white dark:bg-dark shadow-sm"
-                                                                        />
-                                                                        {tempPartProductMap[p.id] && (
-                                                                            <p className="text-[9px] text-primary/60 italic ml-1 flex items-center gap-1.5 font-bold animate-in fade-in duration-300">
-                                                                                <IconBoxSeam size={10} className="text-primary" />
-                                                                                Component allocated for this part
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50/50 dark:bg-gray-900/50 border border-dashed border-gray-200 dark:border-gray-800">
-                                                                        <IconInfoCircle size={14} className="text-gray-400" />
-                                                                        <span className="text-[10px] font-bold text-gray-400">No suggested consumables defined.</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        {/* Left Side Column */}
+                                        <div className="space-y-5">
+                                            <div className="flex items-center gap-2 px-1">
+                                                <div className="w-1 h-1 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                                                <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Left Side</h5>
                                             </div>
-                                        ))}
+                                            <div className="space-y-4">
+                                                {selectedServiceForItems.parts.filter((p: any) => p.side?.toLowerCase() === 'left').length > 0 ? (
+                                                    selectedServiceForItems.parts.filter((p: any) => p.side?.toLowerCase() === 'left').map((p: any) => (
+                                                        <PartConfigurationCard 
+                                                            key={p.id} 
+                                                            p={p} 
+                                                            tempSelectedParts={tempSelectedParts} 
+                                                            setTempSelectedParts={setTempSelectedParts} 
+                                                            tempPartProductMap={tempPartProductMap} 
+                                                            setTempPartProductMap={setTempPartProductMap}
+                                                            products={products}
+                                                            materials={selectedServiceForItems.materials}
+                                                        />
+                                                    ))
+                                                ) : (
+                                                    <div className="py-10 border border-dashed rounded-2xl flex flex-col items-center justify-center text-gray-300 dark:border-gray-800">
+                                                        <IconTools size={24} className="opacity-20 mb-2" />
+                                                        <span className="text-[9px] font-bold uppercase tracking-tight">No Left Components</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Main / Center Column */}
+                                        <div className="space-y-5">
+                                            <div className="flex items-center gap-2 px-1">
+                                                <div className="w-1 h-1 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
+                                                <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Main / Center</h5>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {selectedServiceForItems.parts.filter((p: any) => !p.side || (p.side?.toLowerCase() !== 'left' && p.side?.toLowerCase() !== 'right')).length > 0 ? (
+                                                    selectedServiceForItems.parts.filter((p: any) => !p.side || (p.side?.toLowerCase() !== 'left' && p.side?.toLowerCase() !== 'right')).map((p: any) => (
+                                                        <PartConfigurationCard 
+                                                            key={p.id} 
+                                                            p={p} 
+                                                            tempSelectedParts={tempSelectedParts} 
+                                                            setTempSelectedParts={setTempSelectedParts} 
+                                                            tempPartProductMap={tempPartProductMap} 
+                                                            setTempPartProductMap={setTempPartProductMap}
+                                                            products={products}
+                                                            materials={selectedServiceForItems.materials}
+                                                        />
+                                                    ))
+                                                ) : (
+                                                    <div className="py-10 border border-dashed rounded-2xl flex flex-col items-center justify-center text-gray-300 dark:border-gray-800">
+                                                        <IconTools size={24} className="opacity-20 mb-2" />
+                                                        <span className="text-[9px] font-bold uppercase tracking-tight">No Main Components</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Right Side Column */}
+                                        <div className="space-y-5">
+                                            <div className="flex items-center gap-2 px-1">
+                                                <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                                <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Right Side</h5>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {selectedServiceForItems.parts.filter((p: any) => p.side?.toLowerCase() === 'right').length > 0 ? (
+                                                    selectedServiceForItems.parts.filter((p: any) => p.side?.toLowerCase() === 'right').map((p: any) => (
+                                                        <PartConfigurationCard 
+                                                            key={p.id} 
+                                                            p={p} 
+                                                            tempSelectedParts={tempSelectedParts} 
+                                                            setTempSelectedParts={setTempSelectedParts} 
+                                                            tempPartProductMap={tempPartProductMap} 
+                                                            setTempPartProductMap={setTempPartProductMap}
+                                                            products={products}
+                                                            materials={selectedServiceForItems.materials}
+                                                        />
+                                                    ))
+                                                ) : (
+                                                    <div className="py-10 border border-dashed rounded-2xl flex flex-col items-center justify-center text-gray-300 dark:border-gray-800">
+                                                        <IconTools size={24} className="opacity-20 mb-2" />
+                                                        <span className="text-[9px] font-bold uppercase tracking-tight">No Right Components</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </section>
                             )}
-
-                            {/* Consumables Section is now integrated into Parts selection */}
                         </div>
                     </ScrollArea>
                     
@@ -908,7 +1190,7 @@ const SalesCreate = () => {
                         <Button 
                             onClick={confirmServiceItems}
                             disabled={tempSelectedParts.length === 0 || tempSelectedParts.some(id => !tempPartProductMap[id])}
-                            className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-black rounded-xl shadow-xl shadow-primary/20 flex items-center justify-between px-8 group transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
+                            className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl shadow-xl shadow-primary/20 flex items-center justify-between px-8 group transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
                         >
                             <div className="flex flex-col items-start gap-0.5">
                                 <span className="text-sm tracking-tight uppercase">Include Selected Components</span>
@@ -939,33 +1221,47 @@ const SalesCreate = () => {
                     <div className="grid gap-6 py-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Brand</Label>
-                                <Select onValueChange={(v) => setNewVehicle({ ...newVehicle, brand_id: parseInt(v), model_id: null })}>
-                                    <SelectTrigger className="rounded-lg h-11">
-                                        <SelectValue placeholder="Brand" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {brands.map((b: any) => (
-                                            <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Brand</Label>
+                                <SearchableSelect 
+                                    options={brands.map((b: any) => ({ value: b.id, label: b.name }))}
+                                    value={newVehicle.brand_id}
+                                    onChange={(v) => setNewVehicle({ ...newVehicle, brand_id: v as number, model_id: null })}
+                                    placeholder="Choose Brand..."
+                                    className="h-11 rounded-lg"
+                                    loading={isLoadingBrands}
+                                    footer={
+                                        <QuickAddFooter 
+                                            label="Brand" 
+                                            onAdd={handleAddBrand} 
+                                            isSaving={isSavingBrand} 
+                                        />
+                                    }
+                                />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Model</Label>
-                                <Select 
+                                <Label className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Model</Label>
+                                <SearchableSelect 
                                     disabled={!newVehicle.brand_id}
-                                    onValueChange={(v) => setNewVehicle({ ...newVehicle, model_id: parseInt(v) })}
-                                >
-                                    <SelectTrigger className="rounded-lg h-11 ">
-                                        <SelectValue placeholder="Model" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(brands.find((b: any) => b.id === newVehicle.brand_id)?.models || []).map((m: any) => (
-                                            <SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    options={(brands.find((b: any) => b.id === newVehicle.brand_id)?.models || []).map((m: any) => ({ 
+                                        value: m.id, 
+                                        label: m.name 
+                                    }))}
+                                    value={newVehicle.model_id}
+                                    onChange={(v) => setNewVehicle({ ...newVehicle, model_id: v as number })}
+                                    placeholder={!newVehicle.brand_id ? "Select Brand First" : "Select Model..."}
+                                    emptyMessage={newVehicle.brand_id ? "No models found for this brand" : "Select a brand to see models"}
+                                    className="h-11 rounded-lg"
+                                    loading={isLoadingBrands}
+                                    footer={
+                                        newVehicle.brand_id && (
+                                            <QuickAddFooter 
+                                                label="Model" 
+                                                onAdd={(name) => handleAddModel(newVehicle.brand_id!, name)} 
+                                                isSaving={isSavingModel} 
+                                            />
+                                        )
+                                    }
+                                />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -992,7 +1288,7 @@ const SalesCreate = () => {
                     </div>
                     <DialogFooter>
                         <Button 
-                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-xl shadow-lg"
+                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-lg shadow-lg"
                             onClick={async () => {
                                 if (!newVehicle.brand_id || !newVehicle.plate_number) {
                                     toast.error('Brand and Plate No are required');

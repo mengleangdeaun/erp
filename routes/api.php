@@ -4,9 +4,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Inventory\PurchaseReceiveController;
 use Spatie\Health\Facades\Health;
-use Spatie\Health\Http\Controllers\HealthCheckJsonResultsController;
+use App\Http\Controllers\SystemHealthController;
 
-Route::get('health', HealthCheckJsonResultsController::class);
+Route::get('health', SystemHealthController::class);
 
 
 /*

@@ -97,6 +97,7 @@ export const useServices = (branchId: number | null) => {
     return useQuery({
         queryKey: ['services', branchId],
         queryFn: () => fetchServices(branchId),
+        enabled: !!branchId,
     });
 };
 
@@ -104,6 +105,7 @@ export const useProducts = (branchId: number | null) => {
     return useQuery({
         queryKey: ['products', branchId],
         queryFn: () => fetchProducts(branchId),
+        enabled: !!branchId,
     });
 };
 
@@ -132,6 +134,7 @@ export const usePaymentAccounts = (branchId?: number | null) => {
     return useQuery({
         queryKey: ['paymentAccounts', branchId],
         queryFn: () => fetchPaymentAccounts(branchId),
+        enabled: !!branchId,
     });
 };
 

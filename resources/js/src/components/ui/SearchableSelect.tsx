@@ -4,7 +4,7 @@ import { Input } from './input';
 import { Button } from './button';
 import PerfectScrollbar from 'react-perfect-scrollbar';
 import 'react-perfect-scrollbar/dist/css/styles.css';
-import { Check, ChevronsUpDown, Search, Inbox } from 'lucide-react';
+import { Check, ChevronsUpDown, Search, Inbox, Loader2 } from 'lucide-react';
 
 interface Option {
     value: string | number;
@@ -23,6 +23,7 @@ interface SearchableSelectProps {
     className?: string;
     disabled?: boolean;
     loading?: boolean;
+    footer?: React.ReactNode;
 }
 
 export function SearchableSelect({
@@ -35,6 +36,7 @@ export function SearchableSelect({
     className = '',
     disabled = false,
     loading = false,
+    footer,
 }: SearchableSelectProps) {
     const [open, setOpen] = React.useState(false);
     const [searchQuery, setSearchQuery] = React.useState('');
@@ -76,24 +78,23 @@ export function SearchableSelect({
                         ${className}
                     `}
                 >
-                    <div className="flex items-center gap-2">
-                        {selectedOption?.color && (
-                            <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedOption.color }}></div>
-                        )}
-                        <span className="">
-                            {loading ? (
-                                <div className="flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.3s]"></span>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.15s]"></span>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce"></span>
-                                </div>
-                            ) : selectedOption ? (
-                                selectedOption.label
-                            ) : (
-                                placeholder
-                            )}
-                        </span>
-                    </div>
+<div className="flex items-center gap-2">
+    {selectedOption?.color && (
+        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedOption.color }}></div>
+    )}
+    <span className="">
+        {loading ? (
+            <div className="flex items-center gap-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary animate-pulse">Loading...</span>
+            </div>
+        ) : selectedOption ? (
+            selectedOption.label
+        ) : (
+            placeholder
+        )}
+    </span>
+</div>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
@@ -120,13 +121,15 @@ export function SearchableSelect({
                     <PerfectScrollbar className="max-h-[240px] w-full relative" options={{ wheelPropagation: false }}>
                         <div className="m-2">
                             {loading ? (
-                                <div className="p-8 flex flex-col items-center justify-center gap-4">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:-0.3s]"></div>
-                                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce [animation-delay:-0.15s]"></div>
-                                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
+                                <div className="p-10 flex flex-col items-center justify-center gap-4">
+                                    <div className="relative">
+                                        <div className="w-10 h-10 rounded-full border-2 border-primary/10 border-t-primary animate-spin"></div>
+                                        <Loader2 className="absolute inset-0 m-auto h-4 w-4 text-primary animate-pulse" />
                                     </div>
-                                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Loading Data</p>
+                                    <div className="flex flex-col items-center gap-1">
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Fetching Data</p>
+                                        <p className="text-[9px] text-gray-400 font-medium">Please wait a moment...</p>
+                                    </div>
                                 </div>
                             ) : filteredOptions.length === 0 ? (
                                 <div className="p-8 text-center flex flex-col items-center justify-center gap-2">
@@ -178,10 +181,17 @@ export function SearchableSelect({
                         </div>
                     </PerfectScrollbar>
 
-                    {/* Footer */}
-                    {filteredOptions.length > 0 && (
-                        <div className="border-t border-gray-100 dark:border-gray-700 px-3 py-2 text-xs text-gray-400 bg-gray-50 dark:bg-gray-900">
+                    {/* Results Count */}
+                    {filteredOptions.length > 0 && !footer && (
+                        <div className="border-t border-gray-100 dark:border-gray-700 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 bg-gray-50/50 dark:bg-gray-900/50">
                             {filteredOptions.length} result{filteredOptions.length !== 1 ? 's' : ''}
+                        </div>
+                    )}
+
+                    {/* Footer / Create New Action */}
+                    {footer && (
+                        <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+                            {footer}
                         </div>
                     )}
                 </div>

@@ -10,8 +10,8 @@ import { useStockBalance, useBranches, useInventoryLocations } from '@/hooks/use
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import HighlightText from '../../../components/ui/HighlightText';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 
 const StockBalanceIndex = () => {
     const { t } = useTranslation();
@@ -220,7 +220,7 @@ const StockBalanceIndex = () => {
                                                                                                         {loc.serial_qty} {t('rolls')}
                                                                                                     </button>
                                                                                                 </PopoverTrigger>
-                                                                                                <PopoverContent className="w-80 p-0 overflow-hidden shadow-2xl border-amber-100 dark:border-amber-900/50" side="right" align="start">
+                                                                                                <PopoverContent className="w-80 p-0 overflow-hidden shadow-2xl border-amber-100 dark:border-amber-900/50" side="right" align="end">
                                                                                                     <div className="bg-amber-50/50 dark:bg-amber-950/20 px-4 py-3 border-b border-amber-100 dark:border-amber-900/50">
                                                                                                         <div className="flex items-center gap-2">
                                                                                                             <div className="bg-amber-100 dark:bg-amber-900/40 p-1.5 rounded-lg">
@@ -232,7 +232,7 @@ const StockBalanceIndex = () => {
                                                                                                             </div>
                                                                                                         </div>
                                                                                                     </div>
-                                                                                                    <ScrollArea className="max-h-[350px]">
+                                                                                                    <PerfectScrollbar className="max-h-[350px]">
                                                                                                         <div className="p-3 space-y-3">
                                                                                                             {(product.serials || [])
                                                                                                                 .filter((s: any) => String(s.location_id) === String(loc.id))
@@ -276,7 +276,7 @@ const StockBalanceIndex = () => {
                                                                                                                     );
                                                                                                                 })}
                                                                                                         </div>
-                                                                                                    </ScrollArea>
+                                                                                                    </PerfectScrollbar>
                                                                                                 </PopoverContent>
                                                                                             </Popover>
                                                                                         )}

@@ -46,7 +46,8 @@ const SystemHealthIndicator = () => {
                 headers: { 'Cache-Control': 'no-cache' }
             });
             const end = performance.now();
-            setLatency(Math.round(end - start));
+            const currentLatency = Math.round(end - start);
+            setLatency(currentLatency);
             setHealthData(response.data);
 
             const allOk = response.data.checkResults.every(r => r.status === 'ok');
@@ -54,7 +55,7 @@ const SystemHealthIndicator = () => {
 
             if (anyFailed) {
                 setStatus('error');
-            } else if (!allOk || (latency && latency > 800)) {
+            } else if (!allOk || (currentLatency > 800)) {
                 setStatus('warning');
             } else {
                 setStatus('online');
@@ -63,7 +64,7 @@ const SystemHealthIndicator = () => {
             setStatus('error');
             setLatency(null);
         }
-    }, [latency]);
+    }, []);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -136,7 +137,7 @@ const SystemHealthIndicator = () => {
                         </Badge>
                     </div>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="p-3 w-64 bg-background/95 backdrop-blur-sm border shadow-xl">
+                <TooltipContent side="top" align='end' className="p-3 w-64  bg-background/95 backdrop-blur-sm border shadow-xl">
                     <div className="space-y-2.5">
                         <div className="flex items-center justify-between border-b pb-1.5 mb-1.5">
                             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">System Health</span>

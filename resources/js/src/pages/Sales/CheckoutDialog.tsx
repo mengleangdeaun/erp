@@ -48,6 +48,8 @@ interface CheckoutDialogProps {
     invoiceImageFile: File | null;
     setInvoiceImageFile: (file: File | null) => void;
     loadingVehicles?: boolean;
+    loadingCustomers?: boolean;
+    loadingAccounts?: boolean;
     onEditPackage: (serviceId: number) => void;
     isEdit?: boolean;
 }
@@ -76,6 +78,8 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
     invoiceImageFile,
     setInvoiceImageFile,
     loadingVehicles = false,
+    loadingCustomers = false,
+    loadingAccounts = false,
     onEditPackage,
     isEdit = false
 }) => {
@@ -134,6 +138,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                     onChange={(val) => { setForm({ ...form, customer_id: val as number, vehicle_id: null }); }}
                                     placeholder="Pick Customer..."
                                     className="h-10 bg-white dark:bg-zinc-900 shadow-sm border-zinc-200 dark:border-zinc-800 font-bold text-sm"
+                                    loading={loadingCustomers}
                                 />
                             </section>
 
@@ -196,7 +201,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                             className="w-5 h-5 border-zinc-300 dark:border-zinc-700 data-[state=checked]:bg-primary"
                                         />
                                         <Label htmlFor="use_tax_dialog" className="text-xs font-black text-zinc-600 dark:text-zinc-300 cursor-pointer flex flex-col">
-                                            <span>Apply Order VAT/Tax</span>
+                                            <span>Apply VAT (10%)</span>
                                             <span className="text-[9px] font-bold text-zinc-400 underline decoration-primary/30">Auto-calculated: ${finalTax.toFixed(2)}</span>
                                         </Label>
                                     </div>
@@ -357,7 +362,10 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                                                     onValueChange={(val) => updateDeposit(idx, { payment_account_id: parseInt(val) })}
                                                                 >
                                                                     <SelectTrigger className="h-9 flex-1 text-[10px] font-bold border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-black/20">
-                                                                        <SelectValue placeholder="Account..." />
+                                                                        <div className="flex items-center gap-2">
+                                                                            {loadingAccounts && <IconLoader2 size={12} className="animate-spin text-primary" />}
+                                                                            <SelectValue placeholder={loadingAccounts ? "Syncing..." : "Account..."} />
+                                                                        </div>
                                                                     </SelectTrigger>
                                                                     <SelectContent>
                                                                             {paymentAccounts.map(acc => (

@@ -10,9 +10,15 @@ class VehicleModelController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return VehicleModel::with('brand')->orderBy('name')->get();
+        $query = VehicleModel::with('brand')->orderBy('name');
+        
+        if ($request->has('brand_id')) {
+            $query->where('brand_id', $request->brand_id);
+        }
+
+        return $query->get();
     }
 
     /**

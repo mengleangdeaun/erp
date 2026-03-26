@@ -6,6 +6,7 @@ import { Input } from '../../../components/ui/input';
 import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialog';
 import { Label } from '../../../components/ui/label';
 import { Textarea } from '../../../components/ui/textarea';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { toast } from 'sonner';
 import { PackageCheck, CheckCircle2, ShoppingCart, Plus, X, Calendar as IconCalendarIcon, Package } from 'lucide-react';
@@ -407,7 +408,7 @@ export default function PurchaseReceivesPage() {
 
 {/* Create PR Modal */}
  <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-  <DialogContent className="sm:max-w-4xl w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+  <DialogContent className="sm:max-w-4xl w-[95vw] max-h-[90vh] h-full flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
     {/* Header */}
     <div className="shrink-0 bg-gradient-to-r from-green-600/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
       <div className="bg-green-600/20 p-3 rounded-2xl shadow-sm">
@@ -422,180 +423,182 @@ export default function PurchaseReceivesPage() {
         </p>
       </div>
     </div>
-
-    <form id="receive-form" onSubmit={handleSubmit} className="flex flex-col gap-6 p-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Purchase Order - takes more space */}
-        <div className="md:col-span-3 space-y-1">
-          <Label className="text-sm font-medium">{t('purchase_order')} <span className="text-red-500">*</span></Label>
-          <SearchableSelect
-            options={pendingOrders.map((po: any) => ({ 
-              value: String(po.id), 
-              label: `${po.po_number} — ${po.supplier?.name}` 
-            }))}
-            value={selectedPoId}
-            onChange={(val) => handlePoChange(String(val))}
-            placeholder={t('select_po_placeholder')}
-          />
-        </div>
-
-        {/* Destination Location */}
-        <div className="md:col-span-1 space-y-1">
-          <Label className="text-sm font-medium">{t('physical_location')} <span className="text-red-500">*</span></Label>
-          <SearchableSelect
-            options={locations.map((l: any) => ({ value: String(l.id), label: l.name }))}
-            value={formData.location_id}
-            onChange={(val) => setFormData((p: any) => ({ ...p, location_id: String(val) }))}
-            placeholder={t('select_location_placeholder')}
-          />
-        </div>
-
-        {/* Reference Number */}
-        <div className="md:col-span-2 space-y-1">
-          <Label className="text-sm font-medium">{t('reference_label')}</Label>
-          <Input 
-            value={formData.reference_number} 
-            onChange={e => setFormData((p: any) => ({ ...p, reference_number: e.target.value }))} 
-            placeholder={t('ref_number_placeholder')} 
-          />
-        </div>
-
-        {/* Receiving Note */}
-        <div className="md:col-span-2 space-y-1">
-          <Label className="text-sm font-medium">{t('note')}</Label>
-          <Input 
-            value={formData.receiving_note} 
-            onChange={e => setFormData((p: any) => ({ ...p, receiving_note: e.target.value }))} 
-            placeholder={t('optional_note_receipt_placeholder')} 
-          />
-        </div>
-      </div>
-
     
-{/* Pending Items */}
-{selectedPoId && (
-  <div className="space-y-3">
-    {/* Header with title and receive date/time */}
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-        {t('items_to_receive')}
-      </h3>
+     <PerfectScrollbar option={{ suppressScrollX: true }} className="flex-1 min-h-0">
+      <form id="receive-form" onSubmit={handleSubmit} className="flex flex-col gap-6 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Purchase Order - takes more space */}
+          <div className="md:col-span-3 space-y-1">
+            <Label className="text-sm font-medium">{t('purchase_order')} <span className="text-red-500">*</span></Label>
+            <SearchableSelect
+              options={pendingOrders.map((po: any) => ({ 
+                value: String(po.id), 
+                label: `${po.po_number} — ${po.supplier?.name}` 
+              }))}
+              value={selectedPoId}
+              onChange={(val) => handlePoChange(String(val))}
+              placeholder={t('select_po_placeholder')}
+            />
+          </div>
 
-      {/* Receive Date & Time moved here */}
-      <div className="flex items-center gap-2">
-        <Label className="text-sm font-medium whitespace-nowrap">
-          {t('receive_date_label')} <span className="text-red-500">*</span>
-        </Label>
-        <DatePicker
-          value={formData.receive_date ? new Date(formData.receive_date) : undefined}
-          onChange={(date) => {
-            if (!date) return;
-            const time = formData.receive_date ? formData.receive_date.split('T')[1]?.slice(0, 5) || '00:00' : '00:00';
-            const newDate = format(date, 'yyyy-MM-dd') + 'T' + time;
-            setFormData((p: any) => ({ ...p, receive_date: newDate }));
-          }}
-        />
-        <TimePicker
-          value={formData.receive_date ? formData.receive_date.split('T')[1]?.slice(0, 5) : '00:00'}
-          onChange={(time) => {
-            const date = formData.receive_date ? formData.receive_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
-            const newDate = date + 'T' + time;
-            setFormData((p: any) => ({ ...p, receive_date: newDate }));
-          }}
-        />
-      </div>
-    </div>
+          {/* Destination Location */}
+          <div className="md:col-span-1 space-y-1">
+            <Label className="text-sm font-medium">{t('physical_location')} <span className="text-red-500">*</span></Label>
+            <SearchableSelect
+              options={locations.map((l: any) => ({ value: String(l.id), label: l.name }))}
+              value={formData.location_id}
+              onChange={(val) => setFormData((p: any) => ({ ...p, location_id: String(val) }))}
+              placeholder={t('select_location_placeholder')}
+            />
+          </div>
 
-    {/* Items list with ScrollArea */}
-    <div className="rounded-lg border dark:border-gray-700">
-      {loadingItems ? (
-        <ScrollArea className="h-80">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
-              <tr>
-                <th className="px-4 py-3 text-left">{t('product')}</th>
-                <th className="px-3 py-3 text-right">{t('ordered')}</th>
-                <th className="px-3 py-3 text-right">{t('received')}</th>
-                <th className="px-3 py-3 text-right text-primary">{t('remaining')}</th>
-                <th className="px-4 py-3 text-right w-40">{t('qty_receiving_now')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y dark:divide-gray-700">
-              {/* Skeleton rows */}
-              {[...Array(3)].map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  <td className="px-4 py-3">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 ml-auto"></div>
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 ml-auto"></div>
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 ml-auto"></div>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24 ml-auto"></div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollArea>
-      ) : pendingItems.length === 0 ? (
-        <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/20 p-6 flex items-center gap-4 text-green-700 dark:text-green-400">
-          <CheckCircle2 className="h-6 w-6 shrink-0" />
-          <div>
-            <p className="font-semibold">{t('all_caught_up')}</p>
-            <p className="text-sm">{t('all_items_received_desc')}</p>
+          {/* Reference Number */}
+          <div className="md:col-span-2 space-y-1">
+            <Label className="text-sm font-medium">{t('reference_label')}</Label>
+            <Input 
+              value={formData.reference_number} 
+              onChange={e => setFormData((p: any) => ({ ...p, reference_number: e.target.value }))} 
+              placeholder={t('ref_number_placeholder')} 
+            />
+          </div>
+
+          {/* Receiving Note */}
+          <div className="md:col-span-2 space-y-1">
+            <Label className="text-sm font-medium">{t('note')}</Label>
+            <Input 
+              value={formData.receiving_note} 
+              onChange={e => setFormData((p: any) => ({ ...p, receiving_note: e.target.value }))} 
+              placeholder={t('optional_note_receipt_placeholder')} 
+            />
           </div>
         </div>
-      ) : (
-        <ScrollArea className="h-80">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
-              <tr>
-                <th className="px-4 py-3 text-left">{t('product')}</th>
-                <th className="px-3 py-3 text-right">{t('ordered')}</th>
-                <th className="px-3 py-3 text-right">{t('received')}</th>
-                <th className="px-3 py-3 text-right text-primary">{t('remaining')}</th>
-                <th className="px-4 py-3 text-right w-40">{t('qty_receiving_now')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y dark:divide-gray-700">
-              {pendingItems.map(it => (
-                <tr key={it.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
-                  <td className="px-4 py-3">
-                    <p className="font-semibold text-gray-900 dark:text-white">{it.product.name}</p>
-                    <p className="text-xs text-gray-500 font-mono tracking-tighter">{it.product.code}</p>
-                  </td>
-                  <td className="px-3 py-3 text-right text-gray-500">{it.order_qty}</td>
-                  <td className="px-3 py-3 text-right text-green-600">{it.received_qty}</td>
-                  <td className="px-3 py-3 text-right text-primary font-bold">{it.remaining_qty}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max={it.remaining_qty}
-                      value={receiveQtys[it.id] || ''}
-                      onChange={e => setReceiveQtys((prev: Record<number, string>) => ({ ...prev, [it.id]: e.target.value }))}
-                      className="text-right font-semibold"
-                    />
-                  </td>
+
+      
+  {/* Pending Items */}
+  {selectedPoId && (
+    <div className="space-y-3">
+      {/* Header with title and receive date/time */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+          {t('items_to_receive')}
+        </h3>
+
+        {/* Receive Date & Time moved here */}
+        <div className="flex items-center gap-2">
+          <Label className="text-sm font-medium whitespace-nowrap">
+            {t('receive_date_label')} <span className="text-red-500">*</span>
+          </Label>
+          <DatePicker
+            value={formData.receive_date ? new Date(formData.receive_date) : undefined}
+            onChange={(date) => {
+              if (!date) return;
+              const time = formData.receive_date ? formData.receive_date.split('T')[1]?.slice(0, 5) || '00:00' : '00:00';
+              const newDate = format(date, 'yyyy-MM-dd') + 'T' + time;
+              setFormData((p: any) => ({ ...p, receive_date: newDate }));
+            }}
+          />
+          <TimePicker
+            value={formData.receive_date ? formData.receive_date.split('T')[1]?.slice(0, 5) : '00:00'}
+            onChange={(time) => {
+              const date = formData.receive_date ? formData.receive_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
+              const newDate = date + 'T' + time;
+              setFormData((p: any) => ({ ...p, receive_date: newDate }));
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Items list with ScrollArea */}
+      <div className="rounded-lg border dark:border-gray-700">
+        {loadingItems ? (
+          <ScrollArea className="h-80">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
+                <tr>
+                  <th className="px-4 py-3 text-left">{t('product')}</th>
+                  <th className="px-3 py-3 text-right">{t('ordered')}</th>
+                  <th className="px-3 py-3 text-right">{t('received')}</th>
+                  <th className="px-3 py-3 text-right text-primary">{t('remaining')}</th>
+                  <th className="px-4 py-3 text-right w-40">{t('qty_receiving_now')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollArea>
-      )}
+              </thead>
+              <tbody className="divide-y dark:divide-gray-700">
+                {/* Skeleton rows */}
+                {[...Array(3)].map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-4 py-3">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 ml-auto"></div>
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 ml-auto"></div>
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 ml-auto"></div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24 ml-auto"></div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollArea>
+        ) : pendingItems.length === 0 ? (
+          <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/20 p-6 flex items-center gap-4 text-green-700 dark:text-green-400">
+            <CheckCircle2 className="h-6 w-6 shrink-0" />
+            <div>
+              <p className="font-semibold">{t('all_caught_up')}</p>
+              <p className="text-sm">{t('all_items_received_desc')}</p>
+            </div>
+          </div>
+        ) : (
+          <ScrollArea className="h-80">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
+                <tr>
+                  <th className="px-4 py-3 text-left">{t('product')}</th>
+                  <th className="px-3 py-3 text-right">{t('ordered')}</th>
+                  <th className="px-3 py-3 text-right">{t('received')}</th>
+                  <th className="px-3 py-3 text-right text-primary">{t('remaining')}</th>
+                  <th className="px-4 py-3 text-right w-40">{t('qty_receiving_now')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y dark:divide-gray-700">
+                {pendingItems.map(it => (
+                  <tr key={it.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-gray-900 dark:text-white">{it.product.name}</p>
+                      <p className="text-xs text-gray-500 font-mono tracking-tighter">{it.product.code}</p>
+                    </td>
+                    <td className="px-3 py-3 text-right text-gray-500">{it.order_qty}</td>
+                    <td className="px-3 py-3 text-right text-green-600">{it.received_qty}</td>
+                    <td className="px-3 py-3 text-right text-primary font-bold">{it.remaining_qty}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max={it.remaining_qty}
+                        value={receiveQtys[it.id] || ''}
+                        onChange={e => setReceiveQtys((prev: Record<number, string>) => ({ ...prev, [it.id]: e.target.value }))}
+                        className="text-right font-semibold"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollArea>
+        )}
+      </div>
     </div>
-  </div>
-)}
-    </form>
+  )}
+      </form>
+    </PerfectScrollbar>
 
     {/* Footer */}
     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">

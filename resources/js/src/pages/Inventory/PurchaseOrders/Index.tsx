@@ -6,10 +6,10 @@ import { Dialog, DialogContent, DialogTitle } from '../../../components/ui/dialo
 import { Label } from '../../../components/ui/label';
 import { Textarea } from '../../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { ScrollArea } from '../../../components/ui/scroll-area';
 import { toast } from 'sonner';
 import { PlusCircle, Pencil, Trash2, ShoppingCart, Plus, X, Calendar as IconCalendarIcon, PackageCheck } from 'lucide-react';
 import { IconShoppingCart, IconCalendar, IconClock } from '@tabler/icons-react';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 
 // Custom components (adjust paths as needed)
 import FilterBar from '../../../components/ui/FilterBar';
@@ -517,7 +517,7 @@ const PurchaseOrdersPage = () => {
             {/* Create/Edit Modal */}
 {/* Create/Edit Modal */}
 <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-    <DialogContent className="sm:max-w-5xl w-[95vw] flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+    <DialogContent className="sm:max-w-5xl w-[95vw] max-h-[90vh] h-full flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
             <div className="bg-primary/20 p-3 rounded-2xl shadow-sm">
@@ -533,105 +533,107 @@ const PurchaseOrdersPage = () => {
             </div>
         </div>
 
-        {/* Two‑column form area */}
-        <form id="po-form" onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6 p-6">
-            {/* Left column – Order Details */}
-            <div className="lg:w-80 space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                    {t('order_details')}
-                </h3>
-                <div className="space-y-4">
-                    <div className="space-y-1">
-                        <Label className="text-sm font-medium">
-                            {t('supplier_label')} <span className="text-red-500">*</span>
-                        </Label>
-                        <SearchableSelect
-                            options={suppliers.map((s: any) => ({ value: String(s.id), label: s.name }))}
-                            value={formData.supplier_id}
-                            onChange={(val) => handleSelectChange(val, 'supplier_id')}
-                            placeholder={t('select_supplier_placeholder')}
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+        {/* Scrollable content area */}
+        <PerfectScrollbar option={{ suppressScrollX: true }} className="flex-1 min-h-0 max-h-[calc(90vh-100px)]">
+            <form id="po-form" onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6 p-6">
+                {/* Left column – Order Details */}
+                <div className="lg:w-80 space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        {t('order_details')}
+                    </h3>
+                    <div className="space-y-4">
                         <div className="space-y-1">
-                            <Label className="text-sm font-medium mb-0">
-                                {t('order_date_label')} <span className="text-red-500">*</span>
+                            <Label className="text-sm font-medium">
+                                {t('supplier_label')} <span className="text-red-500">*</span>
                             </Label>
+                            <SearchableSelect
+                                options={suppliers.map((s: any) => ({ value: String(s.id), label: s.name }))}
+                                value={formData.supplier_id}
+                                onChange={(val) => handleSelectChange(val, 'supplier_id')}
+                                placeholder={t('select_supplier_placeholder')}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <Label className="text-sm font-medium mb-0">
+                                    {t('order_date_label')} <span className="text-red-500">*</span>
+                                </Label>
+                                <DatePicker
+                                    value={formData.order_date ? new Date(formData.order_date) : undefined}
+                                    onChange={(date) => {
+                                        if (!date) return;
+                                        const time = formData.order_date ? formData.order_date.split('T')[1]?.slice(0, 5) || '00:00' : '00:00';
+                                        const newDate = format(date, 'yyyy-MM-dd') + 'T' + time;
+                                        setFormData(p => ({ ...p, order_date: newDate }));
+                                    }}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="text-sm font-medium mb-0">{t('time_label')}</Label>
+                                <TimePicker
+                                    value={formData.order_date ? formData.order_date.split('T')[1]?.slice(0, 5) : '00:00'}
+                                    onChange={(time) => {
+                                        const date = formData.order_date ? formData.order_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
+                                        const newDate = date + 'T' + time;
+                                        setFormData(p => ({ ...p, order_date: newDate }));
+                                    }}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-sm font-medium">{t('expected_delivery_label')}</Label>
                             <DatePicker
-                                value={formData.order_date ? new Date(formData.order_date) : undefined}
+                                value={formData.expected_delivery_date ? new Date(formData.expected_delivery_date) : undefined}
                                 onChange={(date) => {
-                                    if (!date) return;
-                                    const time = formData.order_date ? formData.order_date.split('T')[1]?.slice(0, 5) || '00:00' : '00:00';
-                                    const newDate = format(date, 'yyyy-MM-dd') + 'T' + time;
-                                    setFormData(p => ({ ...p, order_date: newDate }));
+                                    setFormData(p => ({ ...p, expected_delivery_date: date ? format(date, 'yyyy-MM-dd') : '' }));
                                 }}
                             />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-sm font-medium mb-0">{t('time_label')}</Label>
-                            <TimePicker
-                                value={formData.order_date ? formData.order_date.split('T')[1]?.slice(0, 5) : '00:00'}
-                                onChange={(time) => {
-                                    const date = formData.order_date ? formData.order_date.split('T')[0] : format(new Date(), 'yyyy-MM-dd');
-                                    const newDate = date + 'T' + time;
-                                    setFormData(p => ({ ...p, order_date: newDate }));
-                                }}
+                            <Label className="text-sm font-medium">{t('status')}</Label>
+                            <Select
+                                value={formData.status}
+                                onValueChange={v => setFormData(p => ({ ...p, status: v }))}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {['Draft', 'Ordered', 'Cancelled'].map(s => (
+                                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-sm font-medium">{t('note')}</Label>
+                            <Textarea
+                                value={formData.note}
+                                onChange={e => setFormData(p => ({ ...p, note: e.target.value }))}
+                                rows={3}
                             />
                         </div>
-                    </div>
-                    <div className="space-y-1">
-                        <Label className="text-sm font-medium">{t('expected_delivery_label')}</Label>
-                        <DatePicker
-                            value={formData.expected_delivery_date ? new Date(formData.expected_delivery_date) : undefined}
-                            onChange={(date) => {
-                                setFormData(p => ({ ...p, expected_delivery_date: date ? format(date, 'yyyy-MM-dd') : '' }));
-                            }}
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <Label className="text-sm font-medium">{t('status')}</Label>
-                        <Select
-                            value={formData.status}
-                            onValueChange={v => setFormData(p => ({ ...p, status: v }))}
-                        >
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {['Draft', 'Ordered', 'Cancelled'].map(s => (
-                                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-1">
-                        <Label className="text-sm font-medium">{t('note')}</Label>
-                        <Textarea
-                            value={formData.note}
-                            onChange={e => setFormData(p => ({ ...p, note: e.target.value }))}
-                            rows={3}
-                        />
                     </div>
                 </div>
-            </div>
 
-            {/* Right column – Line Items */}
-            <div className="flex-1 space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                        {t('order_items')}
-                    </h3>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setItems((p: POItem[]) => [...p, { ...emptyItem }])}
-                        className="flex items-center gap-1"
-                    >
-                        <Plus className="h-4 w-4" /> {t('add_row')}
-                    </Button>
-                <div className="rounded-lg border dark:border-gray-700 overflow-hidden">
-                    <div className="max-h-96 overflow-y-auto">
+                {/* Right column – Line Items */}
+                <div className="flex-1 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            {t('order_items')}
+                        </h3>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setItems((p: POItem[]) => [...p, { ...emptyItem }])}
+                            className="flex items-center gap-1"
+                        >
+                            <Plus className="h-4 w-4" /> {t('add_row')}
+                        </Button>
+                    </div>
+
+                    <div className="rounded-lg border dark:border-gray-700 overflow-hidden">
                         <table className="w-full text-sm">
                             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 uppercase text-xs sticky top-0">
                                 <tr>
@@ -720,11 +722,10 @@ const PurchaseOrdersPage = () => {
                         </table>
                     </div>
                 </div>
-            </div>
-            </div>
-        </form>
+            </form>
+        </PerfectScrollbar>
 
-         {/* Footer */}
+        {/* Footer */}
         <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
             <Button type="button" variant="ghost" onClick={() => setModalOpen(false)}>
                 {t('cancel')}
