@@ -276,7 +276,7 @@ const LeaveBalanceIndex = () => {
             ) : (
                 <div className="table-responsive bg-white dark:bg-black rounded-lg shadow-sm border border-gray-100 dark:border-gray-800">
                     <table className="table-hover table-striped w-full table">
-                        <thead>
+                        <thead className='border-b dark:border-gray-600' >
                             <tr>
                                 <SortableHeader label={t('employee_sort_label')} value="employee" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <SortableHeader label={t('leave_type_label')} value="leave_type" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />

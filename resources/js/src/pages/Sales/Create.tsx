@@ -56,6 +56,7 @@ interface SalesOrder {
     notes: string;
     use_tax: boolean;
     global_tax_percent: number;
+    sale_remark_id: number | null;
     invoice_image_path?: string;
     deposits: { amount: number; payment_account_id: number | null; date: string; notes: string; receipt: File | null }[];
 }
@@ -257,6 +258,7 @@ const SalesCreate = () => {
         notes: '',
         use_tax: true,
         global_tax_percent: 10,
+        sale_remark_id: null,
         deposits: [],
     });
 
@@ -272,6 +274,7 @@ const SalesCreate = () => {
     const { data: paymentAccounts = [], isLoading: isLoadingAccounts } = usePaymentAccounts(selectedBranchId);
     const { data: customerTypes = [] } = useCRMCustomerTypes();
     const { data: vehicles = [], isLoading: isLoadingVehicles } = useCustomerVehicles(form.customer_id);
+    const { data: saleRemarks = [] } = useSaleRemarks();
 
     const activeBranches = useMemo(() => branches.filter((b: any) => b.status === 'active'), [branches]);
 
@@ -413,6 +416,7 @@ const SalesCreate = () => {
                         notes: data.notes || '',
                         use_tax: parseFloat(data.tax_percent) > 0,
                         global_tax_percent: parseFloat(data.tax_percent || 10),
+                        sale_remark_id: data.sale_remark_id,
                         invoice_image_path: data.invoice_image_path,
                         deposits: [], // We don't edit old deposits in this flow usually
                     });
@@ -685,6 +689,7 @@ const SalesCreate = () => {
             formData.append('notes', form.notes);
             formData.append('taxable_amount', form.taxable_amount.toString());
             formData.append('tax_percent', form.global_tax_percent.toString());
+            if (form.sale_remark_id) formData.append('sale_remark_id', form.sale_remark_id.toString());
             formData.append('discount_type', form.global_discount_type);
             formData.append('discount_value', form.global_discount_value.toString());
 
@@ -1077,6 +1082,7 @@ const SalesCreate = () => {
                 loadingAccounts={isAccountsLoading}
                 onEditPackage={handleEditPackage}
                 isEdit={isEdit}
+                saleRemarks={saleRemarks}
             />
 
             {/* Service Item Selector Dialog */}

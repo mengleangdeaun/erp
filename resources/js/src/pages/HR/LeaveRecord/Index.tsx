@@ -299,7 +299,7 @@ export default function LeaveRecordIndex() {
                 <div className="rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden mb-5 bg-white dark:bg-black shadow-sm">
                     <div className="table-responsive">
                         <table className="w-full text-sm">
-                            <thead className="border-b border-gray-100 dark:border-gray-800 text-gray-500 uppercase font-bold text-[11px] tracking-wider">
+                            <thead className="border-b dark:border-gray-600 text-gray-500 uppercase font-bold text-[11px] tracking-wider">
                                 <tr>
                                     <SortableHeader label={t('requested_label')} value="created_at" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3 whitespace-nowrap" />
                                     <SortableHeader label={t('employee_label')} value="employee" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} className="px-4 py-3" />

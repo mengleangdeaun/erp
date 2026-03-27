@@ -31,8 +31,14 @@ class SalesOrder extends Model
         'status',
         'payment_status',
         'notes',
+        'sale_remark_id',
         'created_by'
     ];
+
+    public function saleRemark()
+    {
+        return $this->belongsTo(SaleRemark::class);
+    }
 
     public function customer()
     {

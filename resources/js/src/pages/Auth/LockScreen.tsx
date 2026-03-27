@@ -110,10 +110,10 @@ const LockScreen = () => {
                          <div className="absolute -inset-1.5 bg-gradient-to-tr from-primary to-primary/40 rounded-full opacity-40 group-hover:opacity-60 transition duration-500"></div>
                          <img 
                             className="relative w-24 h-24 rounded-full object-cover border-4 border-white shadow-2xl" 
-                            src={user?.avatar ? `/storage/${user.avatar}` : "/assets/images/user-profile.jpeg"} 
+                            src={user?.avatar ? `/storage/${user.avatar}` : "/assets/images/user-profile.svg"} 
                             alt="User Profile" 
                             onError={(e) => {
-                                e.currentTarget.src = "/assets/images/user-profile.jpeg";
+                                e.currentTarget.src = "/assets/images/user-profile.svg";
                             }}
                          />
                          <div className="absolute bottom-0 right-0 bg-primary rounded-full p-1.5 border-2 border-slate-900 shadow-lg">

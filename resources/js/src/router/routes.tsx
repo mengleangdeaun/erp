@@ -103,6 +103,9 @@ const SalesOrderIndex = lazy(() => import('../pages/Sales/Index'));
 const SalesCreate = lazy(() => import('../pages/Sales/Create'));
 const PaymentAccountIndex = lazy(() => import('../pages/Finance/PaymentAccounts/Index'));
 const JobCardIndex = lazy(() => import('../pages/Services/JobCards/Index'));
+const DamageReportsIndex = lazy(() => import('../pages/Services/JobCards/DamageReportsIndex'));
+const ReplacementTypeIndex = lazy(() => import('../pages/Services/JobCards/ReplacementTypeIndex'));
+const SaleRemarkIndex = lazy(() => import('../pages/Sales/SaleRemarks/Index'));
 
 // Access Control
 const RoleManagement = lazy(() => import('../pages/AccessControl/Roles'));
@@ -456,9 +459,12 @@ const routes = [
     { path: '/services/vehicles/brands', element: <VehicleBrandIndex />, layout: 'default' },
     { path: '/services/vehicles/models', element: <VehicleModelIndex />, layout: 'default' },
     { path: '/services/job-cards', element: <JobCardIndex />, layout: 'default' },
+    { path: '/job-cards/replacement-types', element: <ReplacementTypeIndex />, layout: 'default' },
     { path: '/sales/orders', element: <SalesOrderIndex />, layout: 'default' },
     { path: '/sales/create', element: <SalesCreate />, layout: 'default' },
     { path: '/sales/edit/:id', element: <SalesCreate />, layout: 'default' },
+    { path: '/sales/remarks', element: <SaleRemarkIndex />, layout: 'default' },
+    { path: '/services/damage-reports', element: <DamageReportsIndex />, layout: 'default' },
     { path: '/finance/payment-accounts', element: <PaymentAccountIndex />, layout: 'default' },
     {
         path: '*',

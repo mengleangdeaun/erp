@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { IconWallet, IconBuilding } from '@tabler/icons-react';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { toast } from 'sonner';
 
 interface AccountDialogProps {
@@ -88,7 +88,7 @@ const AccountDialog = ({ isOpen, setIsOpen, editingAccount, onSave }: AccountDia
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-[500px] p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
+            <DialogContent className="sm:max-w-[500px]  max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">
                 <div className="shrink-0 bg-gradient-to-r from-primary/10 to-transparent px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-4">
                     <div className="bg-primary/20 p-3 rounded-xl shadow-sm">
                         <IconWallet className="text-primary w-6 h-6" />
@@ -101,6 +101,7 @@ const AccountDialog = ({ isOpen, setIsOpen, editingAccount, onSave }: AccountDia
                     </div>
                 </div>
 
+                <PerfectScrollbar className="flex-1 min-h-0">
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
                     <div className="grid grid-cols-1 gap-5">
                         <div className="space-y-1.5">
@@ -176,6 +177,7 @@ const AccountDialog = ({ isOpen, setIsOpen, editingAccount, onSave }: AccountDia
                         </Button>
                     </div>
                 </form>
+                </PerfectScrollbar>
             </DialogContent>
         </Dialog>
     );

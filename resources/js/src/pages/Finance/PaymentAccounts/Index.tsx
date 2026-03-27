@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import AccountDialog from './AccountDialog';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
+import { NoAccountIllustration, SearchNotFoundIllustration } from '@/components/illustrations/SearchNotFound';
 
 const PaymentAccountIndex = () => {
     const dispatch = useDispatch();
@@ -169,9 +170,15 @@ const PaymentAccountIndex = () => {
                     description="Get started by adding your first payment account."
                     actionLabel="Add Account"
                     onAction={handleCreate}
+                    illustration={<NoAccountIllustration />}
                 />
             ) : filteredAndSortedAccounts.length === 0 ? (
-                <EmptyState isSearch searchTerm={search} onClearFilter={() => setSearch('')} />
+                <EmptyState
+                    isSearch
+                    searchTerm={search}
+                    onClearFilter={() => setSearch('')}
+                    illustration={<SearchNotFoundIllustration />}
+                />
             ) : (
                 <div className="table-responsive bg-white dark:bg-black rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
                     <table className="table-hover table-striped w-full table">

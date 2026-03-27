@@ -4,13 +4,17 @@ import { toast } from 'sonner';
 /**
  * Hook to fetch all job cards
  */
-export const useJobCards = (params?: { status?: string; search?: string }) => {
+export const useJobCards = (params?: { status?: string; search?: string; type?: string; branch_id?: number | null; from_date?: string | null; to_date?: string | null }) => {
     return useQuery({
         queryKey: ['job-cards', params],
         queryFn: async () => {
             const queryParams = new URLSearchParams();
             if (params?.status) queryParams.append('status', params.status);
             if (params?.search) queryParams.append('search', params.search);
+            if (params?.type) queryParams.append('type', params.type);
+            if (params?.branch_id) queryParams.append('branch_id', params.branch_id.toString());
+            if (params?.from_date) queryParams.append('from_date', params.from_date);
+            if (params?.to_date) queryParams.append('to_date', params.to_date);
             
             const response = await fetch(`/api/services/job-cards?${queryParams.toString()}`);
             if (!response.ok) throw new Error('Failed to fetch job cards');
@@ -228,5 +232,48 @@ export const useAvailableSerials = (productId: number | null, branchId?: number)
             return response.json();
         },
         enabled: !!productId
+    });
+};
+
+/**
+ * Hook to fetch replacement types
+ */
+export const useReplacementTypes = () => {
+    return useQuery({
+        queryKey: ['replacement-types'],
+        queryFn: async () => {
+            const response = await fetch('/api/services/replacement-types');
+            if (!response.ok) throw new Error('Failed to fetch replacement types');
+            return response.json();
+        }
+    });
+};
+
+/**
+ * Hook to create a replacement job
+ */
+export const useCreateReplacementJob = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ originalId, data }: { originalId: number; data: any }) => {
+            const response = await fetch(`/api/services/job-cards/${originalId}/replacement`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) throw new Error('Failed to create replacement job');
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['job-cards'] });
+            toast.success('Replacement Job Card created successfully');
+        },
+        onError: (err: any) => {
+            toast.error(err.message || 'Failed to create replacement job');
+        }
     });
 };

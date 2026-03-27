@@ -258,8 +258,6 @@ const PromotionIndex = () => {
                 onRefresh={fetchData}
             />
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="overflow-x-auto">
                     {loading ? (
                         <TableSkeleton columns={6} rows={5} />
                     ) : sortedItems.length === 0 ? (
@@ -273,8 +271,10 @@ const PromotionIndex = () => {
                             onAction={handleCreate}
                         />
                     ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
-                            <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-y border-gray-100 dark:border-gray-700">
+                            <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-600">
                                 <tr>
                                     <SortableHeader label={t('employee_label')} value="employee.full_name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={handleSort} />
                                     <th className="px-6 py-4">{t('previous_role_label')}</th>
@@ -337,8 +337,8 @@ const PromotionIndex = () => {
                                 ))}
                             </tbody>
                         </table>
-                    )}
                 </div>
+               
                 {!loading && sortedItems.length > 0 && (
                     <Pagination
                         currentPage={currentPage}
@@ -349,7 +349,7 @@ const PromotionIndex = () => {
                     />
                 )}
             </div>
-
+ )}
             {/* Create/Edit Dialog */}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
                 <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">

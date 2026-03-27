@@ -12,10 +12,23 @@ class JobCardController extends Controller
 {
     public function index(Request $request)
     {
-        $query = JobCard::with(['order', 'customer', 'vehicle.brand', 'vehicle.model', 'items.service', 'items.part', 'items.technician']);
+        $query = JobCard::with(['order', 'customer', 'vehicle.brand', 'vehicle.model', 'items.service', 'items.part', 'items.technician', 'replacementType'])
+            ->withCount('replacements');
 
         if ($request->status) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->type) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->branch_id) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->from_date && $request->to_date) {
+            $query->whereBetween('created_at', [$request->from_date . ' 00:00:00', $request->to_date . ' 23:59:59']);
         }
 
         if ($request->search) {
@@ -24,6 +37,9 @@ class JobCardController extends Controller
                 $q->where('job_no', 'like', "%{$search}%")
                   ->orWhereHas('customer', function($cq) use ($search) {
                       $cq->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('vehicle', function($vq) use ($search) {
+                      $vq->where('plate_number', 'like', "%{$search}%");
                   });
             });
         }
@@ -41,7 +57,10 @@ class JobCardController extends Controller
             'items.service', 
             'items.part', 
             'items.technician',
-            'materialUsage.product'
+            'materialUsage.product',
+            'parent',
+            'replacements',
+            'replacementType'
         ])->findOrFail($id);
     }
 
@@ -54,10 +73,12 @@ class JobCardController extends Controller
             $status = $request->status;
             $normalized = match(strtolower(str_replace(['_', '-'], ' ', $status))) {
                 'pending' => 'Pending',
+                'assigned' => 'Assigned',
                 'in progress' => 'In Progress',
                 'completed' => 'Completed',
                 'on hold' => 'On Hold',
                 'cancelled' => 'Cancelled',
+                'reworking' => 'Reworking',
                 default => $status
             };
             $request->merge(['status' => $normalized]);
@@ -65,7 +86,7 @@ class JobCardController extends Controller
 
         $validated = $request->validate([
             'technician_id' => 'sometimes|nullable|exists:employees,id',
-            'status' => ['sometimes', \Illuminate\Validation\Rule::in(['Pending', 'In Progress', 'Completed', 'On Hold', 'Cancelled'])],
+            'status' => ['sometimes', \Illuminate\Validation\Rule::in(['Pending', 'Assigned', 'In Progress', 'Completed', 'On Hold', 'Cancelled', 'Reworking'])],
             'notes' => 'nullable|string',
             'completion_percentage' => 'nullable|integer|min:0|max:100',
             'started_at' => 'nullable|date',
@@ -86,7 +107,7 @@ class JobCardController extends Controller
         // Auto update Job Card status if all items are completed
         $jobCard = $item->jobCard;
         if ($jobCard->items()->where('status', '!=', 'Completed')->count() === 0) {
-            $jobCard->update(['status' => 'Testing', 'completed_at' => now()]);
+            $jobCard->update(['status' => 'QC Review', 'completed_at' => now()]);
         } elseif ($jobCard->status === 'Pending') {
             $jobCard->update(['status' => 'In Progress', 'started_at' => now()]);
         }
@@ -131,7 +152,7 @@ class JobCardController extends Controller
         
         DB::transaction(function() use ($jobCard, $stockService) {
             $jobCard->update([
-                'status' => 'Completed',
+                'status' => 'Delivered',
                 'completed_at' => now()
             ]);
 
@@ -212,6 +233,52 @@ class JobCardController extends Controller
             }
         });
 
-        return response()->json(['message' => 'Job Card completed successfully']);
+        return response()->json(['message' => 'Job Card delivered successfully']);
+    }
+
+    public function createReplacement(Request $request, $id)
+    {
+        $original = JobCard::findOrFail($id);
+
+        $validated = $request->validate([
+            'replacement_type_id' => 'required|exists:job_card_replacement_types,id',
+            'notes' => 'nullable|string',
+            'items' => 'required|array',
+            'items.*.service_id' => 'required|exists:services,id',
+            'items.*.part_id' => 'required|exists:job_part_masters,id',
+        ]);
+
+        return DB::transaction(function() use ($original, $validated) {
+            // Generate next job number
+            $lastJob = JobCard::latest('id')->first();
+            $nextId = ($lastJob ? $lastJob->id : 0) + 1;
+            $jobNo = 'JOB-' . date('Ymd') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+
+            $replacement = JobCard::create([
+                'job_no' => $jobNo,
+                'sales_order_id' => $original->sales_order_id,
+                'branch_id' => $original->branch_id,
+                'customer_id' => $original->customer_id,
+                'vehicle_id' => $original->vehicle_id,
+                'mileage_in' => $original->mileage_in,
+                'status' => 'Pending',
+                'type' => 'replacement',
+                'parent_id' => $original->id,
+                'replacement_type_id' => $validated['replacement_type_id'],
+                'notes' => $validated['notes']
+            ]);
+
+            foreach ($validated['items'] as $item) {
+                JobCardItem::create([
+                    'job_card_id' => $replacement->id,
+                    'service_id' => $item['service_id'],
+                    'part_id' => $item['part_id'],
+                    'status' => 'Pending',
+                    'completion_percentage' => 0
+                ]);
+            }
+
+            return $replacement->load(['items.part', 'items.service', 'replacementType']);
+        });
     }
 }

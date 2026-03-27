@@ -21,7 +21,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { 
     IconTools, IconPackage, IconCheck, IconLoader2, IconX, 
     IconCoins, IconUser, IconCar, IconPlus, IconReceipt2,
-    IconTrash, IconFileDescription, IconUpload, IconPhoto, IconCalculator, IconRosetteDiscount
+    IconTrash, IconFileDescription, IconUpload, IconPhoto, IconCalculator, IconRosetteDiscount, IconTag
 } from '@tabler/icons-react';
 
 interface CheckoutDialogProps {
@@ -53,6 +53,7 @@ interface CheckoutDialogProps {
     onEditPackage: (serviceId: number) => void;
     onAddCustomer: () => void;
     isEdit?: boolean;
+    saleRemarks?: any[];
 }
 
 const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
@@ -83,7 +84,8 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
     loadingAccounts = false,
     onEditPackage,
     onAddCustomer,
-    isEdit = false
+    isEdit = false,
+    saleRemarks = []
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     
@@ -179,6 +181,31 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                     disabled={!form.customer_id || loadingVehicles}
                                     className="h-10 bg-white dark:bg-zinc-900 shadow-sm border-zinc-200 dark:border-zinc-800 font-bold text-sm"
                                 />
+                            </section>
+
+                            <section className="space-y-2">
+                                <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest flex items-center gap-2">
+                                    <IconTag size={15} className="text-primary" /> Sale Remark / Type
+                                </h3>
+                                <Select 
+                                    value={form.sale_remark_id?.toString()} 
+                                    onValueChange={(val) => setForm({ ...form, sale_remark_id: parseInt(val) })}
+                                >
+                                    <SelectTrigger className="h-10 bg-white dark:bg-zinc-900 shadow-sm border-zinc-200 dark:border-zinc-800 font-bold text-sm">
+                                        <SelectValue placeholder="Categorize Sale..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="0" className="opacity-50">None (Normal Sale)</SelectItem>
+                                        {saleRemarks.map((r: any) => (
+                                            <SelectItem key={r.id} value={r.id.toString()}>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color_code }} />
+                                                    {r.name}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </section>
 
                             <section className="space-y-5 pt-4 border-t dark:border-zinc-800">

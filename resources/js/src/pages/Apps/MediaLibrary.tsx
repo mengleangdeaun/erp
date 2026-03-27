@@ -4,6 +4,7 @@ import { setPageTitle } from '../../store/themeConfigSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, Toaster } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { NoFolderIllustration } from '@/components/illustrations/EmptyData';
 import {
     useMediaFolders,
     useMediaFiles,
@@ -693,10 +694,10 @@ const MediaLibrary = () => {
                             <div className="flex flex-col items-center justify-center h-80 text-center animate-in fade-in zoom-in duration-300">
                                 {hasFilters ? (
                                     <>
-                                        <div className="w-16 h-16 bg-amber-50 dark:bg-amber-950/30 rounded-2xl flex items-center justify-center mb-4">
-                                            <IconSearch size={28} className="text-amber-400" />
+                                        <div className="w-48 flex items-center justify-center mb-2">
+                                           <NoFolderIllustration />
                                         </div>
-                                        <p className="text-gray-600 dark:text-gray-400 font-medium">{favoriteFilter ? 'No favorites found' : 'No results found'}</p>
+                                        <p className="text-gray-600 text-lg dark:text-gray-400 font-medium">{favoriteFilter ? 'No favorites found' : 'No results found'}</p>
                                         <p className="text-sm text-gray-400 mt-1 max-w-[250px]">We couldn't find anything matching your current {favoriteFilter ? 'favorited files' : ''} search or filters.</p>
                                         <button onClick={clearFilters}
                                             className="mt-4 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all font-medium">

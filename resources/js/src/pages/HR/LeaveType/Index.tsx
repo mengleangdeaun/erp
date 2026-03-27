@@ -292,7 +292,7 @@ const LeaveTypeIndex = () => {
             ) : (
                 <div className="table-responsive bg-white dark:bg-black rounded-lg shadow-sm border border-gray-100 dark:border-gray-800">
                     <table className="table-hover table-striped w-full table">
-                        <thead>
+                        <thead className='border-b dark:border-gray-600'>
                             <tr>
                                 <SortableHeader label={t('name_label')} value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <SortableHeader label={t('max_days_per_year_label')} value="max_per_year" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />

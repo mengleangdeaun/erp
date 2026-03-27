@@ -1,52 +1,78 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { format } from 'date-fns';
+import { setPageTitle } from '@/store/themeConfigSlice';
 import { 
     IconTools, 
-    IconExternalLink, 
     IconClock, 
-    IconChecks, 
     IconLoader2, 
-    IconCar, 
-    IconUser, 
-    IconChevronRight 
+    IconChecks, 
+    IconExternalLink, 
+    IconChevronRight, 
+    IconFilter,
+    IconSearch,
+    IconRefresh,
+    IconX,
+    IconCar,
+    IconDotsVertical,
+    IconUser
 } from '@tabler/icons-react';
-import { X } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { X, LayoutGrid, List, RotateCcw, MoreVertical } from 'lucide-react';
+import { useJobCards, useCreateReplacementJob, useReplacementTypes } from '@/hooks/useJobCardData';
+import { useHRBranches } from '@/hooks/useHRData';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { DateRange } from 'react-day-picker';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+    DropdownMenu, 
+    DropdownMenuContent, 
+    DropdownMenuItem, 
+    DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 import FilterBar from '@/components/ui/FilterBar';
 import Pagination from '@/components/ui/Pagination';
+import ProgressUpdateDialog from './ProgressUpdateDialog';
+import ReplacementJobDialog from './ReplacementJobDialog';
+import QCReviewDialog from './QCReviewDialog';
+import StockDeductDialog from './StockDeductDialog';
+import TableSkeleton from '@/components/ui/TableSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
-import { Badge } from '@/components/ui/badge';
-import JobCardDialog from './JobCardDialog';
-import { format } from 'date-fns';
-import { useDispatch } from 'react-redux';
-import { setPageTitle } from '@/store/themeConfigSlice';
-import { useJobCards } from '@/hooks/useJobCardData';
-import { Skeleton } from '@/components/ui/skeleton';
+import ActionButtons from '@/components/ui/ActionButtons';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
+// Grid skeleton for workshop cards
 const JobCardSkeleton = () => (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 flex flex-col gap-5 shadow-sm overflow-hidden">
-        <div className="flex justify-between items-center">
-            <Skeleton className="h-6 w-24 rounded-full" />
-            <Skeleton className="h-5 w-16 rounded-lg font-mono" />
+    <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800 p-6 flex flex-col gap-6 shadow-sm overflow-hidden animate-pulse">
+        <div className="flex justify-between items-center mb-2">
+            <div className="h-6 w-24 bg-gray-100 dark:bg-gray-800 rounded-full" />
+            <div className="h-5 w-16 bg-gray-50 dark:bg-gray-800 rounded-lg" />
         </div>
         <div className="space-y-3">
-            <Skeleton className="h-8 w-1/2 rounded-xl" />
-            <Skeleton className="h-4 w-1/3 rounded-lg" />
+            <div className="h-9 w-3/4 bg-gray-100 dark:bg-gray-800 rounded-xl" />
+            <div className="h-4 w-1/2 bg-gray-50 dark:bg-gray-800 rounded-lg" />
         </div>
-        <div className="py-4 border-y border-gray-50 dark:border-gray-800/50 space-y-3">
-            <div className="flex justify-between">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-3 w-20" />
+        <div className="py-5 border-y border-gray-50 dark:border-gray-800/50 space-y-4">
+            <div className="flex justify-between items-end">
+                <div className="h-3 w-16 bg-gray-100 dark:bg-gray-800 rounded-full" />
+                <div className="h-3 w-8 bg-gray-100 dark:bg-gray-800 rounded-full" />
             </div>
-            <Skeleton className="h-2 w-full rounded-full" />
+            <div className="h-2 w-full bg-gray-50 dark:bg-gray-800 rounded-full" />
         </div>
-        <div className="flex justify-between mt-auto pt-2">
+        <div className="flex justify-between items-center mt-auto">
             <div className="flex gap-2">
-                <Skeleton className="w-8 h-8 rounded-full" />
-                <Skeleton className="h-4 w-24 self-center" />
+                <div className="w-9 h-9 bg-gray-100 dark:bg-gray-800 rounded-xl" />
+                <div className="space-y-1">
+                    <div className="h-2 w-12 bg-gray-100 dark:bg-gray-800 rounded-full" />
+                    <div className="h-3 w-20 bg-gray-50 dark:bg-gray-800 rounded-full" />
+                </div>
             </div>
-            <Skeleton className="w-10 h-10 rounded-full" />
+            <div className="h-8 w-16 bg-gray-100 dark:bg-gray-800 rounded-xl" />
         </div>
     </div>
 );
@@ -56,15 +82,36 @@ const JobCardIndex: React.FC = () => {
     const { t } = useTranslation();
     const [selectedJob, setSelectedJob] = useState<any>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [replacementDialogOpen, setReplacementDialogOpen] = useState(false);
+    const [qcDialogOpen, setQcDialogOpen] = useState(false);
+    const [stockDeductOpen, setStockDeductOpen] = useState(false);
     
     // Search and Pagination state
     const [searchParams] = useSearchParams();
     const jobIdParam = searchParams.get('id');
     const [search, setSearch] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [actionLoading, setActionLoading] = useState<number | null>(null);
+    const [status, setStatus] = useState<string>('all');
+    const [type, setType] = useState<string>('all');
+    const [branchId, setBranchId] = useState<string>('all');
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-    const { data: jobs = [], isLoading, refetch } = useJobCards({ search });
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(12);
+
+    const { data: branches = [] } = useHRBranches();
+    const { data: replacementTypes = [] } = useReplacementTypes();
+    const createReplacementMutation = useCreateReplacementJob();
+
+    const { data: jobs = [], isLoading, refetch } = useJobCards({ 
+        search, 
+        status: status === 'all' ? undefined : status,
+        type: type === 'all' ? undefined : type,
+        branch_id: branchId === 'all' ? null : parseInt(branchId),
+        from_date: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : null,
+        to_date: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : null,
+    });
 
     useEffect(() => {
         if (jobIdParam) {
@@ -74,8 +121,16 @@ const JobCardIndex: React.FC = () => {
     }, [jobIdParam]);
 
     useEffect(() => {
-        dispatch(setPageTitle(t('workshop_jobs', 'Workshop Jobs')));
+        dispatch(setPageTitle(t('workshop_jobs', 'Service Command Center')));
     }, [dispatch, t]);
+
+    const handleClearFilters = () => {
+        setSearch('');
+        setStatus('all');
+        setType('all');
+        setBranchId('all');
+        setDateRange(undefined);
+    };
 
     const filteredJobs = jobs; 
 
@@ -85,39 +140,59 @@ const JobCardIndex: React.FC = () => {
         currentPage * itemsPerPage
     );
 
+    const handleOpenDialog = (job: any, setter: (open: boolean) => void) => {
+        setSelectedJob(job);
+        setter(true);
+    };
+
     const getStatusUI = (status: string) => {
         switch (status) {
-            case 'Pending': 
+            case 'PENDING': 
                 return { 
-                    label: 'Service Queue', 
+                    label: 'Pending', 
                     variant: 'warning', 
                     icon: <IconClock className="w-3.5 h-3.5" />,
                     class: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800'
                 };
             case 'In Progress': 
                 return { 
-                    label: 'Live Installation', 
+                    label: 'In Progress', 
                     variant: 'secondary', 
                     icon: <IconLoader2 className="w-3.5 h-3.5 animate-spin" />,
                     class: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
                 };
-            case 'Testing': 
+            case 'Review':
+            case 'QC Review': 
                 return { 
-                    label: 'Quality Audit', 
+                    label: 'QC Review', 
                     variant: 'secondary', 
                     icon: <IconChecks className="w-3.5 h-3.5" />,
                     class: 'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800'
                 };
-            case 'Completed': 
+            case 'Rework': 
                 return { 
-                    label: 'Ready For Pickup', 
+                    label: 'Needs Rework', 
+                    variant: 'destructive', 
+                    icon: <RotateCcw className="w-3.5 h-3.5" />,
+                    class: 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800'
+                };
+            case 'Ready': 
+                return { 
+                    label: 'Ready', 
                     variant: 'success', 
                     icon: <IconChecks className="w-3.5 h-3.5" />,
                     class: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800'
                 };
+            case 'Delivered': 
+                return { 
+                    label: 'Delivered', 
+                    variant: 'success', 
+                    icon: <IconExternalLink className="w-3.5 h-3.5" />,
+                    class: 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-900/20 dark:text-slate-400 dark:border-slate-800'
+                };
             case 'Cancelled': 
                 return { 
-                    label: 'Halted', 
+                    label: 'Cancelled', 
                     variant: 'destructive', 
                     icon: <X className="w-3.5 h-3.5" />,
                     class: 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
@@ -143,96 +218,270 @@ const JobCardIndex: React.FC = () => {
                 onRefresh={() => { refetch(); }}
                 itemsPerPage={itemsPerPage}
                 setItemsPerPage={setItemsPerPage}
-            />
+                hasActiveFilters={status !== 'all' || type !== 'all' || branchId !== 'all' || !!dateRange}
+                onClearFilters={handleClearFilters}
+                extraActions={
+                    <div className="flex items-center gap-2">
+                        <div className="h-10 flex bg-white dark:bg-dark p-1 bg-white border rounded-md dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-primary border-slate-200 dark:border-slate-800 shadow-sm">
+                            <Button
+                                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={() => setViewMode('grid')}
+                            >
+                                <LayoutGrid className="w-4 h-4" />
+                            </Button>
+                            <Button
+                                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="h-7 w-7 p-0 "
+                                onClick={() => setViewMode('list')}
+                            >
+                                <List className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    </div>
+                }
+            >
+                <div>
+                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</span>
+                     <Select value={status} onValueChange={setStatus}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                            <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="Pending">Pending</SelectItem>
+                            <SelectItem value="In Progress">In Progress</SelectItem>
+                            <SelectItem value="QC Review">QC Review</SelectItem>
+                            <SelectItem value="Rework">Rework</SelectItem>
+                            <SelectItem value="Ready">Ready</SelectItem>
+                            <SelectItem value="Delivered">Delivered</SelectItem>
+                            <SelectItem value="Cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                     </Select>
+                </div>
+                <div>
+                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Job Type</span>
+                     <Select value={type} onValueChange={setType}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                            <SelectValue placeholder="All types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            <SelectItem value="installation">First Installation</SelectItem>
+                            <SelectItem value="replacement">Warranty Replacement</SelectItem>
+                        </SelectContent>
+                     </Select>
+                </div>
+                <div>
+                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Location</span>
+                     <Select value={branchId} onValueChange={setBranchId}>
+                        <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                            <SelectValue placeholder="All branches" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Branches</SelectItem>
+                            {branches.map((b: any) => (
+                                <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                     </Select>
+                </div>
+                <div className="lg:col-span-1">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Registered Date</span>
+                    <DateRangePicker 
+                        value={dateRange} 
+                        onChange={setDateRange}
+                        className="w-full"
+                    />
+                </div>
+            </FilterBar>
 
             {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Array.from({ length: 6 }).map((_, index) => <JobCardSkeleton key={index} />)}
-                </div>
+                viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {Array.from({ length: 8 }).map((_, index) => <JobCardSkeleton key={index} />)}
+                    </div>
+                ) : (
+                    <TableSkeleton columns={5} rows={8} />
+                )
             ) : filteredJobs.length === 0 ? (
                 <EmptyState 
-                    isSearch={!!search}
+                    isSearch={status !== 'all' || search !== ''}
                     searchTerm={search}
-                    title="Workflow Is Idle"
+                    onClearFilter={handleClearFilters}
+                    title={search ? "No Matches Found" : "Workflow Is Idle"}
                     description={search ? "Adjust parameters to locate specific job logs." : "No active installations detected in the current queue."}
                 />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {paginatedJobs.map((job: any) => {
-                        const statusUI = getStatusUI(job.status);
-                        const completedItems = job.items?.filter((i: any) => i.status === 'Completed').length || 0;
-                        const totalItems = job.items?.length || 0;
-                        const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+                viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {paginatedJobs.map((job: any) => {
+                            const statusUI = getStatusUI(job.status);
+                            const completedItems = job.items?.filter((i: any) => i.status === 'Completed').length || 0;
+                            const totalItems = job.items?.length || 0;
+                            const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
-                        return (
-                            <div key={job.id} 
-                                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 flex flex-col gap-5 shadow-sm hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer group relative overflow-hidden"
-                                onClick={() => { setSelectedJob(job); setDialogOpen(true); }}
-                            >
-                                {/* Gradient interaction layer */}
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full translate-x-16 -translate-y-16 group-hover:scale-150 transition-transform duration-700" />
+                            return (
+                                <div key={job.id} 
+                                    className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 flex flex-col gap-5 shadow-sm hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 transition-all cursor-pointer group relative overflow-hidden"
+                                >
+                                    {/* Gradient interaction layer */}
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full translate-x-16 -translate-y-16 group-hover:scale-150 transition-transform duration-700" />
 
-                                <div className="flex items-center justify-between relative z-10">
-                                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest shadow-sm ${statusUI.class}`}>
-                                        {statusUI.icon}
-                                        {statusUI.label}
-                                    </div>
-                                    <span className="text-[10px] font-mono font-bold text-gray-400 bg-gray-50/50 dark:bg-gray-800/50 px-2 py-0.5 rounded border border-gray-100 dark:border-gray-800">
-                                        {job.job_no}
-                                    </span>
-                                </div>
+                                    <div className="flex items-center justify-between relative z-10">
+                                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest shadow-sm ${statusUI.class}`}>
+                                            {statusUI.icon}
+                                            {statusUI.label}
+                                        </div>
+                                        <div className="flex gap-2 items-center">
 
-                                <div className="space-y-1 relative z-10">
-                                    <h3 className="text-3xl font-black text-gray-900 dark:text-white leading-tight tracking-tighter flex items-center gap-2">
-                                        {job.vehicle?.plate_number}
-                                        <IconChevronRight className="w-5 h-5 text-gray-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                                    </h3>
-                                    <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-[0.15em]">
-                                        <IconCar className="w-3.5 h-3.5 text-primary/60" />
-                                        {job.vehicle?.brand?.name} {job.vehicle?.model?.name}
-                                    </div>
-                                </div>
-
-                                <div className="py-4 border-y border-gray-100 dark:border-gray-800/50 space-y-3 relative z-10">
-                                    <div className="flex justify-between items-end">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Component Progress</span>
-                                        <span className="text-xs font-black text-primary">{Math.round(progress)}%</span>
-                                    </div>
-                                    <div className="h-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner">
-                                        <div 
-                                            className="h-full bg-gradient-to-r from-primary to-primary-600 transition-all duration-1000 ease-out relative"
-                                            style={{ width: `${progress}%` }}
-                                        >
-                                            <div className="absolute inset-0 bg-white/20 animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+                                            {job.type === 'replacement' && (
+                                                <Badge variant="destructive" className="text-[8px] px-1.5 h-4 font-black uppercase">REPLACEMENT</Badge>
+                                            )}
+                                            {job.replacements_count > 0 && (
+                                                <Badge variant="secondary" className="text-[8px] px-1.5 h-4 font-black uppercase bg-red-100 text-red-700">{job.replacements_count}X RETURN</Badge>
+                                            )}
+                                            <span className="text-[10px] font-mono font-bold text-gray-400 bg-gray-50/50 dark:bg-gray-800/50 px-2 py-0.5 rounded border border-gray-100 dark:border-gray-800">
+                                                {job.job_no}
+                                            </span>
                                         </div>
                                     </div>
-                                    <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-                                        <span>{completedItems} Done</span>
-                                        <span>{totalItems} Mapped</span>
-                                    </div>
-                                </div>
 
-                                <div className="flex items-center justify-between mt-auto pt-2 relative z-10">
-                                    <div className="flex items-center gap-3">
-                                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-xl border border-white dark:border-gray-700 shadow-sm">
-                                            <IconUser className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 leading-none mb-1">Customer</span>
-                                            <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{job.customer?.name}</span>
+                                    <div className="space-y-1 relative z-10" onClick={() => { setSelectedJob(job); setDialogOpen(true); }}>
+                                        <h3 className="text-3xl font-black text-gray-900 dark:text-white leading-tight tracking-tighter flex items-center gap-2">
+                                            {job.vehicle?.plate_number}
+                                        </h3>
+                                        <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                            <IconCar className="w-3.5 h-3.5 text-primary/60" />
+                                            {job.vehicle?.brand?.name} {job.vehicle?.model?.name}
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 px-3 py-1.5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                                            <IconClock className="w-3.5 h-3.5 text-primary" />
-                                            {format(new Date(job.created_at), 'dd MMM')}
+
+                                    <div className="py-4 border-y border-gray-100 dark:border-gray-800/50 space-y-3 relative z-10">
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Progression</span>
+                                            <span className="text-xs font-black text-primary">{Math.round(progress)}%</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden shadow-inner">
+                                            <div 
+                                                className="h-full bg-gradient-to-r from-primary to-primary-600 transition-all duration-1000 ease-out relative"
+                                                style={{ width: `${progress}%` }}
+                                            >
+                                                <div className="absolute inset-0 bg-white/20 animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+                                            <span>{completedItems} Done</span>
+                                            <span>{totalItems} Items</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between mt-auto pt-6 relative z-10">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                <IconUser className="w-4 h-4 text-slate-400" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1">Customer</span>
+                                                <span className="text-sm font-bold text-slate-900 dark:text-slate-100 line-clamp-1">{job.customer?.name}</span>
+                                            </div>
+                                        </div>
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                            <ActionButtons 
+                                                onApprove={['Review', 'QC Review'].includes(job.status) ? (() => handleOpenDialog(job, setQcDialogOpen)) : undefined}
+                                                onReceive={job.status === 'Delivered' && job.type === 'installation' ? (() => handleOpenDialog(job, setReplacementDialogOpen)) : undefined}
+                                                onStats={() => handleOpenDialog(job, (open) => {
+                                                    setSelectedJob(job);
+                                                    setStockDeductOpen(open);
+                                                })}
+                                                onEdit={() => handleOpenDialog(job, setDialogOpen)}
+                                                approveLabel="QC Review"
+                                                receiveLabel="Replacement"
+                                                statsLabel="Stock Deduct"
+                                                size="sm"
+                                            />
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="bg-white dark:bg-dark rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="font-black text-[10px] uppercase tracking-widest">Entry</TableHead>
+                                    <TableHead className="font-black text-[10px] uppercase tracking-widest">Vehicle</TableHead>
+                                    <TableHead className="font-black text-[10px] uppercase tracking-widest">Status</TableHead>
+                                    <TableHead className="font-black text-[10px] uppercase tracking-widest">Progress</TableHead>
+                                    <TableHead className="font-black text-[10px] uppercase tracking-widest text-right">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paginatedJobs.map((job: any) => {
+                                    const statusUI = getStatusUI(job.status);
+                                    const completedItems = job.items?.filter((i: any) => i.status === 'Completed').length || 0;
+                                    const totalItems = job.items?.length || 0;
+                                    const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+
+                                    return (
+                                        <TableRow key={job.id} className="group cursor-pointer" onClick={() => { setSelectedJob(job); setDialogOpen(true); }}>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold font-mono">{job.job_no}</span>
+                                                    <span className="text-[10px] text-gray-400 font-bold">{format(new Date(job.created_at), 'dd/MM/yyyy')}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="text-base font-black tracking-tight">{job.vehicle?.plate_number}</span>
+                                                    <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">{job.vehicle?.brand?.name} {job.vehicle?.model?.name}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest shadow-sm ${statusUI.class}`}>
+                                                    {statusUI.icon}
+                                                    {statusUI.label}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="w-[200px]">
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between items-center text-[9px] font-black text-gray-400 uppercase">
+                                                        <span>{Math.round(progress)}%</span>
+                                                        <span>{completedItems}/{totalItems} Items</span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div onClick={(e) => e.stopPropagation()}>
+                                                    <ActionButtons 
+                                                        onApprove={['Review', 'QC Review'].includes(job.status) ? (() => handleOpenDialog(job, setQcDialogOpen)) : undefined}
+                                                        onReceive={job.status === 'Delivered' && job.type === 'installation' ? (() => handleOpenDialog(job, setReplacementDialogOpen)) : undefined}
+                                                        onStats={() => handleOpenDialog(job, (open) => {
+                                                            setSelectedJob(job);
+                                                            setStockDeductOpen(open);
+                                                        })}
+                                                        onEdit={() => handleOpenDialog(job, setDialogOpen)}
+                                                        approveLabel="QC Review"
+                                                        receiveLabel="Replacement"
+                                                        statsLabel="Stock Deduct"
+                                                        size="sm"
+                                                    />
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )
             )}
 
             {totalPages > 1 && (
@@ -247,11 +496,33 @@ const JobCardIndex: React.FC = () => {
                 </div>
             )}
 
-            <JobCardDialog 
+            <ProgressUpdateDialog 
                 isOpen={dialogOpen} 
                 setIsOpen={setDialogOpen} 
                 jobId={selectedJob?.id} 
                 onSave={refetch} 
+            />
+
+            <ReplacementJobDialog 
+                isOpen={replacementDialogOpen}
+                setIsOpen={setReplacementDialogOpen}
+                originalJob={selectedJob}
+                onSave={refetch}
+            />
+
+            <StockDeductDialog 
+                isOpen={stockDeductOpen}
+                setIsOpen={setStockDeductOpen}
+                jobId={selectedJob?.id}
+                onSave={refetch}
+            />
+
+            <QCReviewDialog 
+                isOpen={qcDialogOpen}
+                setIsOpen={setQcDialogOpen}
+                jobId={selectedJob?.id}
+                jobNo={selectedJob?.job_no}
+                onSave={refetch}
             />
         </div>
     );

@@ -718,15 +718,14 @@ const Sidebar = () => {
                                             <NavLink to="/sales/orders">{t('sales_orders', 'Sales Orders')}</NavLink>
                                         </li>
                                         <li>
-                                            <NavLink to="/services/job-cards">{t('job_cards', 'Job Cards')}</NavLink>
+                                            <NavLink to="/sales/remarks">{t('sale_remarks', 'Sale Remarks')}</NavLink>
                                         </li>
-
                                     </ul>
                                 </AnimateHeight>
                             </li>
 
                             <li className="menu nav-item !mt-1">
-                                <button type="button" className={`${currentMenu === 'element' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('element')}>
+                                <button type="button" className={`${currentMenu === 'jobcontrol' ? 'active' : ''} nav-link group w-full`} onClick={() => toggleMenu('jobcontrol')}>
                                     <div className="flex items-center">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:!text-primary shrink-0">
                                             <path
@@ -741,20 +740,26 @@ const Sidebar = () => {
                                                 fill="currentColor"
                                             ></path>
                                         </svg>
-                                        <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('elements')}</span>
+                                        <span className="ltr:pl-3 rtl:pr-3 text-black dark:text-[#506690] dark:group-hover:text-white-dark">{t('job_control', 'Job Control')}</span>
                                     </div>
 
-                                    <div className={currentMenu === 'element' ? 'rotate-90' : 'rtl:rotate-180'}>
+                                    <div className={currentMenu === 'jobcontrol' ? 'rotate-90' : 'rtl:rotate-180'}>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M9 5L15 12L9 19" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                         </svg>
                                     </div>
                                 </button>
 
-                                <AnimateHeight duration={300} height={currentMenu === 'element' ? 'auto' : 0}>
+                                <AnimateHeight duration={300} height={currentMenu === 'jobcontrol' ? 'auto' : 0}>
                                     <ul className="sub-menu text-gray-500">
                                         <li>
-                                            <NavLink to="/elements/alerts">{t('alerts')}</NavLink>
+                                            <NavLink to="/services/job-cards">{t('job_cards', 'Job Cards')}</NavLink>
+                                        </li>
+                                        <li>
+                                            <NavLink to="/services/damage-reports">{t('damage_reports', 'Damage Reports')}</NavLink>
+                                        </li>
+                                        <li>
+                                            <NavLink to="/job-cards/replacement-types">{t('replacement_types', 'Replacement Types')}</NavLink>
                                         </li>
                                     </ul>
                                 </AnimateHeight>

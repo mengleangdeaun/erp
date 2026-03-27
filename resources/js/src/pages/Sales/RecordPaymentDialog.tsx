@@ -28,6 +28,7 @@ import {
     IconClock,
     IconWallet
 } from '@tabler/icons-react';
+import { JPGFile, PDFFile, CSVFile, PNGFile } from '@/components/illustrations/FileExtension';
 import { format, parseISO, setHours, setMinutes } from 'date-fns';
 import { usePaymentAccounts, useAddSalesOrderDeposit } from '@/hooks/usePOSData';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -101,7 +102,7 @@ const RecordPaymentDialog: React.FC<RecordPaymentDialogProps> = ({ open, onOpenC
                 <div className="flex flex-col md:flex-row h-full">
                     {/* Left Column: Form Inputs */}
                     <div className="flex-1 p-8 bg-white dark:bg-zinc-950">
-                        <div className="flex items-center gap-4 mb-8">
+                        <div className="flex items-center gap-4 mb-8 border-b pb-8">
                             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
                                 <IconCoins size={26} stroke={2.5} />
                             </div>
@@ -224,10 +225,10 @@ const RecordPaymentDialog: React.FC<RecordPaymentDialogProps> = ({ open, onOpenC
                                     onClick={() => fileInputRef.current?.click()}
                                     className="aspect-square w-full border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg flex flex-col items-center justify-center bg-white dark:bg-black/20 hover:border-emerald-500/50 transition-all cursor-pointer group hover:shadow-xl hover:shadow-emerald-500/5"
                                 >
-                                    <div className="w-12 h-12 rounded-full bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-300 group-hover:text-emerald-500 group-hover:bg-emerald-500/5 transition-all">
-                                        <IconUpload size={24} stroke={2.5} />
+                                    <div className="w-12 h-12 flex items-center justify-center text-zinc-300">
+                                        <JPGFile />
                                     </div>
-                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter mt-3 text-center px-4 leading-tight">Attach Image / Proof</span>
+                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter mt-6 text-center px-4 leading-tight">Attach Image / Proof</span>
                                 </div>
                             ) : (
                                 <div className="relative group rounded-lg overflow-hidden border-2 border-emerald-500/30 aspect-vertical shadow-lg">

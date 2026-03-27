@@ -21,7 +21,10 @@ class JobCard extends Model
         'started_at',
         'completed_at',
         'status',
-        'notes'
+        'notes',
+        'type',
+        'parent_id',
+        'replacement_type_id'
     ];
 
     public function order()
@@ -52,5 +55,20 @@ class JobCard extends Model
     public function materialUsage()
     {
         return $this->hasMany(JobCardMaterialUsage::class);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(JobCard::class, 'parent_id');
+    }
+
+    public function replacements()
+    {
+        return $this->hasMany(JobCard::class, 'parent_id');
+    }
+
+    public function replacementType()
+    {
+        return $this->belongsTo(JobCardReplacementType::class, 'replacement_type_id');
     }
 }
