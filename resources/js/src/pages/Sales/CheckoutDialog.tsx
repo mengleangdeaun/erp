@@ -21,7 +21,7 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { 
     IconTools, IconPackage, IconCheck, IconLoader2, IconX, 
     IconCoins, IconUser, IconCar, IconPlus, IconReceipt2,
-    IconTrash, IconFileDescription, IconUpload, IconPhoto, IconCalculator
+    IconTrash, IconFileDescription, IconUpload, IconPhoto, IconCalculator, IconRosetteDiscount
 } from '@tabler/icons-react';
 
 interface CheckoutDialogProps {
@@ -51,6 +51,7 @@ interface CheckoutDialogProps {
     loadingCustomers?: boolean;
     loadingAccounts?: boolean;
     onEditPackage: (serviceId: number) => void;
+    onAddCustomer: () => void;
     isEdit?: boolean;
 }
 
@@ -81,6 +82,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
     loadingCustomers = false,
     loadingAccounts = false,
     onEditPackage,
+    onAddCustomer,
     isEdit = false
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,10 +130,18 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                         {/* Column 1: Identity & Manual Overrides */}
                         <div className="w-full lg:w-[320px] p-6 border-r dark:border-zinc-800 flex flex-col space-y-6 bg-zinc-50/20 dark:bg-black/10 overflow-y-auto shrink-0">
-                            <section className="space-y-2">
-                                <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest flex items-center gap-2">
-                                    <IconUser size={15} className="text-primary" /> Customer
-                                </h3>
+                             <section className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest flex items-center gap-2">
+                                        <IconUser size={15} className="text-primary" /> Customer
+                                    </h3>
+                                    <Button 
+                                        variant="outline" size="sm" onClick={onAddCustomer}
+                                        className="h-6 px-2 text-[9px] font-black text-primary border-primary/20 hover:bg-primary/5 shadow-sm"
+                                    >
+                                        <IconPlus size={10} className="mr-1" /> NEW
+                                    </Button>
+                                </div>
                                 <SearchableSelect 
                                     options={customers.map(c => ({ value: c.id, label: `${c.name || 'No Name'} (${c.customer_code})` }))}
                                     value={form.customer_id}
@@ -192,22 +202,19 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                     )}
                                 </div>
 
-                                <div className="space-y-4 pt-2">
-                                    <div className="flex items-center space-x-3 bg-white dark:bg-black/30 p-3 rounded-lg border dark:border-zinc-800">
-                                        <Checkbox 
-                                            id="use_tax_dialog"
-                                            checked={form.use_tax} 
-                                            onCheckedChange={(checked) => setForm({ ...form, use_tax: !!checked })}
-                                            className="w-5 h-5 border-zinc-300 dark:border-zinc-700 data-[state=checked]:bg-primary"
-                                        />
-                                        <Label htmlFor="use_tax_dialog" className="text-xs font-black text-zinc-600 dark:text-zinc-300 cursor-pointer flex flex-col">
-                                            <span>Apply VAT (10%)</span>
-                                            <span className="text-[9px] font-bold text-zinc-400 underline decoration-primary/30">Auto-calculated: ${finalTax.toFixed(2)}</span>
-                                        </Label>
-                                    </div>
-
+                                 <div className="space-y-4 pt-2">
                                     <div className="space-y-2">
-                                        <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest pl-1">Global Discount</Label>
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-[10px] mb-0 font-black uppercase text-zinc-400 tracking-widest flex items-center gap-2">
+                                                <IconRosetteDiscount size={14} className="text-primary" /> Global Discount
+                                            </h3>
+                                            <button 
+                                                onClick={() => setForm({ ...form, global_discount_value: 0 })}
+                                                className="text-[8px] font-black text-primary hover:text-primary/70 uppercase tracking-tighter"
+                                            >
+                                                Clear
+                                            </button>
+                                        </div>
                                         <div className="flex items-center gap-2">
                                             <div className="flex-1 flex items-center bg-zinc-100 dark:bg-black/50 rounded-lg p-1 border dark:border-zinc-800">
                                                 <button 
@@ -231,6 +238,19 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                                 placeholder="0.00"
                                             />
                                         </div>
+                                    </div>
+                                    <div className='border-t w-full bg-zinc-100 dark:bg-zinc-800' />
+                                    <div className="flex items-center space-x-3 bg-white dark:bg-black/30 p-3 rounded-lg border dark:border-zinc-800">
+                                        <Checkbox 
+                                            id="use_tax_dialog"
+                                            checked={form.use_tax} 
+                                            onCheckedChange={(checked) => setForm({ ...form, use_tax: !!checked })}
+                                            className="w-5 h-5 border-zinc-300 dark:border-zinc-700 data-[state=checked]:bg-primary"
+                                        />
+                                        <Label htmlFor="use_tax_dialog" className="text-xs font-black text-zinc-600 dark:text-zinc-300 cursor-pointer flex flex-col">
+                                            <span>Apply VAT (10%)</span>
+                                            <span className="text-[9px] font-bold text-zinc-400 underline decoration-primary/30">Auto-calculated: ${finalTax.toFixed(2)}</span>
+                                        </Label>
                                     </div>
                                 </div>
                             </section>

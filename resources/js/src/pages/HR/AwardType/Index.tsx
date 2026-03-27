@@ -17,9 +17,12 @@ import SortableHeader from '../../../components/ui/SortableHeader';
 import DeleteModal from '../../../components/DeleteModal';
 import ActionButtons from '../../../components/ui/ActionButtons';
 import { Badge } from '../../../components/ui/badge';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const AwardTypeIndex = () => {
     const { t } = useTranslation();
+    const dispatch = useDispatch();
     const [awardTypes, setAwardTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -48,6 +51,10 @@ const AwardTypeIndex = () => {
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop()?.split(';').shift();
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('award_types_title')));
+    }, [dispatch, t]);
 
     const fetchAwardTypes = () => {
         setLoading(true);
@@ -209,8 +216,6 @@ const AwardTypeIndex = () => {
                 onRefresh={fetchAwardTypes}
             />
 
-            <div className="rounded-lg shadow-sm border overflow-hidden">
-                <div className="overflow-x-auto">
                     {loading ? (
                         <TableSkeleton columns={4} rows={5} />
                     ) : sortedItems.length === 0 ? (
@@ -224,6 +229,8 @@ const AwardTypeIndex = () => {
                             onAction={handleCreate}
                         />
                     ) : (
+            <div className="rounded-lg shadow-sm border overflow-hidden">
+                <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs bg-gray-50 dark:bg-gray-950 text-gray-500 uppercase border-y">
                                 <tr>
@@ -254,7 +261,7 @@ const AwardTypeIndex = () => {
                                 ))}
                             </tbody>
                         </table>
-                    )}
+                    
                 </div>
                 {!loading && sortedItems.length > 0 && (
                     <Pagination
@@ -266,6 +273,7 @@ const AwardTypeIndex = () => {
                     />
                 )}
             </div>
+            )}
 
 <Dialog open={modalOpen} onOpenChange={setModalOpen}>
   <DialogContent className="sm:max-w-[700px] w-[95vw] max-h-[90vh] h-auto flex flex-col p-0 border-0 shadow-2xl rounded-2xl overflow-hidden">

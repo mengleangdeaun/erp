@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import { toast } from 'sonner';
+import api from '@/utils/api';
 import { useCRMCreateVehicle, useCRMUpdateVehicle, useCRMCustomersMinimal, useCRMVehicleBrands, useCRMVehicleModels } from '@/hooks/useCRMData';
 import { useTranslation } from 'react-i18next';
 import { IconCar, IconLoader2, IconPlus } from '@tabler/icons-react';
@@ -120,8 +121,8 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
                 queryClient.invalidateQueries({ queryKey: ['crm_vehicle_brands'] });
                 setFormData(prev => ({ ...prev, brand_id: res.data.id, model_id: null }));
             }
-        } catch (error) {
-            toast.error('Failed to create brand');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to create brand');
         } finally {
             setIsSavingBrand(false);
         }
@@ -137,8 +138,8 @@ const VehicleDialog = ({ isOpen, setIsOpen, vehicle, onSave }: VehicleDialogProp
                 queryClient.invalidateQueries({ queryKey: ['crm_vehicle_models'] });
                 setFormData(prev => ({ ...prev, model_id: res.data.id }));
             }
-        } catch (error) {
-            toast.error('Failed to create model');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to create model');
         } finally {
             setIsSavingModel(false);
         }

@@ -19,11 +19,14 @@ import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import MediaSelector, { MediaFile } from '../../../components/MediaSelector';
 import { IconTrophy, IconCertificate, IconPhoto, IconX, IconExternalLink } from '@tabler/icons-react';
 import HighlightText from '@/components/ui/HighlightText';
+import { useDispatch } from 'react-redux';
+import { setPageTitle } from '@/store/themeConfigSlice';
 
 const toDateStr = (d: Date | undefined) => d ? d.toISOString().split('T')[0] : '';
 
 const AwardIndex = () => {
     const { t } = useTranslation();
+    const dispatch = useDispatch();
     const [awards, setAwards] = useState<any[]>([]);
     const [awardTypes, setAwardTypes] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
@@ -63,6 +66,10 @@ const AwardIndex = () => {
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop()?.split(';').shift();
     };
+
+    useEffect(() => {
+        dispatch(setPageTitle(t('awards_title')));
+    }, [dispatch, t]);
 
     const fetchData = () => {
         setLoading(true);

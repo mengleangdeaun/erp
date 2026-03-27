@@ -34,10 +34,12 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import CheckoutDialog from './CheckoutDialog';
+import CustomerDialog from '../Customers/CustomerDialog';
 import { 
     useCustomers, useServices, useProducts, useBranches, 
     useBrands, useCategories, usePaymentAccounts, useCustomerVehicles
 } from '@/hooks/usePOSData';
+import { useCRMCustomerTypes } from '@/hooks/useCRMData';
 
 interface SalesOrder {
     customer_id: number | null;
@@ -150,7 +152,7 @@ const PartConfigurationCard = ({
 }: any) => (
     <div 
         onClick={() => setTempSelectedParts((prev: any) => prev.includes(p.id) ? prev.filter((x: any) => x !== p.id) : [...prev, p.id])}
-        className={`group relative overflow-hidden rounded-2xl border transition-all duration-500 p-0.5 cursor-pointer select-none ${
+        className={`group relative overflow-hidden rounded-lg border transition-all duration-500 p-0.5 cursor-pointer select-none ${
             tempSelectedParts.includes(p.id) 
                 ? 'border-primary ring-2 ring-primary/10 bg-primary/[0.02]' 
                 : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-primary/40'
@@ -160,7 +162,7 @@ const PartConfigurationCard = ({
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                     <div 
-                        className={`w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all duration-300 ${
+                        className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ${
                             tempSelectedParts.includes(p.id) 
                                 ? 'bg-primary border-primary text-white scale-110 shadow-lg shadow-primary/20' 
                                 : 'bg-transparent border-gray-200 dark:border-gray-700 group-hover:border-primary/50'
@@ -193,7 +195,7 @@ const PartConfigurationCard = ({
                                 value={tempPartProductMap[p.id]}
                                 onChange={(val) => setTempPartProductMap((prev: any) => ({ ...prev, [p.id]: val as number }))}
                                 placeholder="Select Product..."
-                                className="h-9 text-[10px] font-bold rounded-xl border-primary/20 bg-white dark:bg-dark shadow-sm"
+                                className="h-9 text-[10px] font-bold rounded-lg border-primary/20 bg-white dark:bg-dark shadow-sm"
                             />
                             {tempPartProductMap[p.id] && (
                                 <p className="text-[8px] text-primary/60 italic ml-1 flex items-center gap-1.5 font-bold uppercase tracking-widest animate-in fade-in duration-300">
@@ -238,6 +240,7 @@ const SalesCreate = () => {
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const [invoiceImageFile, setInvoiceImageFile] = useState<File | null>(null);
     const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
+    const [showAddCustomer, setShowAddCustomer] = useState(false);
 
     const [form, setForm] = useState<SalesOrder>({
         customer_id: null,
@@ -267,6 +270,7 @@ const SalesCreate = () => {
     const { data: brands = [], isLoading: isLoadingBrands } = useBrands();
     const { data: categories = [], isLoading: isLoadingCategories } = useCategories();
     const { data: paymentAccounts = [], isLoading: isLoadingAccounts } = usePaymentAccounts(selectedBranchId);
+    const { data: customerTypes = [] } = useCRMCustomerTypes();
     const { data: vehicles = [], isLoading: isLoadingVehicles } = useCustomerVehicles(form.customer_id);
 
     const activeBranches = useMemo(() => branches.filter((b: any) => b.status === 'active'), [branches]);
@@ -289,6 +293,22 @@ const SalesCreate = () => {
     const [selectedServiceForItems, setSelectedServiceForItems] = useState<any>(null);
     const [tempSelectedParts, setTempSelectedParts] = useState<number[]>([]);
     const [tempPartProductMap, setTempPartProductMap] = useState<Record<number, number>>({}); // part_id -> product_id
+    
+    const handleToggleParts = (parts: any[]) => {
+        const ids = parts.map(p => p.id);
+        const allSelected = ids.length > 0 && ids.every(id => tempSelectedParts.includes(id));
+        
+        if (allSelected) {
+            setTempSelectedParts(prev => prev.filter(id => !ids.includes(id)));
+            setTempPartProductMap(prev => {
+                const next = { ...prev };
+                ids.forEach(id => delete next[id]);
+                return next;
+            });
+        } else {
+            setTempSelectedParts(prev => Array.from(new Set([...prev, ...ids])));
+        }
+    };
     
     // Quick Add Brand/Model states
     const [isSavingBrand, setIsSavingBrand] = useState(false);
@@ -1028,7 +1048,7 @@ const SalesCreate = () => {
             </div>
 
             {/* Standalone Checkout Dialog */}
-            <CheckoutDialog 
+             <CheckoutDialog 
                 open={showCheckoutDialog}
                 onOpenChange={setShowCheckoutDialog}
                 form={form}
@@ -1043,6 +1063,7 @@ const SalesCreate = () => {
                 manualGrandTotal={manualGrandTotal}
                 setManualGrandTotal={setManualGrandTotal}
                 onAddVehicle={() => setShowAddVehicle(true)}
+                onAddCustomer={() => setShowAddCustomer(true)}
                 removeItem={removeItem}
                 updateItem={updateItem}
                 addDeposit={addDeposit}
@@ -1094,17 +1115,40 @@ const SalesCreate = () => {
                                             <IconTools size={16} className="animate-pulse" /> 
                                             Configure Package Components
                                         </h4>
-                                        <Badge variant="outline" className="text-[9px] font-bold border-primary/20 text-primary px-3 py-1 rounded-full bg-primary/5">
-                                            {selectedServiceForItems.parts.length} Total Components
-                                        </Badge>
+                                        <div className="flex items-center gap-3">
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={() => handleToggleParts(selectedServiceForItems.parts)}
+                                                className="h-7 text-[8px] font-black uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5 rounded-lg px-3"
+                                            >
+                                                {selectedServiceForItems.parts.length > 0 && selectedServiceForItems.parts.every((p: any) => tempSelectedParts.includes(p.id)) ? 'Unselect All' : 'Select All'}
+                                            </Button>
+                                            <Badge variant="outline" className="text-[9px] font-bold border-primary/20 text-primary px-3 py-1 rounded-full bg-primary/5">
+                                                {selectedServiceForItems.parts.length} Total Components
+                                            </Badge>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                         {/* Left Side Column */}
-                                        <div className="space-y-5">
-                                            <div className="flex items-center gap-2 px-1">
-                                                <div className="w-1 h-1 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                                                <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Left Side</h5>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between px-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1 h-1 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                                                    <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Left Side</h5>
+                                                </div>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    onClick={() => handleToggleParts(selectedServiceForItems.parts.filter((p: any) => p.side?.toLowerCase() === 'left'))}
+                                                    className="h-6 text-[7px] font-black uppercase tracking-tighter text-primary/60 hover:text-primary hover:bg-primary/5 px-2"
+                                                >
+                                                    {(() => {
+                                                        const leftParts = selectedServiceForItems.parts.filter((p: any) => p.side?.toLowerCase() === 'left');
+                                                        return leftParts.length > 0 && leftParts.every((p: any) => tempSelectedParts.includes(p.id)) ? 'Unselect All' : 'Select All';
+                                                    })()}
+                                                </Button>
                                             </div>
                                             <div className="space-y-4">
                                                 {selectedServiceForItems.parts.filter((p: any) => p.side?.toLowerCase() === 'left').length > 0 ? (
@@ -1130,10 +1174,23 @@ const SalesCreate = () => {
                                         </div>
 
                                         {/* Main / Center Column */}
-                                        <div className="space-y-5">
-                                            <div className="flex items-center gap-2 px-1">
-                                                <div className="w-1 h-1 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
-                                                <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Main / Center</h5>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between px-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1 h-1 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
+                                                    <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Main / Center</h5>
+                                                </div>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    onClick={() => handleToggleParts(selectedServiceForItems.parts.filter((p: any) => !p.side || (p.side?.toLowerCase() !== 'left' && p.side?.toLowerCase() !== 'right')))}
+                                                    className="h-6 text-[7px] font-black uppercase tracking-tighter text-primary/60 hover:text-primary hover:bg-primary/5 px-2"
+                                                >
+                                                    {(() => {
+                                                        const mainParts = selectedServiceForItems.parts.filter((p: any) => !p.side || (p.side?.toLowerCase() !== 'left' && p.side?.toLowerCase() !== 'right'));
+                                                        return mainParts.length > 0 && mainParts.every((p: any) => tempSelectedParts.includes(p.id)) ? 'Unselect All' : 'Select All';
+                                                    })()}
+                                                </Button>
                                             </div>
                                             <div className="space-y-4">
                                                 {selectedServiceForItems.parts.filter((p: any) => !p.side || (p.side?.toLowerCase() !== 'left' && p.side?.toLowerCase() !== 'right')).length > 0 ? (
@@ -1159,10 +1216,23 @@ const SalesCreate = () => {
                                         </div>
 
                                         {/* Right Side Column */}
-                                        <div className="space-y-5">
-                                            <div className="flex items-center gap-2 px-1">
-                                                <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                                <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Right Side</h5>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between px-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                                    <h5 className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Right Side</h5>
+                                                </div>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    onClick={() => handleToggleParts(selectedServiceForItems.parts.filter((p: any) => p.side?.toLowerCase() === 'right'))}
+                                                    className="h-6 text-[8px] font-black uppercase tracking-tighter text-primary/60 hover:text-primary hover:bg-primary/5 px-2"
+                                                >
+                                                    {(() => {
+                                                        const rightParts = selectedServiceForItems.parts.filter((p: any) => p.side?.toLowerCase() === 'right');
+                                                        return rightParts.length > 0 && rightParts.every((p: any) => tempSelectedParts.includes(p.id)) ? 'Unselect All' : 'Select All';
+                                                    })()}
+                                                </Button>
                                             </div>
                                             <div className="space-y-4">
                                                 {selectedServiceForItems.parts.filter((p: any) => p.side?.toLowerCase() === 'right').length > 0 ? (
@@ -1192,11 +1262,11 @@ const SalesCreate = () => {
                         </div>
                     </ScrollArea>
                     
-                    <DialogFooter className="p-8 bg-gray-50/50 dark:bg-gray-900/50 border-t dark:border-gray-800 shrink-0">
+                    <DialogFooter className="p-6 bg-gray-50/50 dark:bg-gray-900/50 border-t dark:border-gray-800 shrink-0">
                         <Button 
                             onClick={confirmServiceItems}
                             disabled={tempSelectedParts.length === 0 || tempSelectedParts.some(id => !tempPartProductMap[id])}
-                            className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl shadow-xl shadow-primary/20 flex items-center justify-between px-8 group transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
+                            className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-bold rounded-lg shadow-xl shadow-primary/20 flex items-center justify-between px-8 group transition-all duration-300 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
                         >
                             <div className="flex flex-col items-start gap-0.5">
                                 <span className="text-sm tracking-tight uppercase">Include Selected Components</span>
@@ -1214,6 +1284,16 @@ const SalesCreate = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+             <CustomerDialog
+                isOpen={showAddCustomer}
+                setIsOpen={setShowAddCustomer}
+                customer={null}
+                customerTypes={customerTypes}
+                onSave={() => {
+                    queryClient.invalidateQueries({ queryKey: ['customers'] });
+                }}
+            />
 
             {/* Add Vehicle Dialog */}
             <Dialog open={showAddVehicle} onOpenChange={setShowAddVehicle}>
