@@ -51,4 +51,10 @@ class JobCardItem extends Model
     {
         return $this->hasMany(JobCardMaterialUsage::class, 'job_card_item_id');
     }
+
+    public function technicians()
+    {
+        return $this->belongsToMany(HR\Employee::class, 'job_card_item_technician', 'job_card_item_id', 'employee_id')
+                    ->withTimestamps();
+    }
 }

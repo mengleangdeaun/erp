@@ -180,16 +180,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('replacement-types', \App\Http\Controllers\JobCardReplacementTypeController::class);
         
         // Job Cards
+        Route::get('job-cards/qc', [\App\Http\Controllers\JobCardQCController::class, 'index']);
+        Route::post('job-cards/qc', [\App\Http\Controllers\JobCardQCController::class, 'store']);
         Route::get('job-cards', [\App\Http\Controllers\JobCardController::class, 'index']);
         Route::get('job-cards/{id}', [\App\Http\Controllers\JobCardController::class, 'show']);
+        Route::put('job-cards/{id}', [\App\Http\Controllers\JobCardController::class, 'update']);
+        Route::get('job-cards/{id}/qc', [\App\Http\Controllers\JobCardQCController::class, 'show']);
         Route::put('job-cards/items/{itemId}', [\App\Http\Controllers\JobCardController::class, 'updateItem']);
         Route::put('job-cards/material-usage/{usageId}', [\App\Http\Controllers\JobCardController::class, 'updateMaterialUsage']);
         Route::get('inventory/products/{productId}/serials', [\App\Http\Controllers\JobCardController::class, 'getAvailableSerials']);
         Route::post('job-cards/{id}/complete', [\App\Http\Controllers\JobCardController::class, 'complete']);
         Route::post('job-cards/{id}/replacement', [\App\Http\Controllers\JobCardController::class, 'createReplacement']);
-        Route::post('job-cards/qc', [\App\Http\Controllers\JobCardQCController::class, 'store']);
-        Route::get('job-cards/qc', [\App\Http\Controllers\JobCardQCController::class, 'index']);
-        Route::get('job-cards/{id}/qc', [\App\Http\Controllers\JobCardQCController::class, 'show']);
 
         // Serial Management
         Route::apiResource('inventory/serials', \App\Http\Controllers\Inventory\InventoryProductSerialController::class);

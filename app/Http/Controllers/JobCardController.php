@@ -12,7 +12,17 @@ class JobCardController extends Controller
 {
     public function index(Request $request)
     {
-        $query = JobCard::with(['order', 'customer', 'vehicle.brand', 'vehicle.model', 'items.service', 'items.part', 'items.technician', 'replacementType'])
+        $query = JobCard::with([
+                'order', 
+                'customer', 
+                'vehicle.brand', 
+                'vehicle.model', 
+                'items.service', 
+                'items.part', 
+                'items.technicians', // Changed from technician
+                'replacementType',
+                'leadTechnician' // Added
+            ])
             ->withCount('replacements');
 
         if ($request->status) {
@@ -56,12 +66,35 @@ class JobCardController extends Controller
             'vehicle.model', 
             'items.service', 
             'items.part', 
-            'items.technician',
+            'items.technicians', // Changed
             'materialUsage.product',
             'parent',
             'replacements',
-            'replacementType'
+            'replacementType',
+            'leadTechnician' // Added
         ])->findOrFail($id);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $jobCard = JobCard::findOrFail($id);
+        
+        $validated = $request->validate([
+            'status' => 'sometimes|string',
+            'notes' => 'sometimes|nullable|string',
+            'technician_lead_id' => 'sometimes|nullable|exists:employees,id',
+        ]);
+
+        if (isset($validated['status'])) {
+            // Logic for status transitions if needed
+            if ($validated['status'] === 'Delivered' && !$jobCard->completed_at) {
+                $validated['completed_at'] = now();
+            }
+        }
+
+        $jobCard->update($validated);
+
+        return $jobCard->load(['customer', 'vehicle', 'leadTechnician']);
     }
 
     public function updateItem(Request $request, $itemId)
@@ -85,7 +118,9 @@ class JobCardController extends Controller
         }
 
         $validated = $request->validate([
-            'technician_id' => 'sometimes|nullable|exists:employees,id',
+            'technician_id' => 'sometimes|nullable|exists:employees,id', // Legacy support
+            'technician_ids' => 'sometimes|array', // Multiple techs
+            'technician_ids.*' => 'exists:employees,id',
             'status' => ['sometimes', \Illuminate\Validation\Rule::in(['Pending', 'Assigned', 'In Progress', 'Completed', 'On Hold', 'Cancelled', 'Reworking'])],
             'notes' => 'nullable|string',
             'completion_percentage' => 'nullable|integer|min:0|max:100',
@@ -97,22 +132,40 @@ class JobCardController extends Controller
             if ($validated['status'] === 'In Progress' && !$item->started_at) {
                 $validated['started_at'] = now();
             }
-            if ($validated['status'] === 'Completed' && !$item->completed_at) {
-                $validated['completed_at'] = now();
+            if ($validated['status'] === 'Completed') {
+                if (!$item->completed_at) {
+                    $validated['completed_at'] = now();
+                }
+                $validated['completion_percentage'] = 100;
             }
         }
 
         $item->update($validated);
-        
-        // Auto update Job Card status if all items are completed
-        $jobCard = $item->jobCard;
-        if ($jobCard->items()->where('status', '!=', 'Completed')->count() === 0) {
-            $jobCard->update(['status' => 'QC Review', 'completed_at' => now()]);
-        } elseif ($jobCard->status === 'Pending') {
-            $jobCard->update(['status' => 'In Progress', 'started_at' => now()]);
+
+        // Sync multiple technicians if provided
+        if (isset($validated['technician_ids'])) {
+            $item->technicians()->sync($validated['technician_ids']);
         }
 
-        return $item->load(['technician', 'part', 'service']);
+        // Auto update Job Card status and timestamps
+        $jobCard = $item->jobCard;
+        if ($jobCard->items()->where('status', '!=', 'Completed')->count() === 0) {
+            $jobCard->update([
+                'status' => 'QC Review', 
+                'completed_at' => $jobCard->completed_at ?: now()
+            ]);
+        } else {
+            // Check if any item is started
+            $hasStarted = $jobCard->items()->whereIn('status', ['In Progress', 'Completed', 'Reworking'])->exists();
+            if ($hasStarted && $jobCard->status === 'Pending') {
+                $jobCard->update([
+                    'status' => 'In Progress',
+                    'started_at' => $jobCard->started_at ?: now()
+                ]);
+            }
+        }
+
+        return $item->load(['technicians', 'part', 'service']);
     }
 
     public function updateMaterialUsage(Request $request, $usageId)
@@ -245,7 +298,7 @@ class JobCardController extends Controller
             'notes' => 'nullable|string',
             'items' => 'required|array',
             'items.*.service_id' => 'required|exists:services,id',
-            'items.*.part_id' => 'required|exists:job_part_masters,id',
+            'items.*.part_id' => 'required|exists:job_parts_master,id',
         ]);
 
         return DB::transaction(function() use ($original, $validated) {

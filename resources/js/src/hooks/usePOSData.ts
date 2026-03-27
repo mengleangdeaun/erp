@@ -47,8 +47,8 @@ const fetchCustomerVehicles = async (customerId: number | null) => {
     return data;
 };
 
-const fetchSaleRemarks = async () => {
-    const { data } = await api.get('/sales/remarks');
+const fetchSaleRemarks = async (params: any = {}) => {
+    const { data } = await api.get('/sales/remarks', { params });
     return data;
 };
 
@@ -151,10 +151,10 @@ export const useCustomerVehicles = (customerId: number | null) => {
     });
 };
 
-export const useSaleRemarks = () => {
+export const useSaleRemarks = (params: any = {}) => {
     return useQuery({
-        queryKey: ['saleRemarks'],
-        queryFn: fetchSaleRemarks,
+        queryKey: ['saleRemarks', params],
+        queryFn: () => fetchSaleRemarks(params),
     });
 };
 

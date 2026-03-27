@@ -7,9 +7,27 @@ use Illuminate\Http\Request;
 
 class JobCardReplacementTypeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return JobCardReplacementType::all();
+        $query = JobCardReplacementType::query();
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('all') || $request->paginate === 'false') {
+            return $query->get();
+        }
+
+        return $query->paginate($request->per_page ?? 15);
     }
 
     public function store(Request $request)

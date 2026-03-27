@@ -40,6 +40,36 @@ export const useJobCard = (id: number | null) => {
 };
 
 /**
+ * Hook to update top-level job card details
+ */
+export const useUpdateJobCard = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, updates }: { id: number; updates: any }) => {
+            const response = await fetch(`/api/services/job-cards/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+                body: JSON.stringify(updates),
+            });
+            if (!response.ok) throw new Error('Failed to update job card');
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['job-cards'] });
+            queryClient.invalidateQueries({ queryKey: ['job-card'] });
+            toast.success('Job Card updated successfully');
+        },
+        onError: (err: any) => {
+            toast.error(err.message || 'Failed to update job card');
+        }
+    });
+};
+
+/**
  * Hook to update an item within a job card
  */
 export const useUpdateJobCardItem = () => {
@@ -238,11 +268,21 @@ export const useAvailableSerials = (productId: number | null, branchId?: number)
 /**
  * Hook to fetch replacement types
  */
-export const useReplacementTypes = () => {
+/**
+ * Hook to fetch replacement types with pagination and search
+ */
+export const useReplacementTypes = (params: any = {}) => {
     return useQuery({
-        queryKey: ['replacement-types'],
+        queryKey: ['replacement-types', params],
         queryFn: async () => {
-            const response = await fetch('/api/services/replacement-types');
+            const queryParams = new URLSearchParams();
+            if (params.page) queryParams.append('page', params.page.toString());
+            if (params.per_page) queryParams.append('per_page', params.per_page.toString());
+            if (params.search) queryParams.append('search', params.search);
+            if (params.status) queryParams.append('status', params.status);
+            if (params.all) queryParams.append('all', 'true');
+
+            const response = await fetch(`/api/services/replacement-types?${queryParams.toString()}`);
             if (!response.ok) throw new Error('Failed to fetch replacement types');
             return response.json();
         }
@@ -274,6 +314,26 @@ export const useCreateReplacementJob = () => {
         },
         onError: (err: any) => {
             toast.error(err.message || 'Failed to create replacement job');
+        }
+    });
+};
+/**
+ * Hook to fetch QC reports with pagination and search
+ */
+export const useJobCardQCReports = (params: any = {}) => {
+    return useQuery({
+        queryKey: ['job-card-qc-reports', params],
+        queryFn: async () => {
+            const queryParams = new URLSearchParams();
+            if (params.page) queryParams.append('page', params.page.toString());
+            if (params.per_page) queryParams.append('per_page', params.per_page.toString());
+            if (params.search) queryParams.append('search', params.search);
+            if (params.decision) queryParams.append('decision', params.decision);
+            if (params.technician_id) queryParams.append('technician_id', params.technician_id.toString());
+
+            const response = await fetch(`/api/services/job-cards/qc?${queryParams.toString()}`);
+            if (!response.ok) throw new Error('Failed to fetch QC reports');
+            return response.json();
         }
     });
 };

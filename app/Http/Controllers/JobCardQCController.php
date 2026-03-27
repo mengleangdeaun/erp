@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\JobCard;
 use App\Models\JobCardItem;
 use App\Models\JobCardQCReport;
+use App\Models\JobCardQCItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -12,7 +13,29 @@ class JobCardQCController extends Controller
 {
     public function index(Request $request)
     {
-        $query = JobCardQCReport::with(['jobCard', 'qcPerson', 'reworkTechnician']);
+        $query = JobCardQCReport::with([
+            'jobCard.customer', 
+            'qcPerson', 
+            'reworkTechnician',
+            'qcItems.jobCardItem.part',
+            'qcItems.reworkTechnician',
+            'qcItems.replacementType'
+        ]);
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->whereHas('jobCard', function($q) use ($search) {
+                    $q->where('job_no', 'like', "%{$search}%");
+                })
+                ->orWhereHas('reworkTechnician', function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                })
+                ->orWhereHas('qcPerson', function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                });
+            });
+        }
 
         if ($request->has('decision')) {
             $query->where('decision', $request->decision);
@@ -24,7 +47,16 @@ class JobCardQCController extends Controller
             });
         }
 
-        return $query->latest()->paginate(20);
+        $paginated = $query->latest()->paginate($request->per_page ?? 20);
+
+        $stats = [
+            'total_failures' => JobCardQCReport::where('decision', 'FAIL')->count(),
+            'avg_rating' => round(JobCardQCReport::avg('rating') ?: 0, 1),
+            'rework_tasks' => JobCardQCReport::whereNotNull('rework_technician_id')->count(),
+            'active_issues' => JobCardQCReport::where('decision', 'FAIL')->count(), // Same as failures for now
+        ];
+
+        return response()->json(array_merge($paginated->toArray(), ['stats' => $stats]));
     }
 
     public function store(Request $request)
@@ -51,9 +83,19 @@ class JobCardQCController extends Controller
                 'notes' => $validated['notes'] ? $jobCard->notes . "\nQC Notes: " . $validated['notes'] : $jobCard->notes
             ]);
 
-            // Sync item-level statuses if failures exist
+            // Save item-level evaluations to the new table
             if (!empty($validated['item_evaluations'])) {
                 foreach ($validated['item_evaluations'] as $itemId => $evaluation) {
+                    JobCardQCItem::create([
+                        'qc_report_id' => $report->id,
+                        'job_card_item_id' => $itemId,
+                        'rating' => $evaluation['rating'] ?? 5,
+                        'status' => $evaluation['status'] ?? 'PASS',
+                        'replacement_type_id' => $evaluation['replacement_type_id'] ?? null,
+                        'rework_technician_id' => $evaluation['rework_technician_id'] ?? null,
+                        'notes' => $evaluation['notes'] ?? null,
+                    ]);
+
                     if (isset($evaluation['status']) && $evaluation['status'] === 'FAIL') {
                         JobCardItem::where('id', $itemId)->update([
                             'status' => 'Reworking',
@@ -69,7 +111,13 @@ class JobCardQCController extends Controller
 
     public function show($jobCardId)
     {
-        return JobCardQCReport::with(['qcPerson', 'reworkTechnician'])
+        return JobCardQCReport::with([
+                'qcPerson', 
+                'reworkTechnician',
+                'qcItems.jobCardItem.part',
+                'qcItems.reworkTechnician',
+                'qcItems.replacementType'
+            ])
             ->where('job_card_id', $jobCardId)
             ->latest()
             ->first();

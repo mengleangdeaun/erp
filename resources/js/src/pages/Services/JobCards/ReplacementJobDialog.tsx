@@ -19,7 +19,8 @@ interface ReplacementJobDialogProps {
 }
 
 const ReplacementJobDialog: React.FC<ReplacementJobDialogProps> = ({ isOpen, setIsOpen, originalJob, onSave }) => {
-    const { data: replacementTypes = [] } = useReplacementTypes();
+    const { data: replacementData } = useReplacementTypes({ all: true });
+    const replacementTypes = Array.isArray(replacementData) ? replacementData : (replacementData?.data || []);
     const createReplacementMutation = useCreateReplacementJob();
     
     const [selectedTypeId, setSelectedTypeId] = useState<string>('');

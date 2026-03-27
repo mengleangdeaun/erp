@@ -24,7 +24,8 @@ class JobCard extends Model
         'notes',
         'type',
         'parent_id',
-        'replacement_type_id'
+        'replacement_type_id',
+        'technician_lead_id'
     ];
 
     public function order()
@@ -70,5 +71,10 @@ class JobCard extends Model
     public function replacementType()
     {
         return $this->belongsTo(JobCardReplacementType::class, 'replacement_type_id');
+    }
+
+    public function leadTechnician()
+    {
+        return $this->belongsTo(HR\Employee::class, 'technician_lead_id');
     }
 }

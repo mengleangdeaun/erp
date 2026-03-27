@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,14 +8,16 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
-import { useJobCard, useUpdateJobCardItem, useUpdateMaterialUsage, useCompleteJobCard, useTechnicians, useAvailableSerials } from '@/hooks/useJobCardData';
+import { useJobCard, useUpdateJobCard, useUpdateJobCardItem, useUpdateMaterialUsage, useCompleteJobCard, useTechnicians, useAvailableSerials } from '@/hooks/useJobCardData';
 import { Skeleton } from '@/components/ui/skeleton';
 import TableSkeleton from '@/components/ui/TableSkeleton';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import { SearchableSelect } from '@/components/ui/SearchableSelect';
+import SearchableMultiSelect from '@/components/ui/SearchableMultiSelect';
 import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const SideColumn = ({ title, items, employees, onUpdate }: { title: string, items: any[], employees: any[], onUpdate: (id: number, updates: any) => void }) => (
+const SideColumn = ({ title, items, employees, techOptions, onUpdate }: { title: string, items: any[], employees: any[], techOptions: any[], onUpdate: (id: number, updates: any) => void }) => (
     <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between border-b dark:border-gray-800 pb-2 px-1">
             <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
@@ -27,7 +29,7 @@ const SideColumn = ({ title, items, employees, onUpdate }: { title: string, item
         </div>
         <div className="space-y-3">
             {items.map((item) => (
-                <JobItemRow key={item.id} item={item} employees={employees} onUpdate={onUpdate} />
+                <JobItemRow key={item.id} item={item} employees={employees} techOptions={techOptions} onUpdate={onUpdate} />
             ))}
             {items.length === 0 && (
                 <div className="py-8 text-center border-2 border-dashed border-gray-100 dark:border-gray-900 rounded-xl">
@@ -38,11 +40,12 @@ const SideColumn = ({ title, items, employees, onUpdate }: { title: string, item
     </div>
 );
 
-const JobItemRow = ({ item, employees, onUpdate }: { item: any, employees: any[], onUpdate: (id: number, updates: any) => void }) => {
+const JobItemRow = ({ item, employees, techOptions, onUpdate }: { item: any, employees: any[], techOptions: any[], onUpdate: (id: number, updates: any) => void }) => {
     const handleProgressChange = (val: number) => {
         const newStatus = val === 100 ? 'Completed' : val > 0 ? 'In Progress' : 'Pending';
         onUpdate(item.id, { completion_percentage: val, status: newStatus });
     };
+
 
     return (
         <div className="group relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-gray-950 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-primary/20 transition-all">
@@ -58,9 +61,9 @@ const JobItemRow = ({ item, employees, onUpdate }: { item: any, employees: any[]
                 </div>
             </div>
 
-            <div className="space-y-3 pt-1">
+            <div className="space-y-4 pt-1">
                 {/* Completion Percentage */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 px-0.5">
                     <div className="flex justify-between items-center px-0.5">
                         <Label className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Progress</Label>
                         <span className="text-[10px] font-bold text-primary">{item.completion_percentage}%</span>
@@ -74,29 +77,25 @@ const JobItemRow = ({ item, employees, onUpdate }: { item: any, employees: any[]
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="flex flex-col gap-1">
-                        <Select
-                            value={item.technician_id?.toString() || "null"}
-                            onValueChange={(val) => onUpdate(item.id, { technician_id: val === "null" ? null : val })}
-                        >
-                            <SelectTrigger className="h-8 text-[9px] font-bold uppercase tracking-widest bg-gray-50/50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-lg focus:ring-1 focus:ring-primary/30 py-0 px-2">
-                                <SelectValue placeholder="Staff" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-lg border-gray-100 dark:border-gray-800">
-                                <SelectItem value="null" className="text-[10px] font-bold text-gray-400">UNASSIGN</SelectItem>
-                                {employees.map((e: any) => (
-                                    <SelectItem key={e.id} value={e.id.toString()} className="text-[10px] font-bold uppercase tracking-widest">{e.full_name || e.name || 'Technician'}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                <div className="flex flex-col gap-3">
+                    <div className="space-y-1.5 px-0.5">
+                        <Label className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Assigned Workforce</Label>
+                        <SearchableMultiSelect
+                            options={techOptions}
+                            value={item.technician_ids || []}
+                            onChange={(vals) => onUpdate(item.id, { technician_ids: vals })}
+                            placeholder="Assign Technicians"
+                            searchPlaceholder="Search staff..."
+                        />
                     </div>
-                    <div className="flex flex-col gap-1">
+                    
+                    <div className="space-y-1.5 px-0.5">
+                        <Label className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Activity State</Label>
                         <Select
                             value={item.status}
                             onValueChange={(val) => onUpdate(item.id, { status: val })}
                         >
-                            <SelectTrigger className={`h-8 text-[9px] font-bold uppercase tracking-widest border border-gray-100 dark:border-gray-800 rounded-lg focus:ring-1 focus:ring-primary/30 bg-opacity-10 py-0 px-2 ${item.status === 'Completed' ? 'bg-emerald-500 text-emerald-600' : item.status === 'In Progress' ? 'bg-blue-500 text-blue-500' : 'bg-gray-50 dark:bg-gray-900 text-gray-400'}`}>
+                            <SelectTrigger className={`h-9 text-[9px] font-bold uppercase tracking-widest border border-gray-100 dark:border-gray-800 rounded-lg focus:ring-1 focus:ring-primary/30 bg-opacity-10 py-0 px-3 ${item.status === 'Completed' ? 'bg-emerald-500 text-emerald-600' : item.status === 'In Progress' ? 'bg-blue-500 text-blue-500' : 'bg-gray-50 dark:bg-gray-900 text-gray-400'}`}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="rounded-lg border-gray-100 dark:border-gray-800">
@@ -113,23 +112,41 @@ const JobItemRow = ({ item, employees, onUpdate }: { item: any, employees: any[]
     );
 };
 
+interface JobCardDialogProps {
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
+    jobId: number | null;
+    onSave: () => void;
+}
+
 const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps) => {
     const { data: job, isLoading } = useJobCard(jobId);
     const { data: employees = [] } = useTechnicians();
 
     const updateItemMutation = useUpdateJobCardItem();
+    const updateJobMutation = useUpdateJobCard();
     const updateMaterialMutation = useUpdateMaterialUsage();
     const completeJobMutation = useCompleteJobCard();
 
     const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
     const [localItems, setLocalItems] = useState<any[]>([]);
     const [localUsage, setLocalUsage] = useState<any[]>([]);
+    const [leadTechnicianId, setLeadTechnicianId] = useState<number | null>(null);
     const [isDirty, setIsDirty] = useState(false);
+
+    const techOptions = useMemo(() => (employees || []).map((e: any) => ({
+        value: e.id.toString(),
+        label: e.full_name || e.name || 'Technician'
+    })), [employees]);
 
     useEffect(() => {
         if (job) {
-            setLocalItems(job.items || []);
+            setLocalItems((job.items || []).map((i: any) => ({
+                ...i,
+                technician_ids: i.technicians?.map((t: any) => t.id.toString()) || []
+            })));
             setLocalUsage(job.material_usage || []);
+            setLeadTechnicianId(job.technician_lead_id);
             setIsDirty(false);
         }
     }, [job]);
@@ -146,16 +163,27 @@ const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps)
 
     const saveChanges = async () => {
         try {
+            // Process Job Card top-level updates (Lead Technician)
+            let jobPromise = null;
+            if (leadTechnicianId !== job.technician_lead_id) {
+                jobPromise = updateJobMutation.mutateAsync({
+                    id: job.id,
+                    updates: { technician_lead_id: leadTechnicianId }
+                });
+            }
+
             // Process Items
             const itemPromises = localItems
                 .filter(li => {
                     const original = job.items.find((i: any) => i.id === li.id);
-                    return JSON.stringify(original) !== JSON.stringify(li);
+                    const originalTechIds = original.technicians?.map((t: any) => t.id.toString()) || [];
+                    const techChanged = JSON.stringify(originalTechIds.sort()) !== JSON.stringify([...li.technician_ids].sort());
+                    return techChanged || original.status !== li.status || original.completion_percentage !== li.completion_percentage;
                 })
                 .map(li => updateItemMutation.mutateAsync({ 
                     itemId: li.id, 
                     updates: {
-                        technician_id: li.technician_id,
+                        technician_ids: li.technician_ids,
                         status: li.status,
                         completion_percentage: li.completion_percentage
                     } 
@@ -172,9 +200,9 @@ const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps)
                     ...lu 
                 }));
 
-            await Promise.all([...itemPromises, ...usagePromises]);
+            await Promise.all([jobPromise, ...itemPromises, ...usagePromises].filter(Boolean));
             setIsDirty(false);
-            toast.success('Workflow and tracking synchronized');
+            toast.success('Workforce and operations synchronized');
         } catch (error) {
             toast.error('Failed to sync changes');
         }
@@ -192,13 +220,16 @@ const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps)
         }
     };
 
-    const getStatusColor = (status: string): any => {
+    const getStatusUI = (status: string) => {
         switch (status) {
-            case 'Pending': return 'warning';
-            case 'In Progress': return 'secondary';
-            case 'Completed': return 'success';
-            case 'Cancelled': return 'destructive';
-            default: return 'secondary';
+            case 'Pending': return { class: 'bg-amber-500 text-white' };
+            case 'In Progress': return { class: 'bg-blue-600 text-white' };
+            case 'QC Review': return { class: 'bg-indigo-600 text-white' };
+            case 'Ready': return { class: 'bg-emerald-600 text-white' };
+            case 'Rework': return { class: 'bg-orange-500 text-white' };
+            case 'Delivered': return { class: 'bg-slate-700 text-white' };
+            case 'Cancelled': return { class: 'bg-destructive text-white' };
+            default: return { class: 'bg-secondary text-secondary-foreground' };
         }
     };
 
@@ -263,9 +294,25 @@ const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps)
                                     {job?.customer?.name}
                                 </DialogTitle>
                                 <div className="flex items-center gap-3 mt-1">
-                                    <Badge variant={getStatusColor(job?.status)} className="px-3 h-5 text-[9px] font-bold uppercase tracking-widest rounded-lg">
-                                        {job?.status}
-                                    </Badge>
+                                    <Select
+                                        value={job?.status}
+                                        onValueChange={(val) => {
+                                            updateJobMutation.mutate({ id: job.id, updates: { status: val } });
+                                        }}
+                                    >
+                                        <SelectTrigger className={`h-6 text-[9px] font-black uppercase tracking-widest border-none px-3 rounded-lg shadow-sm w-32 ${getStatusUI(job?.status).class}`}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-gray-100 dark:border-gray-800 shadow-2xl">
+                                            <SelectItem value="Pending" className="text-[10px] font-bold uppercase tracking-widest">Pending</SelectItem>
+                                            <SelectItem value="In Progress" className="text-[10px] font-bold uppercase tracking-widest">In Progress</SelectItem>
+                                            <SelectItem value="QC Review" className="text-[10px] font-bold uppercase tracking-widest">QC Review</SelectItem>
+                                            <SelectItem value="Rework" className="text-[10px] font-bold uppercase tracking-widest text-orange-500">Rework</SelectItem>
+                                            <SelectItem value="Ready" className="text-[10px] font-bold uppercase tracking-widest">Ready</SelectItem>
+                                            <SelectItem value="Delivered" className="text-[10px] font-bold uppercase tracking-widest">Delivered</SelectItem>
+                                            <SelectItem value="Cancelled" className="text-[10px] font-bold uppercase tracking-widest text-destructive">Cancelled</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                                         <IconClock size={12} className="opacity-50" />
                                         Inbound: {job && format(new Date(job.created_at), 'dd MMM yyyy, HH:mm')}
@@ -275,6 +322,21 @@ const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps)
                         </div>
 
                         <div className="flex items-center gap-6 px-6 py-4 bg-gray-50/80 dark:bg-gray-900/40 rounded-2xl border border-gray-100/50 dark:border-gray-800/50 backdrop-blur-sm shadow-sm ring-1 ring-black/5 dark:ring-white/5">
+                            <div className="flex flex-col items-end border-r dark:border-gray-800 pr-6">
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Team Leadership</span>
+                                <div className="w-56">
+                                    <SearchableSelect
+                                        options={techOptions}
+                                        value={leadTechnicianId}
+                                        onChange={(val) => {
+                                            setLeadTechnicianId(val as number);
+                                            setIsDirty(true);
+                                        }}
+                                        placeholder="Assign Lead"
+                                        className="h-9 text-[10px] font-bold"
+                                    />
+                                </div>
+                            </div>
                             <div className="flex flex-col items-end border-r dark:border-gray-800 pr-6">
                                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Asset Identity</span>
                                 <div className="flex items-center gap-2.5">
@@ -310,9 +372,9 @@ const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps)
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                                <SideColumn title="Side (Left)" items={itemsBySide.Left} employees={employees} onUpdate={handleUpdateItemLocal} />
-                                <SideColumn title="Main / Center" items={itemsBySide.Main} employees={employees} onUpdate={handleUpdateItemLocal} />
-                                <SideColumn title="Side (Right)" items={itemsBySide.Right} employees={employees} onUpdate={handleUpdateItemLocal} />
+                                <SideColumn title="Side (Left)" items={itemsBySide.Left} employees={employees} techOptions={techOptions} onUpdate={handleUpdateItemLocal} />
+                                <SideColumn title="Main / Center" items={itemsBySide.Main} employees={employees} techOptions={techOptions} onUpdate={handleUpdateItemLocal} />
+                                <SideColumn title="Side (Right)" items={itemsBySide.Right} employees={employees} techOptions={techOptions} onUpdate={handleUpdateItemLocal} />
                             </div>
                         </section>
 
@@ -454,8 +516,11 @@ const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps)
                                                 <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
                                                     <IconUser size={10} /> 
                                                     {(() => {
-                                                        const tech = employees.find((e: any) => e.id.toString() === i.technician_id?.toString());
-                                                        return tech ? (tech.full_name || tech.name) : 'Unassigned';
+                                                        if (!i.technician_ids || i.technician_ids.length === 0) return 'Unassigned';
+                                                        return i.technician_ids.map((tid: string) => {
+                                                            const tech = employees.find((e: any) => e.id.toString() === tid);
+                                                            return tech ? (tech.full_name || tech.name) : 'Unknown';
+                                                        }).join(', ');
                                                     })()}
                                                 </span>
                                             </div>

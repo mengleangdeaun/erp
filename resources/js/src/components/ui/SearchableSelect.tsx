@@ -125,7 +125,7 @@ export function SearchableSelect({
                                 <div className="p-10 flex flex-col items-center justify-center gap-4">
                                     <div className="relative">
                                         <div className="w-10 h-10 rounded-full border-2 border-primary/10 border-t-primary animate-spin"></div>
-                                        <Loader2 className="absolute inset-0 m-auto h-4 w-4 text-primary animate-pulse" />
+                                        <Loader2 className="absolute inset-0 m-auto h-4 w-4 text-primary animate-pulse animate-spin-reverse" />
                                     </div>
                                     <div className="flex flex-col items-center gap-1">
                                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Fetching Data</p>

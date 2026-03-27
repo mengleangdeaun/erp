@@ -196,7 +196,7 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="0" className="opacity-50">None (Normal Sale)</SelectItem>
-                                        {saleRemarks.map((r: any) => (
+                                        {Array.isArray(saleRemarks) && saleRemarks.map((r: any) => (
                                             <SelectItem key={r.id} value={r.id.toString()}>
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color_code }} />

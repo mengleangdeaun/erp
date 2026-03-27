@@ -20,7 +20,7 @@ import {
     IconUser
 } from '@tabler/icons-react';
 import { X, LayoutGrid, List, RotateCcw, MoreVertical } from 'lucide-react';
-import { useJobCards, useCreateReplacementJob, useReplacementTypes } from '@/hooks/useJobCardData';
+import { useJobCards, useCreateReplacementJob, useReplacementTypes, useUpdateJobCard } from '@/hooks/useJobCardData';
 import { useHRBranches } from '@/hooks/useHRData';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,7 +37,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import FilterBar from '@/components/ui/FilterBar';
 import Pagination from '@/components/ui/Pagination';
-import ProgressUpdateDialog from './ProgressUpdateDialog';
+import JobCardDialog from './JobCardDialog';
 import ReplacementJobDialog from './ReplacementJobDialog';
 import QCReviewDialog from './QCReviewDialog';
 import StockDeductDialog from './StockDeductDialog';
@@ -101,8 +101,8 @@ const JobCardIndex: React.FC = () => {
     const [itemsPerPage, setItemsPerPage] = useState(12);
 
     const { data: branches = [] } = useHRBranches();
-    const { data: replacementTypes = [] } = useReplacementTypes();
     const createReplacementMutation = useCreateReplacementJob();
+    const updateJobMutation = useUpdateJobCard();
 
     const { data: jobs = [], isLoading, refetch } = useJobCards({ 
         search, 
@@ -121,7 +121,7 @@ const JobCardIndex: React.FC = () => {
     }, [jobIdParam]);
 
     useEffect(() => {
-        dispatch(setPageTitle(t('workshop_jobs', 'Service Command Center')));
+        dispatch(setPageTitle(t('workshop_jobs', 'Service Center')));
     }, [dispatch, t]);
 
     const handleClearFilters = () => {
@@ -148,6 +148,7 @@ const JobCardIndex: React.FC = () => {
     const getStatusUI = (status: string) => {
         switch (status) {
             case 'PENDING': 
+            case 'Pending': 
                 return { 
                     label: 'Pending', 
                     variant: 'warning', 
@@ -211,7 +212,7 @@ const JobCardIndex: React.FC = () => {
         <div className="space-y-8 pb-10">
             <FilterBar 
                 icon={<IconTools className="w-6 h-6 text-primary" />}
-                title="Service Command Center"
+                title="Service Center"
                 description="Live workflow orchestration for vehicle enhancements."
                 search={search}
                 setSearch={setSearch}
@@ -331,12 +332,29 @@ const JobCardIndex: React.FC = () => {
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full translate-x-16 -translate-y-16 group-hover:scale-150 transition-transform duration-700" />
 
                                     <div className="flex items-center justify-between relative z-10">
-                                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest shadow-sm ${statusUI.class}`}>
-                                            {statusUI.icon}
-                                            {statusUI.label}
-                                        </div>
                                         <div className="flex gap-2 items-center">
-
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest shadow-sm cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all ${statusUI.class}`}>
+                                                        {statusUI.icon}
+                                                        {statusUI.label}
+                                                    </div>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="start" className="w-48 rounded-xl border-gray-100 dark:border-gray-800 shadow-xl">
+                                                    <div className="px-2 py-1.5 border-b dark:border-gray-800 mb-1">
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transition State</span>
+                                                    </div>
+                                                    <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'Pending' } })} className="text-[10px] font-bold uppercase tracking-widest py-2">Set Pending</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'In Progress' } })} className="text-[10px] font-bold uppercase tracking-widest py-2 text-blue-500">Start Work</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'QC Review' } })} className="text-[10px] font-bold uppercase tracking-widest py-2 text-indigo-500">Move to QC</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'Rework' } })} className="text-[10px] font-bold uppercase tracking-widest py-2 text-orange-500">Needs Rework</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'Ready' } })} className="text-[10px] font-bold uppercase tracking-widest py-2 text-emerald-500">Mark Ready</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'Delivered' } })} className="text-[10px] font-bold uppercase tracking-widest py-2 text-slate-700">Set Delivered</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'Cancelled' } })} className="text-[10px] font-bold uppercase tracking-widest py-2 text-red-500">Cancel Job</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                        <div className="flex gap-2 items-center" onClick={(e) => e.stopPropagation()}>
                                             {job.type === 'replacement' && (
                                                 <Badge variant="destructive" className="text-[8px] px-1.5 h-4 font-black uppercase">REPLACEMENT</Badge>
                                             )}
@@ -441,11 +459,24 @@ const JobCardIndex: React.FC = () => {
                                                     <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">{job.vehicle?.brand?.name} {job.vehicle?.model?.name}</span>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
-                                                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest shadow-sm ${statusUI.class}`}>
-                                                    {statusUI.icon}
-                                                    {statusUI.label}
-                                                </div>
+                                             <TableCell onClick={(e) => e.stopPropagation()}>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest shadow-sm cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all ${statusUI.class}`}>
+                                                            {statusUI.icon}
+                                                            {statusUI.label}
+                                                        </div>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="start" className="w-48 rounded-xl border-gray-100 dark:border-gray-800 shadow-xl">
+                                                        <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'Pending' } })} className="text-[10px] font-bold uppercase tracking-widest">Set Pending</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'In Progress' } })} className="text-[10px] font-bold uppercase tracking-widest text-blue-500">Start Work</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'QC Review' } })} className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Move to QC</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'Rework' } })} className="text-[10px] font-bold uppercase tracking-widest text-orange-500">Needs Rework</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'Ready' } })} className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Mark Ready</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'Delivered' } })} className="text-[10px] font-bold uppercase tracking-widest text-slate-700">Set Delivered</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => updateJobMutation.mutate({ id: job.id, updates: { status: 'Cancelled' } })} className="text-[10px] font-bold uppercase tracking-widest text-red-500">Cancel Job</DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </TableCell>
                                             <TableCell className="w-[200px]">
                                                 <div className="space-y-1.5">
@@ -496,7 +527,7 @@ const JobCardIndex: React.FC = () => {
                 </div>
             )}
 
-            <ProgressUpdateDialog 
+            <JobCardDialog 
                 isOpen={dialogOpen} 
                 setIsOpen={setDialogOpen} 
                 jobId={selectedJob?.id} 

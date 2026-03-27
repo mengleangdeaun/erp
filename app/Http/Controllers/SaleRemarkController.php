@@ -7,9 +7,23 @@ use Illuminate\Http\Request;
 
 class SaleRemarkController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return SaleRemark::latest()->get();
+        $query = SaleRemark::query();
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('all') || $request->paginate === 'false') {
+            return $query->latest()->get();
+        }
+
+        return $query->latest()->paginate($request->per_page ?? 15);
     }
 
     public function store(Request $request)
@@ -24,7 +38,7 @@ class SaleRemarkController extends Controller
         return SaleRemark::create($validated);
     }
 
-    public function update(Request $request, SaleRemark $saleRemark)
+    public function update(Request $request, SaleRemark $remark)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -33,13 +47,13 @@ class SaleRemarkController extends Controller
             'is_active' => 'boolean'
         ]);
 
-        $saleRemark->update($validated);
-        return $saleRemark;
+        $remark->update($validated);
+        return $remark;
     }
 
-    public function destroy(SaleRemark $saleRemark)
+    public function destroy(SaleRemark $remark)
     {
-        $saleRemark->delete();
+        $remark->delete();
         return response()->json(['message' => 'Deleted successfully']);
     }
 }

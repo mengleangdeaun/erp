@@ -37,7 +37,8 @@ import CheckoutDialog from './CheckoutDialog';
 import CustomerDialog from '../Customers/CustomerDialog';
 import { 
     useCustomers, useServices, useProducts, useBranches, 
-    useBrands, useCategories, usePaymentAccounts, useCustomerVehicles
+    useBrands, useCategories, usePaymentAccounts, useCustomerVehicles,
+    useSaleRemarks
 } from '@/hooks/usePOSData';
 import { useCRMCustomerTypes } from '@/hooks/useCRMData';
 
@@ -274,7 +275,7 @@ const SalesCreate = () => {
     const { data: paymentAccounts = [], isLoading: isLoadingAccounts } = usePaymentAccounts(selectedBranchId);
     const { data: customerTypes = [] } = useCRMCustomerTypes();
     const { data: vehicles = [], isLoading: isLoadingVehicles } = useCustomerVehicles(form.customer_id);
-    const { data: saleRemarks = [] } = useSaleRemarks();
+    const { data: saleRemarks = [] } = useSaleRemarks({ all: true });
 
     const activeBranches = useMemo(() => branches.filter((b: any) => b.status === 'active'), [branches]);
 

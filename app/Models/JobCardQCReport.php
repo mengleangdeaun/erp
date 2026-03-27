@@ -42,4 +42,9 @@ class JobCardQCReport extends Model
     {
         return $this->belongsTo(HR\Employee::class, 'rework_technician_id');
     }
+
+    public function qcItems()
+    {
+        return $this->hasMany(JobCardQCItem::class, 'qc_report_id');
+    }
 }
