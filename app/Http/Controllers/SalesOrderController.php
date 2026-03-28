@@ -12,6 +12,8 @@ use App\Models\Inventory\InventoryStockMovement;
 use App\Models\Inventory\InventoryLocation;
 use App\Models\Service;
 use App\Services\DocumentNumberService;
+use App\Events\SalesOrderUpdated;
+use App\Events\JobCardUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -146,15 +148,8 @@ class SalesOrderController extends Controller
             }
 
             // --- STOCK DEDUCTION LOGIC ---
-            $location = InventoryLocation::where('branch_id', $validated['branch_id'])
-                ->where('is_active', true)
-                ->orderBy('is_primary', 'desc') // Prioritize primary location
-                ->first();
-
-            if (!$location) {
-                // Fallback to first location if no active/primary one found
-                $location = InventoryLocation::where('branch_id', $validated['branch_id'])->first();
-            }
+            // Note: We no longer need to pre-fetch a single location here 
+            // as deductFromBranch handles the multi-location fallback.
 
             $hasService = false;
             $itemsWithJobParts = [];
@@ -199,11 +194,11 @@ class SalesOrderController extends Controller
                 }
 
                 // Deduct Stock for DIRECT product sales ONLY
-                if ($location && !empty($itemData['product_id']) && empty($itemData['job_part_id'])) {
-                    $stockService->updateStock(
+                if (!empty($itemData['product_id']) && empty($itemData['job_part_id'])) {
+                    $stockService->deductFromBranch(
                         $itemData['product_id'],
-                        $location->id,
-                        -$itemData['qty'],
+                        $validated['branch_id'],
+                        $itemData['qty'],
                         'OUT',
                         $order,
                         "Sales Order #{$order->order_no} direct sale"
@@ -216,6 +211,12 @@ class SalesOrderController extends Controller
                 $this->generateJobCard($order, $validated['items'], $itemsWithJobParts, $documentNumberService);
             }
         });
+
+        // Broadcast updates
+        event(new SalesOrderUpdated($order));
+        if ($order->jobCard) {
+            event(new JobCardUpdated($order->jobCard->id));
+        }
 
         return response()->json($order->load(['customer', 'items', 'jobCard.items']), 201);
     }
@@ -339,6 +340,8 @@ class SalesOrderController extends Controller
             $order->save();
         });
 
+        event(new SalesOrderUpdated($order));
+
         return response()->json($order->load('deposits.paymentAccount'), 201);
     }
 
@@ -390,6 +393,8 @@ class SalesOrderController extends Controller
             $order->save();
         });
 
+        event(new SalesOrderUpdated($order));
+
         return response()->json($order->load(['deposits.paymentAccount', 'deposits.creator']), 200);
     }
 
@@ -423,6 +428,8 @@ class SalesOrderController extends Controller
             $order->save();
         });
 
+        event(new SalesOrderUpdated($order));
+
         return response()->json($order->load(['deposits.paymentAccount', 'deposits.creator']), 200);
     }
 
@@ -448,14 +455,15 @@ class SalesOrderController extends Controller
             }
 
             // --- STOCK RESTOCK LOGIC ---
+            // We restock everything back to the PRIMARY location for simplicity
             $location = InventoryLocation::where('branch_id', $order->branch_id)
                 ->where('is_active', true)
-                ->orderBy('is_primary', 'desc') // Prioritize primary location
+                ->where('is_primary', true)
                 ->first() ?: InventoryLocation::where('branch_id', $order->branch_id)->first();
 
             if ($location) {
                 foreach ($order->items as $item) {
-                    // Only restock direct product sales (mimics the logic in store())
+                     // Only restock direct product sales (mimics the logic in store())
                     if ($item->itemable_type === \App\Models\Inventory\InventoryProduct::class && empty($item->job_part_id)) {
                         $stockService->updateStock(
                             $item->itemable_id,
@@ -469,6 +477,11 @@ class SalesOrderController extends Controller
                 }
             }
         });
+
+        event(new SalesOrderUpdated($order));
+        if ($order->jobCard) {
+            event(new JobCardUpdated($order->jobCard->id));
+        }
 
         return response()->json(['message' => 'Order cancelled successfully']);
     }
@@ -501,10 +514,10 @@ class SalesOrderController extends Controller
         $order = SalesOrder::with('items')->findOrFail($id);
 
         DB::transaction(function () use ($request, $validated, $documentNumberService, $order, $stockService) {
-            // 1. RESTOCK OLD ITEMS
+            // 1. RESTOCK OLD ITEMS (Back to Primary)
             $location = \App\Models\Inventory\InventoryLocation::where('branch_id', $order->branch_id)
                 ->where('is_active', true)
-                ->orderBy('is_primary', 'desc')
+                ->where('is_primary', true)
                 ->first() ?: \App\Models\Inventory\InventoryLocation::where('branch_id', $order->branch_id)->first();
 
             if ($location) {
@@ -553,11 +566,8 @@ class SalesOrderController extends Controller
             $hasService = false;
             $itemsWithJobParts = [];
 
-            // Get location for new branch (might have changed)
-            $newLocation = \App\Models\Inventory\InventoryLocation::where('branch_id', $validated['branch_id'])
-                ->where('is_active', true)
-                ->orderBy('is_primary', 'desc')
-                ->first() ?: \App\Models\Inventory\InventoryLocation::where('branch_id', $validated['branch_id'])->first();
+            // Get branch ID for new item deduction
+            $branchId = $validated['branch_id'];
 
             foreach ($validated['items'] as $itemData) {
                 $itemable_type = null;
@@ -598,11 +608,11 @@ class SalesOrderController extends Controller
                     ];
                 }
 
-                if ($newLocation && !empty($itemData['product_id']) && empty($itemData['job_part_id'])) {
-                    $stockService->updateStock(
+                if (!empty($itemData['product_id']) && empty($itemData['job_part_id'])) {
+                    $stockService->deductFromBranch(
                         $itemData['product_id'],
-                        $newLocation->id,
-                        -$itemData['qty'],
+                        $validated['branch_id'],
+                        $itemData['qty'],
                         'OUT',
                         $order,
                         "Sales Order #{$order->order_no} update deduction"
@@ -629,6 +639,11 @@ class SalesOrderController extends Controller
                 $this->generateJobCard($order, $validated['items'], $itemsWithJobParts, $documentNumberService);
             }
         });
+
+        event(new SalesOrderUpdated($order));
+        if ($order->jobCard) {
+            event(new JobCardUpdated($order->jobCard->id));
+        }
 
         return response()->json($order->refresh()->load(['customer', 'items', 'jobCard.items']));
     }

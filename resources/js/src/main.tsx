@@ -30,6 +30,25 @@ const queryClient = new QueryClient({
     },
 });
 
+// Initialize Echo for Real-time WebSockets
+import '../echo';
+
+// Global listener for Job Card updates
+(window as any).Echo.channel('job-cards')
+    .listen('.JobCardUpdated', (e: any) => {
+        console.log('Real-time sync: Job Card Updated', e.jobCardId);
+        queryClient.invalidateQueries({ queryKey: ['job-cards'] });
+        queryClient.invalidateQueries({ queryKey: ['job-card', e.jobCardId] });
+    });
+
+// Global listener for Sales Order updates
+(window as any).Echo.channel('sales-orders')
+    .listen('.SalesOrderUpdated', (e: any) => {
+        console.log('Real-time sync: Sales Order Updated', e.salesOrder?.id);
+        queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
+        queryClient.invalidateQueries({ queryKey: ['salesOrder', e.salesOrder?.id] });
+    });
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <Suspense>
         <Provider store={store}>

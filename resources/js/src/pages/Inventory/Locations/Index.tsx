@@ -14,7 +14,8 @@ import ActionButtons from '../../../components/ui/ActionButtons';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { IconBuildingWarehouse, IconLink } from '@tabler/icons-react';
+import { IconBuildingWarehouse } from '@tabler/icons-react';
+import HighlightText from '../../../components/ui/HighlightText';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
 
@@ -26,22 +27,19 @@ const LocationIndex = () => {
     const [editingLocation, setEditingLocation] = useState<any>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [branches, setBranches] = useState<any[]>([]);
-    const [linkModalOpen, setLinkModalOpen] = useState(false);
-    const [linkingLocation, setLinkingLocation] = useState<any>(null);
-    const [selectedBranchId, setSelectedBranchId] = useState<string>('');
-    const [isLinking, setIsLinking] = useState(false);
 
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState('name');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [branchFilter, setBranchFilter] = useState<string>('all');
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const initialFormState = { name: '', description: '', address: '', is_active: '1', is_primary: '0' };
+    const initialFormState = { name: '', description: '', address: '', is_active: '1', is_primary: '0', branch_id: '' };
     const [formData, setFormData] = useState(initialFormState);
 
     const getCookie = (name: string) => {
@@ -86,7 +84,8 @@ const LocationIndex = () => {
             description: loc.description || '', 
             address: loc.address || '', 
             is_active: loc.is_active ? '1' : '0',
-            is_primary: loc.is_primary ? '1' : '0'
+            is_primary: loc.is_primary ? '1' : '0',
+            branch_id: loc.branch_id?.toString() || ''
         });
         setModalOpen(true);
     };
@@ -126,41 +125,20 @@ const LocationIndex = () => {
         } catch (error) { console.error(error); toast.error('An error occurred'); } finally { setIsSaving(false); }
     };
 
-    const handleLinkBranch = async () => {
-        if (!selectedBranchId || !linkingLocation) return;
-        setIsLinking(true);
-        try {
-            const response = await fetch(`/api/inventory/locations/${linkingLocation.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '' },
-                credentials: 'include',
-                body: JSON.stringify({ branch_id: selectedBranchId }),
-            });
-            if (response.ok) {
-                toast.success('Branch linked successfully');
-                setLinkModalOpen(false);
-                fetchLocations();
-            } else {
-                toast.error('Failed to link branch');
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error('An error occurred');
-        } finally {
-            setIsLinking(false);
-        }
-    };
 
     const filteredAndSorted = useMemo(() => {
         let result = [...locations];
         if (search) { const q = search.toLowerCase(); result = result.filter(d => d.name?.toLowerCase().includes(q)); }
+        if (branchFilter !== 'all') {
+            result = result.filter(d => d.branch_id?.toString() === branchFilter);
+        }
         result.sort((a, b) => {
             let valA = a[sortBy] || ''; let valB = b[sortBy] || '';
             if (typeof valA === 'string') valA = valA.toLowerCase(); if (typeof valB === 'string') valB = valB.toLowerCase();
             if (valA < valB) return sortDirection === 'asc' ? -1 : 1; if (valA > valB) return sortDirection === 'asc' ? 1 : -1; return 0;
         });
         return result;
-    }, [locations, search, sortBy, sortDirection]);
+    }, [locations, search, sortBy, sortDirection, branchFilter]);
 
     const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
     const paginated = filteredAndSorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -177,7 +155,24 @@ const LocationIndex = () => {
             onAdd={handleCreate} 
             addLabel="Add Location" 
             onRefresh={fetchLocations} 
-            hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc'} onClearFilters={() => { setSortBy('name'); setSortDirection('asc'); }} />
+            hasActiveFilters={sortBy !== 'name' || sortDirection !== 'asc' || search !== '' || branchFilter !== 'all'} 
+            onClearFilters={() => { setSortBy('name'); setSortDirection('asc'); setSearch(''); setBranchFilter('all'); }} 
+        >
+            <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1">Branch</span>
+                <Select value={branchFilter} onValueChange={setBranchFilter}>
+                    <SelectTrigger className="h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+                        <SelectValue placeholder="All Branches" />
+                    </SelectTrigger>
+                    <SelectContent className="dark:bg-black">
+                        <SelectItem value="all">All Branches</SelectItem>
+                        {branches.map(b => (
+                            <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </FilterBar>
 {loading ? (
   <TableSkeleton columns={3} rows={5} />
 ) : locations.length === 0 ? (
@@ -195,6 +190,7 @@ const LocationIndex = () => {
       setSearch('');
       setSortBy('name');
       setSortDirection('asc');
+      setBranchFilter('all');
     }}
   />
 ) : (
@@ -203,6 +199,7 @@ const LocationIndex = () => {
                         <thead>
                             <tr>
                                 <SortableHeader label="Location Name" value="name" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
+                                <SortableHeader label="Branch" value="branch_id" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <SortableHeader label="Address" value="address" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <SortableHeader label="Status" value="is_active" currentSortBy={sortBy} currentDirection={sortDirection} onSort={setSortBy} />
                                 <th className="text-right">Action</th>
@@ -213,7 +210,7 @@ const LocationIndex = () => {
                                 <tr key={row.id}>
                                     <td className="whitespace-nowrap font-medium">
                                     <div className="flex items-center gap-2">
-                                        {row.name}
+                                        <HighlightText text={row.name} highlight={search} />
                                         {row.is_primary === 1 && (
                                         <Badge
                                             variant="success"
@@ -224,15 +221,19 @@ const LocationIndex = () => {
                                         )}
                                     </div>
                                     </td>
-                                    <td className="text-gray-500 max-w-xs truncate">{row.address || '-'}</td>
+                                    <td>
+                                        <Badge variant="secondary" size="sm">
+                                            {branches.find(b => b.id === row.branch_id)?.name || '-'}
+                                        </Badge>
+                                    </td>
+                                    <td className="text-gray-500 max-w-xs truncate">
+                                        <HighlightText text={row.address || '-'} highlight={search} />
+                                    </td>
                                     <td><Badge 
                                         size="sm"
                                         variant={row.is_active ? 'success' : 'destructive'}>{row.is_active ? 'Active' : 'Inactive'}</Badge></td>
                                     <td>
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="sm" onClick={() => { setLinkingLocation(row); setSelectedBranchId(row.branch_id?.toString() || ''); setLinkModalOpen(true); }} title="Link Branch">
-                                                <IconLink size={16} className="text-primary" />
-                                            </Button>
                                             <ActionButtons skipDeleteConfirm={true} onEdit={() => handleEdit(row)} onDelete={() => confirmDelete(row.id)} />
                                         </div>
                                     </td>
@@ -251,27 +252,68 @@ const LocationIndex = () => {
                     </div>
                     <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
                         <form id="loc-form" onSubmit={handleSubmit} className="p-6 space-y-6">
-                            <div className="space-y-4">
-                                <div className="space-y-1"><label className="text-sm font-medium">Name <span className="text-red-500">*</span></label><Input name="name" value={formData.name} onChange={handleChange} required /></div>
-                                <div className="space-y-1"><label className="text-sm font-medium">Description</label><Textarea name="description" value={formData.description} onChange={handleChange} /></div>
-                                <div className="space-y-1"><label className="text-sm font-medium">Spatial Address</label><Textarea name="address" value={formData.address} onChange={handleChange} /></div>
-                                <div className="space-y-1.5"><label className="text-sm font-medium">Status <span className="text-red-500">*</span></label><Select onValueChange={(value) => handleSelectChange(value, 'is_active')} value={formData.is_active}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">Active</SelectItem><SelectItem value="0">Inactive</SelectItem></SelectContent></Select></div>
-                                <div className="space-y-1.5 pt-2">
-                                    <label className="text-sm font-medium">Primary Usage</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
+                                <div className="space-y-1.5 md:col-span-1">
+                                    <label className="text-sm font-medium">Location Name <span className="text-red-500">*</span></label>
+                                    <Input name="name" value={formData.name} onChange={handleChange} required placeholder="Warehouse A, Store B..." />
+                                </div>
+                                <div className="space-y-1.5 md:col-span-1">
+                                    <label className="text-sm font-medium">Status <span className="text-red-500">*</span></label>
+                                    <Select onValueChange={(value) => handleSelectChange(value, 'is_active')} value={formData.is_active}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="1">Active</SelectItem>
+                                            <SelectItem value="0">Inactive</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5 md:col-span-1">
+                                    <label className="text-sm font-medium">Associated Branch <span className="text-red-500">*</span></label>
+                                    <Select 
+                                        onValueChange={(value) => handleSelectChange(value, 'branch_id')} 
+                                        value={formData.branch_id}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a branch" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {branches.map(b => (
+                                                <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5 md:col-span-1">
+                                    <label className="text-sm font-medium">Distribution Priority</label>
                                     <Select onValueChange={(value) => handleSelectChange(value, 'is_primary')} value={formData.is_primary}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="1">Set as Primary (Default for Sales)</SelectItem>
-                                            <SelectItem value="0">Secondary Location</SelectItem>
+                                            <SelectItem value="1">Primary (Default)</SelectItem>
+                                            <SelectItem value="0">Secondary</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                    <p className="text-[10px] text-gray-500 mt-1 italic">
-                                        Sales will automatically deduct stock from the primary location of each branch.
-                                    </p>
                                 </div>
                             </div>
+                            
+                            <hr className="border-gray-50 dark:border-gray-900" />
+                            
+                            <div className="space-y-5">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium">Physical Address</label>
+                                    <Textarea name="address" value={formData.address} onChange={handleChange} placeholder="Enter full address..." className="min-h-[80px]" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-gray-400">Additional Description</label>
+                                    <Textarea name="description" value={formData.description} onChange={handleChange} placeholder="Notes about this warehouse..." className="min-h-[60px]" />
+                                </div>
+                            </div>
+
+                            <p className="text-[11px] text-primary/70 bg-primary/5 p-3 rounded-xl border border-primary/10 flex items-center gap-2">
+                                <span className="shrink-0 font-bold bg-primary text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px]">!</span>
+                                <span>Sales will automatically pull stock from the Primary location first. If empty, the system will fallback to Secondary locations in the same branch.</span>
+                            </p>
                         </form>
                     </PerfectScrollbar>
                     <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-background">
@@ -281,35 +323,6 @@ const LocationIndex = () => {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={linkModalOpen} onOpenChange={setLinkModalOpen}>
-                <DialogContent className="sm:max-w-[400px] rounded-2xl">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-primary/10 p-2 rounded-xl"><IconLink className="text-primary w-6 h-6" /></div>
-                        <DialogTitle className="text-lg font-bold">Link Branch to {linkingLocation?.name}</DialogTitle>
-                    </div>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium">Select Branch</label>
-                            <Select onValueChange={setSelectedBranchId} value={selectedBranchId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Choose a branch..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {branches.map(b => (
-                                        <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <div className="flex justify-end gap-2 mt-4">
-                        <Button variant="ghost" onClick={() => setLinkModalOpen(false)}>Cancel</Button>
-                        <Button onClick={handleLinkBranch} disabled={isLinking || !selectedBranchId} className="bg-primary text-white">
-                            {isLinking ? 'Linking...' : 'Confirm Link'}
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
             <DeleteModal isOpen={deleteModalOpen} setIsOpen={setDeleteModalOpen} onConfirm={executeDelete} isLoading={isDeleting} title="Delete Location" message="Permanently destroy this storage entity?" />
         </div>
     );

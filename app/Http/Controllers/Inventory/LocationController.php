@@ -21,8 +21,13 @@ class LocationController extends Controller
             'address' => 'nullable|string',
             'is_active' => 'boolean',
             'is_primary' => 'boolean',
-            'branch_id' => 'nullable|exists:branches,id'
+            'branch_id' => 'required|exists:branches,id'
         ]);
+
+        if (!empty($validated['is_primary']) && $validated['is_primary']) {
+            InventoryLocation::where('branch_id', $validated['branch_id'])
+                ->update(['is_primary' => false]);
+        }
 
         return response()->json(InventoryLocation::create($validated), 201);
     }
@@ -42,8 +47,15 @@ class LocationController extends Controller
             'address' => 'nullable|string',
             'is_active' => 'boolean',
             'is_primary' => 'boolean',
-            'branch_id' => 'nullable|exists:branches,id'
+            'branch_id' => 'sometimes|required|exists:branches,id'
         ]);
+
+        if (!empty($validated['is_primary']) && $validated['is_primary']) {
+            $branchId = $validated['branch_id'] ?? $location->branch_id;
+            InventoryLocation::where('branch_id', $branchId)
+                ->where('id', '!=', $id)
+                ->update(['is_primary' => false]);
+        }
 
         $location->update($validated);
         return response()->json($location);

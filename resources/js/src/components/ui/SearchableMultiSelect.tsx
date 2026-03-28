@@ -7,15 +7,15 @@ import 'react-perfect-scrollbar/dist/css/styles.css';
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 
 interface Option {
-    value: string;
+    value: string | number;
     label: string;
     description?: string;
 }
 
 interface SearchableMultiSelectProps {
     options: Option[];
-    value: string[];
-    onChange: (value: string[]) => void;
+    value: (string | number)[];
+    onChange: (value: (string | number)[]) => void;
     placeholder?: string;
     searchPlaceholder?: string;
     emptyMessage?: string;
@@ -54,14 +54,14 @@ const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
         option.label.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleSelect = (optionValue: string) => {
+    const handleSelect = (optionValue: string | number) => {
         const newValue = value.includes(optionValue)
             ? value.filter(v => v !== optionValue)
             : [...value, optionValue];
         onChange(newValue);
     };
 
-    const handleRemove = (e: React.MouseEvent, optionValue: string) => {
+    const handleRemove = (e: React.MouseEvent, optionValue: string | number) => {
         e.stopPropagation();
         onChange(value.filter(v => v !== optionValue));
     };
@@ -71,9 +71,9 @@ const SearchableMultiSelect: React.FC<SearchableMultiSelectProps> = ({
         onChange([]);
     };
 
-    const resolveLabel = (val: string) => {
+    const resolveLabel = (val: string | number) => {
         const opt = (allOptions || options).find(o => o.value === val);
-        return opt ? opt.label : val;
+        return opt ? opt.label : String(val);
     };
 
     const selectedLabels = value.map(v => resolveLabel(v));

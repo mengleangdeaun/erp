@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\JobCard;
 use App\Models\JobCardItem;
 use App\Models\JobCardMaterialUsage;
+use App\Events\JobCardUpdated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -14,14 +15,15 @@ class JobCardController extends Controller
     {
         $query = JobCard::with([
                 'order', 
+                'branch',
                 'customer', 
                 'vehicle.brand', 
                 'vehicle.model', 
                 'items.service', 
                 'items.part', 
-                'items.technicians', // Changed from technician
+                'items.technicians',
                 'replacementType',
-                'leadTechnician' // Added
+                'leadTechnician'
             ])
             ->withCount('replacements');
 
@@ -61,17 +63,18 @@ class JobCardController extends Controller
     {
         return JobCard::with([
             'order.items.itemable', 
+            'branch',
             'customer', 
             'vehicle.brand', 
             'vehicle.model', 
             'items.service', 
             'items.part', 
-            'items.technicians', // Changed
+            'items.technicians',
             'materialUsage.product',
             'parent',
             'replacements',
             'replacementType',
-            'leadTechnician' // Added
+            'leadTechnician'
         ])->findOrFail($id);
     }
 
@@ -93,6 +96,9 @@ class JobCardController extends Controller
         }
 
         $jobCard->update($validated);
+
+        // Broadcast the update
+        event(new JobCardUpdated($jobCard->id));
 
         return $jobCard->load(['customer', 'vehicle', 'leadTechnician']);
     }
@@ -156,16 +162,19 @@ class JobCardController extends Controller
             ]);
         } else {
             // Check if any item is started
-            $hasStarted = $jobCard->items()->whereIn('status', ['In Progress', 'Completed', 'Reworking'])->exists();
             if ($hasStarted && $jobCard->status === 'Pending') {
                 $jobCard->update([
-                    'status' => 'In Progress',
-                    'started_at' => $jobCard->started_at ?: now()
+                    'status' => 'In Progress'
                 ]);
             }
         }
 
-        return $item->load(['technicians', 'part', 'service']);
+        $item->load(['technicians', 'part', 'service']);
+
+        // Broadcast the update to all connected clients
+        event(new JobCardUpdated($jobCard->id));
+
+        return $item;
     }
 
     public function updateMaterialUsage(Request $request, $usageId)
@@ -242,41 +251,35 @@ class JobCardController extends Controller
                     ]);
                 }
 
-                // 2. Record Movement
+                // 2. Record Movement and Deduct Stock
                 $branchId = $jobCard->branch_id ?? $jobCard->order->branch_id;
-                $location = \App\Models\Inventory\InventoryLocation::where('branch_id', $branchId)
-                    ->where('is_primary', true)
-                    ->first() ?? \App\Models\Inventory\InventoryLocation::where('branch_id', $branchId)->first();
 
-                if ($location) {
-                    if ($usage->serial) {
-                        // Serialized Item: Log movement but DON'T deduct from general stock (roll count)
-                        \App\Models\Inventory\InventoryStockMovement::create([
-                            'product_id' => $usage->product_id,
-                            'location_id' => $location->id,
-                            'serial_id' => $usage->serial_id,
-                            'user_id' => auth()->id(),
-                            'movement_type' => 'JOB_CARD_CONSUMPTION',
-                            'quantity' => -$qty,
-                            'previous_quantity' => $usage->serial->current_quantity + $qty, // Reconstruct prev from current
-                            'current_quantity' => $usage->serial->current_quantity,
-                            'reference_type' => 'Job Card',
-                            'reference_id' => $jobCard->id,
-                            'reason' => 'Consumed in Job Card #' . $jobCard->job_no . ' (Serial: ' . $usage->serial->serial_number . ')'
-                        ]);
-                    } else {
-                        // Bulk Item: Deduct from general stock as usual
-                        $stockService->updateStock(
-                            $usage->product_id,
-                            $location->id,
-                            -$qty,
-                            'JOB_CARD_CONSUMPTION',
-                            $jobCard,
-                            'Consumed in Job Card #' . $jobCard->job_no
-                        );
-                    }
+                if ($usage->serial) {
+                   // Serialized Item: Log movement but DON'T deduct from general stock (already handled via decrement above)
+                   // We use the serial's physical location for the movement record
+                   \App\Models\Inventory\InventoryStockMovement::create([
+                        'product_id' => $usage->product_id,
+                        'location_id' => $usage->serial->location_id,
+                        'serial_id' => $usage->serial_id,
+                        'user_id' => auth()->id(),
+                        'movement_type' => 'JOB_CARD_CONSUMPTION',
+                        'quantity' => -$qty,
+                        'previous_quantity' => $usage->serial->current_quantity + $qty,
+                        'current_quantity' => $usage->serial->current_quantity,
+                        'reference_type' => 'Job Card',
+                        'reference_id' => $jobCard->id,
+                        'reason' => 'Consumed in Job Card #' . $jobCard->job_no . ' (Serial: ' . $usage->serial->serial_number . ')'
+                    ]);
                 } else {
-                    \Log::warning("No location found for branch ID: {$branchId}. Skipping stock deduction for product: {$usage->product_id}");
+                    // Bulk Item: Deduct using automated branch fallback
+                    $stockService->deductFromBranch(
+                        $usage->product_id,
+                        $branchId,
+                        $qty,
+                        'JOB_CARD_CONSUMPTION',
+                        $jobCard,
+                        'Consumed in Job Card #' . $jobCard->job_no
+                    );
                 }
             }
 

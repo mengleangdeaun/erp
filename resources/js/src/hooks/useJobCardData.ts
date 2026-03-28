@@ -58,14 +58,32 @@ export const useUpdateJobCard = () => {
             if (!response.ok) throw new Error('Failed to update job card');
             return response.json();
         },
+        onMutate: async ({ id, updates }) => {
+            await queryClient.cancelQueries({ queryKey: ['job-card', id] });
+            await queryClient.cancelQueries({ queryKey: ['job-cards'] });
+            
+            const previousJob = queryClient.getQueryData(['job-card', id]);
+            
+            queryClient.setQueryData(['job-card', id], (old: any) => ({
+                ...old,
+                ...updates
+            }));
+
+            return { previousJob };
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['job-cards'] });
-            queryClient.invalidateQueries({ queryKey: ['job-card'] });
             toast.success('Job Card updated successfully');
         },
-        onError: (err: any) => {
+        onError: (err: any, variables, context: any) => {
+            if (context?.previousJob) {
+                queryClient.setQueryData(['job-card', variables.id], context.previousJob);
+            }
             toast.error(err.message || 'Failed to update job card');
-        }
+        },
+        onSettled: (data, error, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['job-cards'] });
+            queryClient.invalidateQueries({ queryKey: ['job-card', variables.id] });
+        },
     });
 };
 
@@ -87,6 +105,11 @@ export const useUpdateJobCardItem = () => {
             });
             if (!response.ok) throw new Error('Failed to update job card item');
             return response.json();
+        },
+        onMutate: async ({ itemId, updates }) => {
+            // No specific job id here, so we invalidate and let the local state handle it in the component
+            // But we can optimistically update the individual job card if we know which one it belongs to.
+            // For now, invalidating is safest since components have their own local state.
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['job-card'] });

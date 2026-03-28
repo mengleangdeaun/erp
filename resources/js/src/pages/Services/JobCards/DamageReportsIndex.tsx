@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { IconAlertTriangle, IconUserCircle, IconEye, IconHistory, IconStarFilled, IconLoader2 } from '@tabler/icons-react';
+import { IconAlertTriangle, IconUserCircle, IconEye, IconHistory, IconStarFilled, IconLoader2, IconX } from '@tabler/icons-react';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { toast } from 'sonner';
 import TableSkeleton from '@/components/ui/TableSkeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -78,16 +79,7 @@ const DamageReportsIndex = () => {
     };
 
     const getDecisionBadge = (decision: string) => {
-        return (
-            <Badge 
-                variant={decision === 'PASS' ? 'success' : 'destructive'}
-                size="sm"
-                className="text-[10px] font-black uppercase tracking-widest"
-            >
-                {decision === 'FAIL' && <IconAlertTriangle size={12} className="mr-1" />}
-                {decision}
-            </Badge>
-        );
+        return <StatusBadge status={decision} variant="solid" className="h-6 px-4" />;
     };
 
     const renderStars = (rating: number) => {
@@ -107,7 +99,7 @@ const DamageReportsIndex = () => {
     return (
         <div className="space-y-6 pb-12">
             <FilterBar
-                icon={<IconAlertTriangle className="w-6 h-6 text-rose-600" />}
+                icon={<IconAlertTriangle className="w-6 h-6 text-primary" />}
                 title="Damage & Accountability"
                 description="Mistake tracking and quality control audit trail"
                 search={search}
@@ -124,7 +116,7 @@ const DamageReportsIndex = () => {
                     { label: 'Rework Tasks', value: stats.rework_tasks, color: 'blue' },
                     { label: 'Active Issues', value: stats.active_issues, color: 'zinc' },
                 ].map((stat, i) => (
-                    <div key={i} className="p-6 bg-white dark:bg-zinc-950 rounded-3xl border border-slate-100 dark:border-zinc-900 shadow-sm flex flex-col gap-2">
+                    <div key={i} className="p-6 bg-white dark:bg-dark rounded-xl border border-slate-100 dark:border-zinc-900 shadow-sm flex flex-col gap-2">
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{stat.label}</span>
                         <span className="text-3xl font-black tracking-tight">{stat.value}</span>
                     </div>
@@ -225,32 +217,42 @@ const DamageReportsIndex = () => {
             )}
 
             <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-                <DialogContent className="sm:max-w-2xl flex flex-col p-0 border-none shadow-2xl rounded-3xl overflow-hidden">
-                    <DialogHeader className="shrink-0 p-10 bg-rose-500 text-white border-none flex flex-row justify-between items-center">
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Audit Log Record</span>
-                            <DialogTitle className="text-4xl font-black tracking-tighter">Report #{selectedReport?.job_card?.job_no}</DialogTitle>
-                            <DialogDescription className="text-white/80 font-medium">Detailed quality control audit report.</DialogDescription>
-                        </div>
-                        <div className="px-4 py-2 bg-white/20 backdrop-blur-md rounded-2xl border border-white/20">
-                            <span className="text-white font-black text-xl">{selectedReport?.decision}</span>
+                <DialogContent className="max-w-2xl flex flex-col p-0 border-0 shadow-xl rounded-2xl overflow-hidden bg-white dark:bg-zinc-950 ring-1 ring-black/5 dark:ring-white/5">
+                    <DialogHeader className="shrink-0 px-8 py-6 bg-rose-600 text-white border-0 relative">
+                         <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => setIsDetailsOpen(false)}
+                            className="absolute right-4 top-4 h-8 w-8 rounded-lg hover:bg-white/10 text-white transition-colors z-20"
+                        >
+                            <IconX size={18} />
+                        </Button>
+                        <div className="flex flex-row justify-between items-center relative z-10">
+                            <div className="space-y-1">
+                                <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70">Audit Log Record</span>
+                                <DialogTitle className="text-2xl font-black tracking-tight uppercase leading-none">Report #{selectedReport?.job_card?.job_no}</DialogTitle>
+                                <DialogDescription className="text-white/70 font-bold text-[10px] uppercase tracking-wider">Detailed quality control audit report.</DialogDescription>
+                            </div>
+                            <div className="px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-xl border border-white/20">
+                                <span className="text-white font-black text-xl tracking-widest">{selectedReport?.decision}</span>
+                            </div>
                         </div>
                     </DialogHeader>
                     
                     <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0">
-                        <div className="p-10 bg-white dark:bg-zinc-950 space-y-8">
-                            <div className="grid grid-cols-2 gap-8">
-                                <div className="p-6 bg-slate-50 dark:bg-zinc-900 rounded-3xl border border-slate-100/50 dark:border-zinc-800">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-3">Audited By (QC)</span>
-                                    <div className="flex items-center gap-3 font-bold">
-                                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">QC</div>
+                        <div className="p-8 bg-white dark:bg-zinc-950 space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="p-5 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 block mb-2.5">Audited By (QC)</span>
+                                    <div className="flex items-center gap-2.5 font-black text-[11px] uppercase tracking-tight">
+                                        <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center border border-primary/20">QC</div>
                                         {selectedReport?.qc_person?.name}
                                     </div>
                                 </div>
-                                <div className="p-6 bg-rose-50 dark:bg-rose-950/10 rounded-3xl border border-rose-100/50 dark:border-rose-900/50">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 block mb-3">Accountable Technician</span>
-                                    <div className="flex items-center gap-3 font-bold text-rose-600">
-                                        <IconUserCircle size={20} />
+                                <div className="p-5 bg-rose-50/50 dark:bg-rose-950/10 rounded-xl border border-rose-100 dark:border-rose-900/50">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-rose-400 block mb-2.5">Accountable Staff</span>
+                                    <div className="flex items-center gap-2.5 font-black text-[11px] uppercase tracking-tight text-rose-600">
+                                        <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center"><IconUserCircle size={18} /></div>
                                         {selectedReport?.rework_technician?.name || 'N/A'}
                                     </div>
                                 </div>
@@ -292,8 +294,8 @@ const DamageReportsIndex = () => {
                             </div>
 
                             <div className="space-y-4 pb-4">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">QC Performance Notes</Label>
-                                <div className="p-6 bg-zinc-900 text-white rounded-[2rem] font-medium leading-relaxed italic">
+                                <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">QC Performance Audit</Label>
+                                <div className="p-6 bg-zinc-950 text-white rounded-2xl font-bold text-xs leading-relaxed italic border border-white/5 shadow-xl">
                                     "{selectedReport?.notes || "No additional comments provided for this audit record."}"
                                 </div>
                             </div>

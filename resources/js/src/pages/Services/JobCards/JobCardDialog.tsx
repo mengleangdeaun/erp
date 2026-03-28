@@ -1,14 +1,42 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { IconTools, IconUser, IconClock, IconCheck, IconX, IconInfoCircle, IconPackage, IconArrowRight, IconLoader2, IconCar, IconDots, IconSettings } from '@tabler/icons-react';
+import {
+  IconTools,
+  IconUser,
+  IconClock,
+  IconCheck,
+  IconInfoCircle,
+  IconLoader2,
+  IconCar,
+  IconDots,
+  IconX,
+} from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { format } from 'date-fns';
-import { useJobCard, useUpdateJobCard, useUpdateJobCardItem, useUpdateMaterialUsage, useCompleteJobCard, useTechnicians, useAvailableSerials } from '@/hooks/useJobCardData';
+import {
+  useJobCard,
+  useUpdateJobCard,
+  useUpdateJobCardItem,
+  useCompleteJobCard,
+  useTechnicians,
+} from '@/hooks/useJobCardData';
 import { Skeleton } from '@/components/ui/skeleton';
 import TableSkeleton from '@/components/ui/TableSkeleton';
 import ConfirmationModal from '@/components/ConfirmationModal';
@@ -16,630 +44,625 @@ import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import SearchableMultiSelect from '@/components/ui/SearchableMultiSelect';
 import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { getStatusConfig, STATUS_CONFIG, JOB_CARD_STATUS_KEYS } from '@/constants/statusConfig';
+import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const SideColumn = ({ title, items, employees, techOptions, onUpdate }: { title: string, items: any[], employees: any[], techOptions: any[], onUpdate: (id: number, updates: any) => void }) => (
-    <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between border-b dark:border-gray-800 pb-2 px-1">
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                {title}
-                <Badge variant="secondary" className="rounded-full h-4 min-w-[16px] p-0 flex items-center justify-center text-[8px] font-bold">
-                    {items.length}
-                </Badge>
-            </h4>
+// SideColumn component using Card
+const SideColumn = ({
+  title,
+  items = [],
+  employees,
+  techOptions,
+  onUpdate,
+  onCompleteAll,
+}: {
+  title: string;
+  items: any[];
+  employees: any[];
+  techOptions: any[];
+  onUpdate: (id: number, updates: any) => void;
+  onCompleteAll: () => void;
+}) => (
+  <Card className="h-full">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-sm font-semibold flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span>{title}</span>
+          <Badge variant="secondary" className="rounded-full h-5 min-w-[20px] px-1.5 text-xs">
+            {items.length}
+          </Badge>
         </div>
-        <div className="space-y-3">
-            {items.map((item) => (
-                <JobItemRow key={item.id} item={item} employees={employees} techOptions={techOptions} onUpdate={onUpdate} />
-            ))}
-            {items.length === 0 && (
-                <div className="py-8 text-center border-2 border-dashed border-gray-100 dark:border-gray-900 rounded-xl">
-                    <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">No Components</span>
-                </div>
-            )}
+        {items.length > 0 && items.some(i => i.status !== 'Completed') && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onCompleteAll}
+            className="h-7 px-2 text-[10px] font-bold uppercase tracking-widest text-primary hover:text-primary hover:bg-primary/5 gap-1.5"
+          >
+            <IconCheck size={12} />
+            Complete all
+          </Button>
+        )}
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      {items.map((item) => (
+        <JobItemRow
+          key={item.id}
+          item={item}
+          employees={employees}
+          techOptions={techOptions}
+          onUpdate={onUpdate}
+        />
+      ))}
+      {items.length === 0 && (
+        <div className="py-8 text-center border border-dashed rounded-lg">
+          <span className="text-xs text-muted-foreground">No components</span>
         </div>
-    </div>
+      )}
+    </CardContent>
+  </Card>
 );
 
-const JobItemRow = ({ item, employees, techOptions, onUpdate }: { item: any, employees: any[], techOptions: any[], onUpdate: (id: number, updates: any) => void }) => {
-    const handleProgressChange = (val: number) => {
-        const newStatus = val === 100 ? 'Completed' : val > 0 ? 'In Progress' : 'Pending';
-        onUpdate(item.id, { completion_percentage: val, status: newStatus });
-    };
+// JobItemRow component using Card
+const JobItemRow = ({
+  item,
+  employees,
+  techOptions,
+  onUpdate,
+}: {
+  item: any;
+  employees: any[];
+  techOptions: any[];
+  onUpdate: (id: number, updates: any) => void;
+}) => {
+  const handleProgressChange = (val: number[]) => {
+    const newPercentage = val[0];
+    const newStatus =
+      newPercentage === 100 ? 'Completed' : newPercentage > 0 ? 'In Progress' : 'Pending';
+    onUpdate(item.id, { completion_percentage: newPercentage, status: newStatus });
+  };
 
-
-    return (
-        <div className="group relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-gray-950 border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md hover:border-primary/20 transition-all">
-            <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${item.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-gray-50 dark:bg-gray-900 text-gray-400'} border dark:border-gray-800 transition-colors`}>
-                    {item.status === 'Completed' ? <IconCheck size={14} /> : <IconDots size={14} />}
-                </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                    <span className="font-bold text-xs text-gray-900 dark:text-white tracking-tight truncate">{item.part?.name}</span>
-                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider opacity-70 truncate">
-                        {item.service?.name}
-                    </span>
-                </div>
-            </div>
-
-            <div className="space-y-4 pt-1">
-                {/* Completion Percentage */}
-                <div className="space-y-1.5 px-0.5">
-                    <div className="flex justify-between items-center px-0.5">
-                        <Label className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Progress</Label>
-                        <span className="text-[10px] font-bold text-primary">{item.completion_percentage}%</span>
-                    </div>
-                    <Slider
-                        value={[item.completion_percentage || 0]}
-                        max={100}
-                        step={5}
-                        onValueChange={(val) => handleProgressChange(val[0])}
-                        className="w-full"
-                    />
-                </div>
-
-                <div className="flex flex-col gap-3">
-                    <div className="space-y-1.5 px-0.5">
-                        <Label className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Assigned Workforce</Label>
-                        <SearchableMultiSelect
-                            options={techOptions}
-                            value={item.technician_ids || []}
-                            onChange={(vals) => onUpdate(item.id, { technician_ids: vals })}
-                            placeholder="Assign Technicians"
-                            searchPlaceholder="Search staff..."
-                        />
-                    </div>
-                    
-                    <div className="space-y-1.5 px-0.5">
-                        <Label className="text-[8px] font-bold uppercase tracking-widest text-gray-400">Activity State</Label>
-                        <Select
-                            value={item.status}
-                            onValueChange={(val) => onUpdate(item.id, { status: val })}
-                        >
-                            <SelectTrigger className={`h-9 text-[9px] font-bold uppercase tracking-widest border border-gray-100 dark:border-gray-800 rounded-lg focus:ring-1 focus:ring-primary/30 bg-opacity-10 py-0 px-3 ${item.status === 'Completed' ? 'bg-emerald-500 text-emerald-600' : item.status === 'In Progress' ? 'bg-blue-500 text-blue-500' : 'bg-gray-50 dark:bg-gray-900 text-gray-400'}`}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-lg border-gray-100 dark:border-gray-800">
-                                <SelectItem value="Pending" className="text-[10px] font-bold uppercase tracking-widest">Pending</SelectItem>
-                                <SelectItem value="In Progress" className="text-[10px] font-bold uppercase tracking-widest text-blue-500">In Progress</SelectItem>
-                                <SelectItem value="Completed" className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Completed</SelectItem>
-                                <SelectItem value="On Hold" className="text-[10px] font-bold uppercase tracking-widest text-amber-500">On Hold</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-            </div>
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              'p-1.5 rounded-md border',
+              item.status === 'Completed'
+                ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                : 'bg-muted text-muted-foreground border-border'
+            )}
+          >
+            {item.status === 'Completed' ? <IconCheck size={14} /> : <IconDots size={14} />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm truncate">{item.part?.name}</div>
+            <div className="text-xs text-muted-foreground truncate">{item.service?.name}</div>
+          </div>
         </div>
-    );
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-xs">
+            <Label className="text-muted-foreground">Progress</Label>
+            <span className="font-medium">{item.completion_percentage}%</span>
+          </div>
+          <Slider
+            value={[item.completion_percentage || 0]}
+            max={100}
+            step={5}
+            onValueChange={handleProgressChange}
+            className="w-full"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Assigned workforce</Label>
+          <SearchableMultiSelect
+            options={techOptions}
+            value={item.technician_ids || []}
+            onChange={(vals) => onUpdate(item.id, { technician_ids: vals })}
+            placeholder="Select technicians"
+            searchPlaceholder="Search staff..."
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Activity state</Label>
+          <Select value={item.status} onValueChange={(val) => onUpdate(item.id, { status: val })}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="In Progress">In Progress</SelectItem>
+              <SelectItem value="Completed">Completed</SelectItem>
+              <SelectItem value="On Hold">On Hold</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
 interface JobCardDialogProps {
-    isOpen: boolean;
-    setIsOpen: (open: boolean) => void;
-    jobId: number | null;
-    onSave: () => void;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  jobId: number | null;
+  onSave: () => void;
 }
 
 const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps) => {
-    const { data: job, isLoading } = useJobCard(jobId);
-    const { data: employees = [] } = useTechnicians();
+  const { data: job, isLoading } = useJobCard(jobId);
+  const { data: employees = [], isLoading: isLoadingEmployees } = useTechnicians();
 
-    const updateItemMutation = useUpdateJobCardItem();
-    const updateJobMutation = useUpdateJobCard();
-    const updateMaterialMutation = useUpdateMaterialUsage();
-    const completeJobMutation = useCompleteJobCard();
+  const updateItemMutation = useUpdateJobCardItem();
+  const updateJobMutation = useUpdateJobCard();
+  const completeJobMutation = useCompleteJobCard();
 
-    const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
-    const [localItems, setLocalItems] = useState<any[]>([]);
-    const [localUsage, setLocalUsage] = useState<any[]>([]);
-    const [leadTechnicianId, setLeadTechnicianId] = useState<number | null>(null);
-    const [isDirty, setIsDirty] = useState(false);
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [localItems, setLocalItems] = useState<any[]>([]);
+  const [leadTechnicianId, setLeadTechnicianId] = useState<number | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const statusCfg = getStatusConfig(job?.status);
 
-    const techOptions = useMemo(() => (employees || []).map((e: any) => ({
-        value: e.id.toString(),
-        label: e.full_name || e.name || 'Technician'
-    })), [employees]);
+  const techOptions = useMemo(
+    () =>
+      (employees || []).map((e: any) => ({
+        value: Number(e.id),
+        label: e.full_name || e.name || 'Technician',
+      })),
+    [employees]
+  );
 
-    useEffect(() => {
-        if (job) {
-            setLocalItems((job.items || []).map((i: any) => ({
-                ...i,
-                technician_ids: i.technicians?.map((t: any) => t.id.toString()) || []
-            })));
-            setLocalUsage(job.material_usage || []);
-            setLeadTechnicianId(job.technician_lead_id);
-            setIsDirty(false);
-        }
-    }, [job]);
-
-    const handleUpdateItemLocal = (itemId: number, updates: any) => {
-        setLocalItems(prev => prev.map(i => i.id === itemId ? { ...i, ...updates } : i));
-        setIsDirty(true);
-    };
-
-    const handleUpdateUsageLocal = (usageId: number, updates: any) => {
-        setLocalUsage(prev => prev.map(u => u.id === usageId ? { ...u, ...updates } : u));
-        setIsDirty(true);
-    };
-
-    const saveChanges = async () => {
-        try {
-            // Process Job Card top-level updates (Lead Technician)
-            let jobPromise = null;
-            if (leadTechnicianId !== job.technician_lead_id) {
-                jobPromise = updateJobMutation.mutateAsync({
-                    id: job.id,
-                    updates: { technician_lead_id: leadTechnicianId }
-                });
-            }
-
-            // Process Items
-            const itemPromises = localItems
-                .filter(li => {
-                    const original = job.items.find((i: any) => i.id === li.id);
-                    const originalTechIds = original.technicians?.map((t: any) => t.id.toString()) || [];
-                    const techChanged = JSON.stringify(originalTechIds.sort()) !== JSON.stringify([...li.technician_ids].sort());
-                    return techChanged || original.status !== li.status || original.completion_percentage !== li.completion_percentage;
-                })
-                .map(li => updateItemMutation.mutateAsync({ 
-                    itemId: li.id, 
-                    updates: {
-                        technician_ids: li.technician_ids,
-                        status: li.status,
-                        completion_percentage: li.completion_percentage
-                    } 
-                }));
-
-            // Process Material Usage
-            const usagePromises = localUsage
-                .filter(lu => {
-                    const original = job.material_usage.find((u: any) => u.id === lu.id);
-                    return JSON.stringify(original) !== JSON.stringify(lu);
-                })
-                .map(lu => updateMaterialMutation.mutateAsync({ 
-                    usageId: lu.id, 
-                    ...lu 
-                }));
-
-            await Promise.all([jobPromise, ...itemPromises, ...usagePromises].filter(Boolean));
-            setIsDirty(false);
-            toast.success('Workforce and operations synchronized');
-        } catch (error) {
-            toast.error('Failed to sync changes');
-        }
-    };
-
-    const confirmComplete = () => {
-        if (jobId) {
-            completeJobMutation.mutate(jobId, {
-                onSuccess: () => {
-                    setIsCompleteModalOpen(false);
-                    onSave();
-                    setIsOpen(false);
-                }
-            });
-        }
-    };
-
-    const getStatusUI = (status: string) => {
-        switch (status) {
-            case 'Pending': return { class: 'bg-amber-500 text-white' };
-            case 'In Progress': return { class: 'bg-blue-600 text-white' };
-            case 'QC Review': return { class: 'bg-indigo-600 text-white' };
-            case 'Ready': return { class: 'bg-emerald-600 text-white' };
-            case 'Rework': return { class: 'bg-orange-500 text-white' };
-            case 'Delivered': return { class: 'bg-slate-700 text-white' };
-            case 'Cancelled': return { class: 'bg-destructive text-white' };
-            default: return { class: 'bg-secondary text-secondary-foreground' };
-        }
-    };
-
-    if (isLoading && !job) {
-        return (
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="max-w-6xl p-0 h-[80vh] overflow-hidden border dark:border-gray-800 shadow-2xl rounded-xl bg-white dark:bg-gray-950">
-                    <div className="p-8 space-y-8">
-                        <div className="flex justify-between items-start">
-                            <div className="flex gap-4">
-                                <Skeleton className="w-16 h-16 rounded-xl" />
-                                <div className="space-y-2">
-                                    <Skeleton className="h-8 w-64" />
-                                    <Skeleton className="h-4 w-32" />
-                                </div>
-                            </div>
-                            <Skeleton className="h-12 w-48 rounded-xl" />
-                        </div>
-                        <div className="grid grid-cols-3 gap-6">
-                            <TableSkeleton columns={1} rows={3} rowsOnly />
-                            <TableSkeleton columns={1} rows={3} rowsOnly />
-                            <TableSkeleton columns={1} rows={3} rowsOnly />
-                        </div>
-                        <div className="pt-4">
-                            <TableSkeleton columns={5} rows={3} />
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
-        );
+  useEffect(() => {
+    if (job) {
+      setLocalItems(
+        (job.items || []).map((i: any) => ({
+          ...i,
+          technician_ids: i.technicians?.map((t: any) => Number(t.id)) || [],
+        }))
+      );
+      setLeadTechnicianId(job.technician_lead_id);
+      setIsDirty(false);
     }
+  }, [job]);
 
-    const itemsBySide = {
-        Left: localItems.filter((i: any) => i.part?.side === 'Left') || [],
-        Main: localItems.filter((i: any) => !i.part?.side || i.part?.side === 'Main' || i.part?.side === 'Center') || [],
-        Right: localItems.filter((i: any) => i.part?.side === 'Right') || []
-    };
+  const handleUpdateItemLocal = (itemId: number, updates: any) => {
+    setLocalItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, ...updates } : i)));
+    setIsDirty(true);
+  };
 
-    const totalSqm = localUsage.reduce((acc, u) => acc + (parseFloat(u.actual_qty) || 0), 0);
+  const saveChanges = async () => {
+    try {
+      const itemPromises = localItems
+        .filter((li) => {
+          const original = job.items.find((i: any) => i.id === li.id);
+          const originalTechIds = original.technicians?.map((t: any) => Number(t.id)) || [];
+          const techChanged =
+            JSON.stringify(originalTechIds.sort()) !== JSON.stringify([...li.technician_ids].sort());
+          return techChanged || original.status !== li.status || original.completion_percentage !== li.completion_percentage;
+        })
+        .map((li) =>
+          updateItemMutation.mutateAsync({
+            itemId: li.id,
+            updates: {
+              technician_ids: li.technician_ids,
+              status: li.status,
+              completion_percentage: li.completion_percentage,
+            },
+          })
+        );
 
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="max-w-[95vw] w-full h-[95vh] flex flex-col p-0 overflow-hidden border dark:border-gray-800 shadow-2xl rounded-xl bg-white dark:bg-gray-950">
-                <DialogHeader className="px-8 py-6 bg-white dark:bg-gray-950 border-b dark:border-gray-800 shrink-0 relative overflow-hidden">
-                    <div className="flex items-center justify-between relative z-10 w-full gap-8">
-                        <div className="flex items-center gap-5 flex-1 min-w-0">
-                            <div className="p-4 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-inner">
-                                <IconTools className="w-8 h-8" />
-                            </div>
-                            <div className="space-y-1 flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-[10px] font-black uppercase text-primary tracking-[0.2em] flex items-center gap-1.5 bg-primary/5 px-2 py-0.5 rounded">
-                                        JOB CARD • {job?.job_no}
-                                    </span>
-                                    {isDirty && (
-                                        <Badge className="bg-amber-500 text-white border-0 text-[8px] font-bold uppercase rounded px-1.5 h-4 animate-pulse">
-                                            UNSAVED CHANGES
-                                        </Badge>
-                                    )}
-                                </div>
-                                <DialogTitle className="text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none truncate">
-                                    {job?.customer?.name}
-                                </DialogTitle>
-                                <div className="flex items-center gap-3 mt-1">
-                                    <Select
-                                        value={job?.status}
-                                        onValueChange={(val) => {
-                                            updateJobMutation.mutate({ id: job.id, updates: { status: val } });
-                                        }}
-                                    >
-                                        <SelectTrigger className={`h-6 text-[9px] font-black uppercase tracking-widest border-none px-3 rounded-lg shadow-sm w-32 ${getStatusUI(job?.status).class}`}>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border-gray-100 dark:border-gray-800 shadow-2xl">
-                                            <SelectItem value="Pending" className="text-[10px] font-bold uppercase tracking-widest">Pending</SelectItem>
-                                            <SelectItem value="In Progress" className="text-[10px] font-bold uppercase tracking-widest">In Progress</SelectItem>
-                                            <SelectItem value="QC Review" className="text-[10px] font-bold uppercase tracking-widest">QC Review</SelectItem>
-                                            <SelectItem value="Rework" className="text-[10px] font-bold uppercase tracking-widest text-orange-500">Rework</SelectItem>
-                                            <SelectItem value="Ready" className="text-[10px] font-bold uppercase tracking-widest">Ready</SelectItem>
-                                            <SelectItem value="Delivered" className="text-[10px] font-bold uppercase tracking-widest">Delivered</SelectItem>
-                                            <SelectItem value="Cancelled" className="text-[10px] font-bold uppercase tracking-widest text-destructive">Cancelled</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                                        <IconClock size={12} className="opacity-50" />
-                                        Inbound: {job && format(new Date(job.created_at), 'dd MMM yyyy, HH:mm')}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+      await Promise.all(itemPromises);
+      setIsDirty(false);
+      toast.success('Workforce dynamics synchronized');
+    } catch (error) {
+      toast.error('Failed to sync changes');
+    }
+  };
 
-                        <div className="flex items-center gap-6 px-6 py-4 bg-gray-50/80 dark:bg-gray-900/40 rounded-2xl border border-gray-100/50 dark:border-gray-800/50 backdrop-blur-sm shadow-sm ring-1 ring-black/5 dark:ring-white/5">
-                            <div className="flex flex-col items-end border-r dark:border-gray-800 pr-6">
-                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Team Leadership</span>
-                                <div className="w-56">
-                                    <SearchableSelect
-                                        options={techOptions}
-                                        value={leadTechnicianId}
-                                        onChange={(val) => {
-                                            setLeadTechnicianId(val as number);
-                                            setIsDirty(true);
-                                        }}
-                                        placeholder="Assign Lead"
-                                        className="h-9 text-[10px] font-bold"
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-end border-r dark:border-gray-800 pr-6">
-                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Asset Identity</span>
-                                <div className="flex items-center gap-2.5">
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider leading-none">{job?.vehicle?.plate_number}</span>
-                                        <span className="text-[9px] font-bold text-gray-400 uppercase leading-none mt-1">{job?.vehicle?.brand?.name} · {job?.vehicle?.model?.name}</span>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-gray-950 border dark:border-gray-800 flex items-center justify-center text-gray-400 shadow-sm">
-                                        <IconCar size={20} stroke={2} />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex flex-col items-end">
-                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Assigned Branch</span>
-                                <span className="text-xs font-black text-primary uppercase tracking-widest leading-none">{job?.branch?.name || 'Main HQ'}</span>
-                                <span className="text-[9px] font-bold text-gray-400 uppercase leading-none mt-1">Operations Sector</span>
-                            </div>
-                        </div>
-                    </div>
-                </DialogHeader>
+  const confirmComplete = () => {
+    if (jobId) {
+      completeJobMutation.mutate(jobId, {
+        onSuccess: () => {
+          setIsCompleteModalOpen(false);
+          onSave();
+          setIsOpen(false);
+        },
+      });
+    }
+  };
+if (isLoading && !job) {
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent className="max-w-7xl h-[90vh] p-0 flex flex-col overflow-hidden [&>button]:hidden">
+        {/* Custom close button (skeleton version) */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none z-50"
+        >
+          <IconX className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </button>
 
-                <ScrollArea className="flex-1">
-                    <div className="p-6 space-y-10">
-                        {/* Component Map */}
-                        <section className="space-y-6">
-                            <div className="flex items-center justify-between border-b dark:border-gray-800 pb-3">
-                                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                                    Installation Map
-                                    <Badge variant="secondary" className="rounded-full h-5 min-w-[20px] p-0 flex items-center justify-center text-[10px] font-bold">
-                                        {localItems.length}
-                                    </Badge>
-                                </h3>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                                <SideColumn title="Side (Left)" items={itemsBySide.Left} employees={employees} techOptions={techOptions} onUpdate={handleUpdateItemLocal} />
-                                <SideColumn title="Main / Center" items={itemsBySide.Main} employees={employees} techOptions={techOptions} onUpdate={handleUpdateItemLocal} />
-                                <SideColumn title="Side (Right)" items={itemsBySide.Right} employees={employees} techOptions={techOptions} onUpdate={handleUpdateItemLocal} />
-                            </div>
-                        </section>
-
-                        {/* Inventory Consumption */}
-                        <section className="space-y-6">
-                            <div className="flex items-center justify-between border-b dark:border-gray-800 pb-3">
-                                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                                    Material Consumption
-                                    <Badge variant="secondary" className="rounded-full h-5 min-w-[20px] p-0 flex items-center justify-center text-[10px] font-bold">
-                                        {localUsage.length}
-                                    </Badge>
-                                </h3>
-                            </div>
-
-                            <div className="bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                                <table className="w-full text-left border-collapse">
-                                    <thead className="bg-gray-50/50 dark:bg-gray-900/50 border-b dark:border-gray-800">
-                                        <tr>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">Consumable</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">Batch / Serial</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">Dimensions On Car</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">Dimensions For Cut</th>
-                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-gray-400 text-right">Total SQM</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                        {localUsage.map((usage: any) => (
-                                            <MaterialUsageRow
-                                                key={usage.id}
-                                                usage={usage}
-                                                branchId={job?.branch_id}
-                                                onUpdate={(updates) => handleUpdateUsageLocal(usage.id, updates)}
-                                            />
-                                        ))}
-                                    </tbody>
-                                    <tfoot className="bg-gray-50/50 dark:bg-gray-900/30 border-t dark:border-gray-800">
-                                        <tr>
-                                            <td colSpan={4} className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Aggregated Use</td>
-                                            <td className="px-6 py-4 text-base font-bold text-primary text-right">
-                                                {totalSqm.toFixed(4)} <span className="text-[10px] font-normal uppercase ml-1">SQM</span>
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                                {localUsage.length === 0 && (
-                                    <div className="p-20 text-center bg-white dark:bg-gray-950">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-900 flex items-center justify-center text-gray-300">
-                                                <IconPackage size={24} />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No materials linked</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-                    </div>
-                </ScrollArea>
-
-                <DialogFooter className="px-6 py-4 bg-white dark:bg-gray-950 border-t dark:border-gray-800 shrink-0">
-                    <div className="flex w-full items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <IconInfoCircle className="text-gray-300 w-4 h-4" />
-                            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider max-w-[250px]">
-                                Modifications here will sync with operational audits and inventory levels.
-                            </p>
-                        </div>
-                        <div className="flex gap-3">
-                            <Button variant="outline" onClick={() => setIsOpen(false)} className="px-6 h-10 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">
-                                Close
-                            </Button>
-                            
-                            {isDirty && (
-                                <Button 
-                                    onClick={saveChanges}
-                                    isLoading={updateItemMutation.isPending || updateMaterialMutation.isPending}
-                                    className="px-8 h-10 rounded-xl text-xs font-bold uppercase tracking-widest bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-0"
-                                >
-                                    <IconPackage size={14} className="mr-2" />
-                                    Save Changes
-                                </Button>
-                            )}
-
-                            <Button
-                                onClick={() => setIsCompleteModalOpen(true)}
-                                disabled={isDirty || completeJobMutation.isPending || job?.status === 'Completed'}
-                                className="px-8 h-10 rounded-xl text-xs font-bold uppercase tracking-widest shadow-md gap-2"
-                            >
-                                {completeJobMutation.isPending ? <IconLoader2 className="animate-spin w-4 h-4" /> : <IconCheck size={16} />}
-                                {job?.status === 'Completed' ? 'FINALIZED' : 'VERIFY & FINISH'}
-                            </Button>
-                        </div>
-                    </div>
-                </DialogFooter>
-            </DialogContent>
-
-            <ConfirmationModal
-                isOpen={isCompleteModalOpen}
-                setIsOpen={setIsCompleteModalOpen}
-                title="Review & Finalize Job Card"
-                description={
-                    <div className="space-y-6 pt-2">
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-tight leading-relaxed">
-                            Verify all measurements and assignments before completion. This will permanently deduct inventory and lock the operational audit.
-                        </p>
-                        
-                        <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
-                            <div className="space-y-2">
-                                <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
-                                    <IconPackage size={14} className="opacity-70" /> Material Consumption
-                                </h4>
-                                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                                    {localUsage.map(u => (
-                                        <div key={u.id} className="flex items-center justify-between px-3 py-2.5">
-                                            <div className="flex flex-col">
-                                                <span className="text-[11px] font-bold text-gray-900 dark:text-gray-100">{u.product?.name}</span>
-                                                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{u.serial_id ? 'Serialized' : 'Manual Stock'}</span>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="text-xs font-black text-primary">{u.actual_qty || '0.00' }</span>
-                                                <span className="text-[9px] font-bold text-gray-400 ml-1">SQM</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <h4 className="text-[9px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
-                                    <IconTools size={14} className="opacity-70" /> Installation Map
-                                </h4>
-                                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
-                                    {localItems.map(i => (
-                                        <div key={i.id} className="flex items-center justify-between px-3 py-2.5">
-                                            <div className="flex flex-col">
-                                                <span className="text-[11px] font-bold text-gray-900 dark:text-gray-100">{i.part?.name}</span>
-                                                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                                                    <IconUser size={10} /> 
-                                                    {(() => {
-                                                        if (!i.technician_ids || i.technician_ids.length === 0) return 'Unassigned';
-                                                        return i.technician_ids.map((tid: string) => {
-                                                            const tech = employees.find((e: any) => e.id.toString() === tid);
-                                                            return tech ? (tech.full_name || tech.name) : 'Unknown';
-                                                        }).join(', ');
-                                                    })()}
-                                                </span>
-                                            </div>
-                                            <Badge className={`text-[9px] h-5 font-black uppercase ${i.completion_percentage === 100 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'} border-0`}>
-                                                {i.completion_percentage}% Done
-                                            </Badge>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-                onConfirm={confirmComplete}
-                confirmText="CONFIRM & FINALIZED"
-                confirmVariant="success"
-                loading={completeJobMutation.isPending}
-            />
-        </Dialog>
-    );
-};
-
-const MaterialUsageRow = ({ usage, onUpdate, branchId }: { usage: any, onUpdate: (updates: any) => void, branchId?: number }) => {
-    const { data: serials = [] } = useAvailableSerials(usage.product_id, branchId);
-
-    const handleDimChange = (field: string, val: string) => {
-        const numVal = parseFloat(val) || 0;
-        const updates: any = { [field]: numVal };
-
-        if (field === 'width_cut' || field === 'height_cut') {
-            const w = field === 'width_cut' ? numVal : (parseFloat(usage.width_cut) || 0);
-            const h = field === 'height_cut' ? numVal : (parseFloat(usage.height_cut) || 0);
-            updates.actual_qty = (w * h).toFixed(4);
-        }
-        onUpdate(updates);
-    };
-
-    return (
-        <tr className="hover:bg-gray-50/20 dark:hover:bg-gray-900/20 transition-colors border-b dark:border-gray-800 last:border-0">
-            <td className="px-6 py-4">
-                <div className="flex flex-col">
-                    <span className="font-bold text-[13px] text-gray-900 dark:text-gray-100">{usage.product?.name}</span>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{usage.product?.code}</span>
+        <DialogHeader className="p-6 border-b">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <Skeleton className="w-12 h-12 rounded-lg" />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-16" />
                 </div>
-            </td>
-            <td className="px-6 py-4">
-                <Select
-                    value={usage.serial_id?.toString() || "null"}
-                    onValueChange={(val) => onUpdate({ serial_id: val === "null" ? null : parseInt(val) })}
+                <Skeleton className="h-6 w-64" />
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-7 w-32 rounded-md" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-6 bg-muted/30 p-3 rounded-lg">
+              <div className="flex flex-col">
+                <Skeleton className="h-3 w-24 mb-1" />
+                <Skeleton className="h-9 w-44" />
+              </div>
+              <div className="flex flex-col border-l pl-6">
+                <Skeleton className="h-3 w-24 mb-1" />
+                <div className="flex items-center gap-2">
+                  <div>
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-3 w-40 mt-1" />
+                  </div>
+                  <Skeleton className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="flex flex-col border-l pl-6">
+                <Skeleton className="h-3 w-24 mb-1" />
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-3 w-16 mt-1" />
+              </div>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <ScrollArea className="flex-1 p-6">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-4 rounded-full" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-5 w-8 rounded-full" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="h-full">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-5 w-8 rounded-full" />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {[1, 2, 3].map((j) => (
+                        <Card key={j} className="overflow-hidden">
+                          <CardContent className="p-4 space-y-3">
+                            <div className="flex items-start gap-3">
+                              <Skeleton className="h-8 w-8 rounded-md" />
+                              <div className="flex-1 space-y-1">
+                                <Skeleton className="h-4 w-32" />
+                                <Skeleton className="h-3 w-24" />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <Skeleton className="h-3 w-12" />
+                                <Skeleton className="h-3 w-8" />
+                              </div>
+                              <Skeleton className="h-2 w-full" />
+                            </div>
+                            <div className="space-y-2">
+                              <Skeleton className="h-3 w-24" />
+                              <Skeleton className="h-9 w-full" />
+                            </div>
+                            <div className="space-y-2">
+                              <Skeleton className="h-3 w-20" />
+                              <Skeleton className="h-9 w-full" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="p-6 border-t">
+          <div className="flex w-full items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4 rounded-full" />
+              <Skeleton className="h-3 w-64" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-16" />
+              <Skeleton className="h-9 w-28" />
+              <Skeleton className="h-9 w-28" />
+            </div>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+  const itemsBySide = {
+    Left: localItems.filter((i: any) => i.part?.side === 'Left') || [],
+    Main: localItems.filter((i: any) => !i.part?.side || i.part?.side === 'Main' || i.part?.side === 'Center') || [],
+    Right: localItems.filter((i: any) => i.part?.side === 'Right') || [],
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+<DialogContent className="max-w-7xl h-[90vh] p-0 flex flex-col overflow-hidden [&>button]:hidden">
+        {/* Custom close button */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-50"
+        >
+          <IconX className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </button>
+
+        <DialogHeader className="p-6 border-b">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <IconTools className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    JOB CARD • {job?.job_no}
+                  </span>
+                  {isDirty && (
+                    <Badge variant="outline" className="text-amber-500 border-amber-500 text-[10px]">
+                      UNSAVED
+                    </Badge>
+                  )}
+                </div>
+                <DialogTitle className="text-xl font-semibold truncate">
+                  {job?.customer?.name}
+                </DialogTitle>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+
+
+    <Select
+  value={job?.status}
+  onValueChange={(val) => {
+    updateJobMutation.mutate({ id: job.id, updates: { status: val } });
+  }}
+>
+  <SelectTrigger
+    className={cn(
+      'h-7 w-36 text-xs border px-2 shadow-none gap-1.5 focus:ring-0',
+      statusCfg.bg,
+      statusCfg.text,
+      statusCfg.border,
+    )}
+  >
+    {updateJobMutation.isPending && (
+      <IconLoader2 className="size-3 animate-spin shrink-0" />
+    )}
+    <SelectValue />
+  </SelectTrigger>
+
+  <SelectContent>
+    {JOB_CARD_STATUS_KEYS.map((key) => {
+      const cfg = getStatusConfig(key);
+      return (
+        <SelectItem key={key} value={key} className="text-xs focus:bg-transparent">
+          <span className="flex items-center gap-2">
+            <span className={cn('size-1.5 shrink-0 rounded-full', cfg.dot)} />
+            {cfg.label}
+          </span>
+        </SelectItem>
+      );
+    })}
+  </SelectContent>
+</Select>
+                  <div className="flex items-center gap-1">
+                    <IconClock size={12} />
+                    <span>Inbound: {job && format(new Date(job.created_at), 'dd MMM yyyy, HH:mm')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-6 bg-muted/30 p-3 rounded-lg">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase">Team lead</span>
+                <div className="w-44">
+                  {isLoadingEmployees ? (
+                    <Skeleton className="h-9 w-full" />
+                  ) : (
+                    <SearchableSelect
+                      options={techOptions}
+                      value={leadTechnicianId}
+                      onChange={(val) => {
+                        const tid = Number(val);
+                        setLeadTechnicianId(tid);
+                        updateJobMutation.mutate({
+                          id: job.id,
+                          updates: { technician_lead_id: tid }
+                        });
+                      }}
+                      placeholder="Assign lead"
+                      className="h-9 text-sm"
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col border-l pl-6">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase">Asset identity</span>
+                <div className="flex items-center gap-2">
+                  <div>
+                    <div className="font-semibold">{job?.vehicle?.plate_number}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {job?.vehicle?.brand?.name} · {job?.vehicle?.model?.name}
+                    </div>
+                  </div>
+                  <IconCar size={18} className="text-muted-foreground" />
+                </div>
+              </div>
+              <div className="flex flex-col border-l pl-6">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase">Operations</span>
+                <span className="font-semibold">{job?.branch?.name || job?.branch?.branch_name || 'Main HQ'}</span>
+                <span className="text-xs text-muted-foreground">Sector unit</span>
+              </div>
+            </div>
+          </div>
+        </DialogHeader>
+
+        {/* Rest of the dialog content same as before */}
+        <ScrollArea className="flex-1 p-6 pt-0 pb-0">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <IconTools className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold">Installation map</h3>
+                <Badge variant="secondary" className="rounded-full">
+                  {localItems.length}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <SideColumn
+                  title="Side (Left)"
+                  items={itemsBySide.Left}
+                  employees={employees}
+                  techOptions={techOptions}
+                  onUpdate={handleUpdateItemLocal}
+                  onCompleteAll={() => {
+                    itemsBySide.Left.forEach(i => handleUpdateItemLocal(i.id, { completion_percentage: 100, status: 'Completed' }));
+                  }}
+                />
+                <SideColumn
+                  title="Main / Center"
+                  items={itemsBySide.Main}
+                  employees={employees}
+                  techOptions={techOptions}
+                  onUpdate={handleUpdateItemLocal}
+                  onCompleteAll={() => {
+                    itemsBySide.Main.forEach(i => handleUpdateItemLocal(i.id, { completion_percentage: 100, status: 'Completed' }));
+                  }}
+                />
+                <SideColumn
+                  title="Side (Right)"
+                  items={itemsBySide.Right}
+                  employees={employees}
+                  techOptions={techOptions}
+                  onUpdate={handleUpdateItemLocal}
+                  onCompleteAll={() => {
+                    itemsBySide.Right.forEach(i => handleUpdateItemLocal(i.id, { completion_percentage: 100, status: 'Completed' }));
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="p-6 border-t">
+          <div className="flex w-full items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <IconInfoCircle size={14} />
+              <span>Modifications sync with operational audits and inventory levels.</span>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setIsOpen(false)}>
+                Close
+              </Button>
+              {isDirty && (
+                <Button
+                  onClick={saveChanges}
+                  disabled={updateItemMutation.isPending}
+                  variant="default"
                 >
-                    <SelectTrigger className="h-9 w-44 text-[10px] font-bold uppercase tracking-tight bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-lg">
-                        <SelectValue placeholder="No Serial" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-lg border-gray-200 dark:border-gray-800">
-                        <SelectItem value="null" className="text-[10px] font-bold">MANUAL STOCK</SelectItem>
-                        {serials.map((s: any) => (
-                            <SelectItem key={s.id} value={s.id.toString()} className="text-[10px] font-bold uppercase tracking-tight">
-                                {s.serial_number} ({s.current_quantity}{usage.unit})
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </td>
-            {/* Dimensions On Car */}
-            <td className="px-6 py-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[7px] font-bold text-gray-400 uppercase ml-1">Width</span>
-                        <Input
-                            type="number"
-                            value={usage.width_on_car}
-                            onChange={(e) => handleDimChange('width_on_car', e.target.value)}
-                            className="h-9 w-20 text-center text-xs font-bold rounded-lg border-gray-200 bg-white dark:bg-gray-950 focus:ring-1 focus:ring-primary/30"
-                        />
+                  {updateItemMutation.isPending && (
+                    <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Sync progress
+                </Button>
+              )}
+              <Button
+                onClick={() => setIsCompleteModalOpen(true)}
+                disabled={isDirty || completeJobMutation.isPending || job?.status === 'Completed'}
+                variant="default"
+              >
+                {completeJobMutation.isPending && (
+                  <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {job?.status === 'Completed' ? 'Finalized' : 'Mark as ready'}
+              </Button>
+            </div>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+
+
+      <ConfirmationModal
+        isOpen={isCompleteModalOpen}
+        setIsOpen={setIsCompleteModalOpen}
+        title="Review & Finalize Job Card"
+        description={
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Confirm that all assigned technician tasks are fulfilled. This will advance the job
+              state and notify supervisors for final inspection.
+            </p>
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+              <h4 className="text-xs font-medium">Installation map</h4>
+              <div className="border rounded-lg divide-y">
+                {localItems.map((i) => (
+                  <div key={i.id} className="flex items-center justify-between p-3 text-sm">
+                    <div>
+                      <div className="font-medium">{i.part?.name}</div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <IconUser size={12} />
+                        {(() => {
+                          if (!i.technician_ids || i.technician_ids.length === 0)
+                            return 'Unassigned';
+                          return i.technician_ids
+                            .map((tid: string) => {
+                              const tech = employees.find((e: any) => e.id.toString() === tid);
+                              return tech ? (tech.full_name || tech.name) : 'Unknown';
+                            })
+                            .join(', ');
+                        })()}
+                      </div>
                     </div>
-                    <span className="text-gray-300 mt-5 font-light">×</span>
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[7px] font-bold text-gray-400 uppercase ml-1">Length</span>
-                        <Input
-                            type="number"
-                            value={usage.height_on_car}
-                            onChange={(e) => handleDimChange('height_on_car', e.target.value)}
-                            className="h-9 w-20 text-center text-xs font-bold rounded-lg border-gray-200 bg-white dark:bg-gray-950 focus:ring-1 focus:ring-primary/30"
-                        />
-                    </div>
-                </div>
-            </td>
-            {/* Dimensions For Cut */}
-            <td className="px-6 py-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[7px] font-black text-primary uppercase ml-1 opacity-70">Width</span>
-                        <Input
-                            type="number"
-                            value={usage.width_cut}
-                            onChange={(e) => handleDimChange('width_cut', e.target.value)}
-                            className="h-9 w-20 text-center text-xs font-black rounded-lg border-primary/20 bg-primary/5 dark:bg-primary/10 text-primary-700 dark:text-primary-400 focus:ring-1 focus:ring-primary/50"
-                        />
-                    </div>
-                    <span className="text-primary/30 mt-5 font-bold">×</span>
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[7px] font-black text-primary uppercase ml-1 opacity-70">Length</span>
-                        <Input
-                            type="number"
-                            value={usage.height_cut}
-                            onChange={(e) => handleDimChange('height_cut', e.target.value)}
-                            className="h-9 w-20 text-center text-xs font-black rounded-lg border-primary/20 bg-primary/5 dark:bg-primary/10 text-primary-700 dark:text-primary-400 focus:ring-1 focus:ring-primary/50"
-                        />
-                    </div>
-                </div>
-            </td>
-            <td className="px-6 py-4 text-right">
-                <div className="flex flex-col items-end">
-                    <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">{usage.actual_qty || '0.0000'}</span>
-                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Calculated SQM</span>
-                </div>
-            </td>
-        </tr>
-    );
+                    <StatusBadge
+                      status={i.completion_percentage === 100 ? 'Completed' : 'Pending'}
+                      variant="light"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        }
+        onConfirm={confirmComplete}
+        confirmText="CONFIRM & FINALIZE"
+        confirmVariant="success"
+        loading={completeJobMutation.isPending}
+      />
+    </Dialog>
+  );
 };
 
 export default JobCardDialog;

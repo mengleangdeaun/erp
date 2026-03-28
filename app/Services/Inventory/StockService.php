@@ -58,6 +58,54 @@ class StockService
     }
 
     /**
+     * Deduct stock from multiple locations in a branch starting with the primary.
+     */
+    public function deductFromBranch(int $productId, int $branchId, float $quantity, string $type, $reference = null, ?string $reason = null, ?int $userId = null)
+    {
+        return DB::transaction(function () use ($productId, $branchId, $quantity, $type, $reference, $reason, $userId) {
+            $remainingToDeduct = abs($quantity);
+            
+            // 1. Get all active locations for the branch, primary first
+            $locations = \App\Models\Inventory\InventoryLocation::where('branch_id', $branchId)
+                ->where('is_active', true)
+                ->orderBy('is_primary', 'desc')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            if ($locations->isEmpty()) {
+                throw new \Exception("No active locations found for branch ID: {$branchId}");
+            }
+
+            foreach ($locations as $location) {
+                if ($remainingToDeduct <= 0) break;
+
+                $stock = InventoryStock::where('product_id', $productId)
+                    ->where('location_id', $location->id)
+                    ->first();
+
+                $available = $stock ? (float)$stock->quantity : 0;
+                
+                if ($available <= 0 && !$location->is_primary) continue;
+
+                $toDeduct = min($remainingToDeduct, $available);
+                
+                // If it's the primary location and we still have more to deduct, 
+                // we take everything from primary even if it goes negative (unless we want to prevent negative stock)
+                if ($location->is_primary && $toDeduct < $remainingToDeduct) {
+                    $toDeduct = $remainingToDeduct; 
+                }
+
+                if ($toDeduct > 0) {
+                    $this->updateStock($productId, $location->id, -$toDeduct, $type, $reference, $reason, $userId);
+                    $remainingToDeduct -= $toDeduct;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    /**
      * Transfer stock between two locations.
      */
     public function transferStock(int $productId, int $fromLocationId, int $toLocationId, float $quantity, $reference = null, ?string $reason = null, ?int $userId = null)
