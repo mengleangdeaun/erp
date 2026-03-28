@@ -99,7 +99,8 @@ class SalesOrderController extends Controller
         $order = null;
 
         DB::transaction(function () use ($request, $validated, $documentNumberService, $stockService, &$order) {
-            $orderNo = $documentNumberService->generate('sales_order');
+            $type = !empty($validated['parent_job_id']) ? 'replacement' : 'sales_order';
+            $orderNo = $documentNumberService->generate($type, $validated['branch_id']);
 
             $totalPaid = collect($validated['deposits'] ?? [])->sum('amount');
 
@@ -231,7 +232,7 @@ class SalesOrderController extends Controller
 
     private function generateJobCard(SalesOrder $order, array $validated, array $itemsWithJobParts, DocumentNumberService $documentNumberService)
     {
-        $jobNo = $documentNumberService->generate('job_card');
+        $jobNo = $documentNumberService->generate('job_card', $order->branch_id);
         $jobCard = JobCard::create([
             'job_no' => $jobNo,
             'sales_order_id' => $order->id,

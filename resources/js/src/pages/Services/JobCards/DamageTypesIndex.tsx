@@ -124,7 +124,7 @@ const DamageTypesIndex = () => {
     return (
         <div className="space-y-6 pb-12">
             <FilterBar
-                icon={<IconAlertTriangle className="w-6 h-6 text-orange-500" />}
+                icon={<IconAlertTriangle className="w-6 h-6" />}
                 title="Damage & Replacement Types"
                 description="Manage reasons for rework, failures, and warranty replacements."
                 search={search}
@@ -231,7 +231,7 @@ const DamageTypesIndex = () => {
                                         value={formData.name} 
                                         onChange={(e) => setFormData({...formData, name: e.target.value})}
                                         placeholder="e.g. Scratched during install" 
-                                        className="h-11 rounded-xl"
+                                        className="h-11"
                                         required
                                     />
                                 </div>
@@ -242,7 +242,7 @@ const DamageTypesIndex = () => {
                                         value={formData.description} 
                                         onChange={(e) => setFormData({...formData, description: e.target.value})}
                                         placeholder="Optional explanation of when this should be used..."
-                                        className="flex min-h-[100px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="flex min-h-[100px] w-full border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     />
                                 </div>
                                 <div className="flex items-center gap-3 p-4 rounded-xl bg-orange-50/30 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/20">
@@ -258,7 +258,7 @@ const DamageTypesIndex = () => {
                         </form>
                     </PerfectScrollbar>
 
-                    <DialogFooter className="shrink-0 flex gap-3 p-6 border-t border-gray-100 dark:divide-gray-800 bg-background">
+                    <DialogFooter className="shrink-0 flex gap-3 p-6 bg-background">
                         <Button variant="ghost" className="flex-1 h-11 font-bold text-gray-500" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                         <Button 
                             type="submit" 
@@ -267,7 +267,7 @@ const DamageTypesIndex = () => {
                             disabled={isSaving}
                         >
                             {isSaving ? <IconLoader2 className="animate-spin" size={18} /> : <IconDeviceFloppy size={18} />}
-                            {editingType ? 'Update Reason' : 'Save Reason'}
+                            {editingType ? 'Update Reason' : 'Savem Reason'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

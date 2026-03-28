@@ -19,8 +19,8 @@ class JobCardReplacementTypeController extends Controller
             });
         }
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->has('is_active')) {
+            $query->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN));
         }
 
         if ($request->has('all') || $request->paginate === 'false') {
@@ -35,7 +35,7 @@ class JobCardReplacementTypeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:active,inactive'
+            'is_active' => 'sometimes|boolean'
         ]);
 
         return JobCardReplacementType::create($validated);
@@ -48,7 +48,7 @@ class JobCardReplacementTypeController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'sometimes|in:active,inactive'
+            'is_active' => 'sometimes|boolean'
         ]);
 
         $type->update($validated);

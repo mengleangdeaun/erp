@@ -11,22 +11,39 @@ class DocumentNumberService
     /**
      * Generate a unique document number based on settings.
      *
-     * @param string $type The document type (e.g., 'purchase_order', 'stock_transfer')
+     * @param string $type The document type (e.g., 'sales_order', 'job_card', 'replacement')
+     * @param int|null $branchId The ID of the branch for contextual numbering
      * @return string
      */
-    public function generate(string $type): string
+    public function generate(string $type, ?int $branchId = null): string
     {
-        return DB::transaction(function () use ($type) {
-            $setting = DocumentSetting::where('document_type', $type)->lockForUpdate()->first();
+        return DB::transaction(function () use ($type, $branchId) {
+            // Priority 1: Branch-specific setting
+            $setting = null;
+            if ($branchId) {
+                $setting = DocumentSetting::where('document_type', $type)
+                    ->where('branch_id', $branchId)
+                    ->lockForUpdate()
+                    ->first();
+            }
 
+            // Priority 2: Global setting (branch_id is null)
             if (!$setting) {
-                // Create default setting if not exists
+                $setting = DocumentSetting::where('document_type', $type)
+                    ->whereNull('branch_id')
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            // Priority 3: Create default global setting if still not exists
+            if (!$setting) {
                 $defaultPrefix = $this->getDefaultPrefix($type);
                 $setting = DocumentSetting::create([
                     'document_type' => $type,
                     'prefix' => $defaultPrefix,
                     'number_padding' => 4,
                     'next_number' => 1,
+                    'branch_id' => null, // Initial defaults are always global
                 ]);
             }
 
@@ -34,6 +51,14 @@ class DocumentNumberService
 
             $segments = [];
             $separator = $setting->separator ?? '';
+
+            // 0. Optional Branch Code (Dynamic Prefix)
+            if ($setting->include_branch_code && $branchId) {
+                $branch = \App\Models\HR\Branch::find($branchId);
+                if ($branch && $branch->code) {
+                    $segments[] = $branch->code;
+                }
+            }
 
             // 1. Prefix
             if ($setting->prefix) {
@@ -74,6 +99,8 @@ class DocumentNumberService
             'MMDDYY' => 'MMDDYY',
             'YYMMDD' => 'YYMMDD',
             'DDMMMYY' => 'DDMMMYY',
+            'YYYY-MM-DD' => 'YYYY-MM-DD',
+            'DD-MM-YYYY' => 'DD-MM-YYYY',
         ];
 
         return $map[$format] ?? $format;
@@ -120,6 +147,9 @@ class DocumentNumberService
             'invoice' => 'INV',
             'quote' => 'QT',
             'customer' => 'CUS-',
+            'sales_order' => 'SO',
+            'job_card' => 'JC',
+            'replacement' => 'REP',
         ];
 
         return $map[$type] ?? strtoupper(substr($type, 0, 3)) . '-';

@@ -20,7 +20,7 @@ interface ReplacementJobDialogProps {
 }
 
 const ReplacementJobDialog: React.FC<ReplacementJobDialogProps> = ({ isOpen, setIsOpen, originalJob, onSave }) => {
-    const { data: replacementData } = useReplacementTypes({ all: true });
+    const { data: replacementData } = useReplacementTypes({ all: true, is_active: true });
     const replacementTypes = Array.isArray(replacementData) ? replacementData : (replacementData?.data || []);
     const navigate = useNavigate();
     

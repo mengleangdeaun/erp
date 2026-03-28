@@ -160,7 +160,7 @@ const DamageReportsIndex = () => {
     return (
         <div className="space-y-6 pb-20">
             <FilterBar
-                icon={<IconAlertTriangle className="size-6 text-rose-500" />}
+                icon={<IconAlertTriangle className="size-6 text-primary" />}
                 title="Damage & Accountability"
                 description="Technical failure analysis and technician performance audit"
                 search={search}
@@ -324,165 +324,178 @@ const DamageReportsIndex = () => {
             )}
 
             {/* Detailed Damage Report Dialog */}
-            <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-                <DialogContent className="max-w-xl flex flex-col p-0 border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white dark:bg-zinc-950 ring-1 ring-black/5">
-                    <DialogHeader className="shrink-0 px-8 py-10 bg-rose-600 text-white border-0 relative overflow-hidden transition-colors">
-                        {/* Vector Decals */}
-                        <div className="absolute -right-16 -top-16 size-48 bg-white/10 rounded-full blur-3xl" />
-                        <div className="absolute -left-10 -bottom-10 size-32 bg-black/10 rounded-full blur-2xl font-black text-[120px] select-none pointer-events-none flex items-center justify-center opacity-20">
-                          X
-                        </div>
+<Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+  <DialogContent className="max-w-xl max-h-[85vh] h-auto p-0 flex flex-col overflow-hidden [&>button]:hidden">
+    {/* Custom close button */}
+    <button
+      onClick={() => setIsDetailsOpen(false)}
+      className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+    >
+      <IconX className="h-4 w-4" />
+      <span className="sr-only">Close</span>
+    </button>
 
-                        <button
-                            onClick={() => setIsDetailsOpen(false)}
-                            className="absolute right-6 top-6 size-10 rounded-xl bg-black/10 hover:bg-black/20 text-white flex items-center justify-center transition-all z-20 group"
-                        >
-                            <IconX size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-                        </button>
-                        
-                        <div className="flex flex-col gap-4 relative z-10">
-                            <div className="space-y-1">
-                                <span className="text-[10px] font-black uppercase tracking-[0.4em] opacity-70">Technician Accountability</span>
-                                <DialogTitle className="text-4xl font-black tracking-tighter uppercase leading-none drop-shadow-sm">Incident Profile</DialogTitle>
-                                <DialogDescription className="text-white/70 font-bold text-[10px] uppercase tracking-widest mt-1">Detailed forensic breakdown of technical failure event.</DialogDescription>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-xl ring-1 ring-white/30 text-[11px] font-black uppercase tracking-tighter">
-                                   Case #{selectedDamage?.job_card?.job_no}
-                                </div>
-                                <div className="h-px w-8 bg-white/20" />
-                                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase opacity-60">
-                                   <IconCalendar size={14} />
-                                   {selectedDamage && format(new Date(selectedDamage.created_at), 'PPP')}
-                                </div>
-                            </div>
-                        </div>
-                    </DialogHeader>
-                    
-                    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-[400px] max-h-[70vh]">
-                        <div className="p-10 bg-zinc-50/50 dark:bg-zinc-950 space-y-10">
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Card className="border-none bg-white dark:bg-zinc-900 shadow-sm shadow-black/5 rounded-[2rem] p-6 group transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="size-12 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center border border-rose-500/20 shadow-inner group-hover:bg-rose-500 group-hover:text-white transition-all">
-                                            <IconUserExclamation size={24} />
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Mistake Liability</span>
-                                            <div className="flex flex-wrap gap-1">
-                                                {selectedDamage?.mistake_staff_names.map((name, i) => (
-                                                    <span key={i} className="font-black text-sm uppercase tracking-tighter truncate leading-none">{name}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
+    {/* Header with destructive background */}
+    <div className="shrink-0 p-6 bg-destructive/10 text-destructive border-b">
+      <div className="flex flex-col gap-4">
+        <div className="space-y-1">
+          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Technician Accountability
+          </span>
+          <DialogTitle className="text-2xl font-semibold tracking-tight uppercase">
+            Incident Profile
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Detailed forensic breakdown of technical failure event.
+          </DialogDescription>
+        </div>
+        <div className="flex items-center gap-3 text-sm">
+          <Badge variant="outline" className="border-destructive/30 bg-destructive/5">
+            Case #{selectedDamage?.job_card?.job_no}
+          </Badge>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <IconCalendar size={12} />
+            <span>{selectedDamage && format(new Date(selectedDamage.created_at), 'PPP')}</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
-                                <Card className="border-none bg-white dark:bg-zinc-900 shadow-sm shadow-black/5 rounded-[2rem] p-6 group transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="size-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center border border-blue-500/20 shadow-inner group-hover:bg-blue-500 group-hover:text-white transition-all">
-                                            <IconTools size={24} />
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Assigned Remediation</span>
-                                            <div className="flex flex-wrap gap-1">
-                                                {selectedDamage?.rework_staff_names.map((name, i) => (
-                                                    <span key={i} className="font-black text-sm uppercase tracking-tighter truncate leading-none">{name}</span>
-                                                ))}
-                                                {selectedDamage?.rework_staff_names.length === 0 && <span className="font-black text-xs text-slate-400 italic">No staff assigned</span>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </div>
+    <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1">
+      <div className="p-6 py-3 space-y-6">
+        {/* Staff cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                <IconUserExclamation size={20} />
+              </div>
+              <div>
+                <div className="text-xs font-medium text-muted-foreground uppercase">Mistake Liability</div>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {selectedDamage?.mistake_staff_names?.map((name: string, i: number) => (
+                    <span key={i} className="text-sm font-semibold uppercase">{name}</span>
+                  ))}
+                  {(!selectedDamage?.mistake_staff_names || selectedDamage.mistake_staff_names.length === 0) && (
+                    <span className="text-sm text-muted-foreground">—</span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <IconTools size={20} />
+              </div>
+              <div>
+                <div className="text-xs font-medium text-muted-foreground uppercase">Assigned Remediation</div>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {selectedDamage?.rework_staff_names?.map((name: string, i: number) => (
+                    <span key={i} className="text-sm font-semibold uppercase">{name}</span>
+                  ))}
+                  {(!selectedDamage?.rework_staff_names || selectedDamage.rework_staff_names.length === 0) && (
+                    <span className="text-sm text-muted-foreground">No staff assigned</span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                   <div className="size-8 rounded-lg bg-zinc-900 text-white flex items-center justify-center font-black italic text-xs shadow-lg">E</div>
-                                   <h3 className="text-xl font-black tracking-tighter uppercase">Incident Intelligence</h3>
-                                </div>
+        {/* Incident Intelligence */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground text-xs font-bold">
+              E
+            </div>
+            <h3 className="text-base font-semibold uppercase">Damage Log</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <IconBuildingStore size={12} /> Workshop Component
+              </Label>
+              <p className="font-semibold">{selectedDamage?.job_card_item?.part?.name || 'Unknown System'}</p>
+              <div className="h-px w-12 bg-border" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <IconUserCircle size={12} /> Audit Authority (QC)
+              </Label>
+              <p className="font-semibold">{selectedDamage?.qc_report?.qc_person?.full_name || 'System Auto'}</p>
+              <div className="h-px w-12 bg-border" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <IconAlertTriangle size={12} /> Failure Classification
+              </Label>
+              <Badge variant="destructive" className="text-[10px] uppercase">
+                {selectedDamage?.reason?.name || 'Material Conflict'}
+              </Badge>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <IconStarFilled size={12} /> Component QC Rating
+              </Label>
+              <div className="flex items-center gap-2">
+                {renderStars(selectedDamage?.rating || 1)}
+                <span className="text-xs text-muted-foreground">({selectedDamage?.rating}/5)</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-2">
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
-                                            <IconBuildingStore size={12} /> Workshop Component
-                                        </Label>
-                                        <p className="text-base font-black uppercase tracking-tight text-zinc-800 dark:text-zinc-200">{selectedDamage?.job_card_item?.part?.name || 'Unknown System'}</p>
-                                        <div className="h-0.5 w-12 bg-primary/20 rounded-full" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5">
-                                            <IconUserCircle size={12} /> Audit Authority (QC)
-                                        </Label>
-                                        <p className="text-base font-black uppercase tracking-tight text-zinc-800 dark:text-zinc-200">{selectedDamage?.qc_report?.qc_person?.full_name || 'System Auto'}</p>
-                                        <div className="h-0.5 w-12 bg-emerald-500/20 rounded-full" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-rose-400 flex items-center gap-1.5">
-                                            <IconAlertTriangle size={12} /> Failure Classification
-                                        </Label>
-                                        <Badge variant="destructive" className="h-6 px-3 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/20 ring-1 ring-rose-500/30">
-                                            {selectedDamage?.reason?.name || 'Material Conflict'}
-                                        </Badge>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
-                                            <IconStarFilled size={12} /> Component QC Rating
-                                        </Label>
-                                        <div className="flex items-center gap-2">
-                                           {renderStars(selectedDamage?.rating || 1)}
-                                           <span className="text-xs font-black text-amber-500/60 font-mono tracking-tighter italic">({selectedDamage?.rating}/5)</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+        {/* Technical Context */}
+        <div className="border-t pt-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs font-medium text-muted-foreground uppercase">
+              Technical Context & Observations
+            </Label>
+            <IconMessageDots size={16} className="text-muted-foreground" />
+          </div>
+          <Card className="bg-muted/30">
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                  Master Audit Log
+                </span>
+                <p className="text-sm italic leading-relaxed">
+                  "{selectedDamage?.notes || "No additional forensic observations were recorded for this specific technical failure incident."}"
+                </p>
+              </div>
+              <div className="flex items-center justify-between border-t pt-4">
+                <div>
+                  <div className="text-[10px] font-medium text-muted-foreground uppercase">Incident Timestamp</div>
+                  <div className="text-xs font-mono">
+                    {selectedDamage && format(new Date(selectedDamage.created_at), 'HH:mm:ss · yyyy-MM-dd')}
+                  </div>
+                </div>
+                <IconHistory size={20} className="text-muted-foreground/30" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </PerfectScrollbar>
 
-                            <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Technical Context & Observations</Label>
-                                    <IconMessageDots size={18} className="text-zinc-300 dark:text-zinc-700" />
-                                </div>
-                                <div className="relative p-8 rounded-[2rem] bg-zinc-900 shadow-2xl overflow-hidden group">
-                                    {/* Watermark */}
-                                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-700">
-                                       <IconAlertTriangle size={120} />
-                                    </div>
-                                    <div className="relative z-10">
-                                        <span className="block text-[8px] font-black text-primary uppercase tracking-[0.5em] mb-4">Master Audit Log</span>
-                                        <p className="text-sm font-bold leading-relaxed italic text-white/90 font-serif">
-                                            "{selectedDamage?.notes || "No additional forensic observations were recorded for this specific technical failure incident."}"
-                                        </p>
-                                        <div className="mt-8 flex items-center justify-between border-t border-white/5 pt-6">
-                                            <div className="flex flex-col">
-                                                <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">Incident Timestamp</span>
-                                                <span className="text-[10px] font-mono text-white/60 uppercase">{selectedDamage && format(new Date(selectedDamage.created_at), 'HH:mm:ss · yyyy-MM-dd')}</span>
-                                            </div>
-                                            <IconHistory size={24} className="text-white/10" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </PerfectScrollbar>
-
-                    <div className="shrink-0 p-8 bg-zinc-50 dark:bg-zinc-950 border-t border-zinc-200 dark:border-zinc-900 flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="flex items-center gap-4 text-muted-foreground font-black text-[10px] uppercase tracking-tighter">
-                          <span className="opacity-50">Incident Hash</span>
-                          <span className="px-2 py-1 bg-white dark:bg-zinc-900 rounded-lg ring-1 ring-black/5 select-all hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">#{selectedDamage?.id}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-3 w-full md:w-auto">
-                           <Button variant="outline" className="flex-1 md:flex-none h-12 px-8 rounded-2xl gap-2 font-black uppercase text-xs tracking-widest border-2 hover:bg-zinc-100 transition-all active:scale-95 duration-200">
-                              <IconRefresh size={18} /> Flag for Review
-                           </Button>
-                           <Button className="flex-1 md:flex-none h-12 px-10 rounded-2xl gap-2 font-black uppercase text-xs tracking-[0.15em] bg-zinc-900 hover:bg-zinc-800 text-white shadow-xl shadow-black/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
-                              <IconFileExport size={18} /> Export Profile
-                           </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+    {/* Footer */}
+    <div className="shrink-0 p-4 border-t flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="font-medium">Incident Hash:</span>
+        <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">#{selectedDamage?.id}</code>
+      </div>
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm">
+          <IconRefresh size={16} className="mr-2" /> Flag for Review
+        </Button>
+        <Button size="sm">
+          <IconFileExport size={16} className="mr-2" /> Export Profile
+        </Button>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
         </div>
     );
 };

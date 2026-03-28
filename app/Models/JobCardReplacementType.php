@@ -12,7 +12,11 @@ class JobCardReplacementType extends Model
     protected $fillable = [
         'name',
         'description',
-        'status'
+        'is_active'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean'
     ];
 
     public function jobCards()

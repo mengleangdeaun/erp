@@ -18,6 +18,8 @@ class DocumentSetting extends Model
         'last_reset_date',
         'date_format',
         'separator',
+        'branch_id',
+        'include_branch_code',
     ];
 
     protected $casts = [

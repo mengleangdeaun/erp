@@ -26,6 +26,7 @@ export default function SettingDialog({ isOpen, setIsOpen, setting, onSave }: Se
         is_monthly_reset: false,
         date_format: '',
         separator: '-',
+        include_branch_code: false,
     });
     const [saving, setSaving] = useState(false);
 
@@ -40,6 +41,7 @@ export default function SettingDialog({ isOpen, setIsOpen, setting, onSave }: Se
                 is_monthly_reset: !!setting.is_monthly_reset,
                 date_format: setting.date_format || '_NONE_',
                 separator: setting.separator || '-',
+                include_branch_code: !!setting.include_branch_code,
             });
         }
     }, [setting]);
@@ -85,6 +87,12 @@ export default function SettingDialog({ isOpen, setIsOpen, setting, onSave }: Se
 
     const renderPreview = () => {
         const segments = [];
+        
+        // Simulating branch code preview if enabled
+        if (form.include_branch_code) {
+            segments.push('BR'); // Dummy branch code for preview
+        }
+
         if (form.prefix) segments.push(form.prefix);
         if (form.date_format && form.date_format !== '_NONE_') {
             try {
@@ -220,6 +228,17 @@ export default function SettingDialog({ isOpen, setIsOpen, setting, onSave }: Se
                                 onCheckedChange={val => setForm({ ...form, is_monthly_reset: val, is_yearly_reset: val ? false : form.is_yearly_reset })} 
                             />
                         </div>
+
+                        <div className="flex items-center justify-between group pt-4 border-t border-gray-100 dark:border-gray-800">
+                            <div className="space-y-0.5">
+                                <Label className="text-sm font-semibold text-primary">Include Branch Code</Label>
+                                <p className="text-[10px] text-gray-500 italic">Automatically prepend branch code to final number</p>
+                            </div>
+                            <Switch 
+                                checked={form.include_branch_code} 
+                                onCheckedChange={val => setForm({ ...form, include_branch_code: val })} 
+                            />
+                        </div>
                     </div>
 
                     <div className="bg-primary/5 dark:bg-primary/10 p-4 rounded-xl border border-primary/10">
@@ -231,19 +250,19 @@ export default function SettingDialog({ isOpen, setIsOpen, setting, onSave }: Se
 
                     <div className="flex justify-end gap-2 pt-2">
                         <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="h-10">Cancel</Button>
-    <Button type="submit" disabled={saving} className="h-10 gap-2 px-6">
-        {saving ? (
-            <>
-                <IconLoader2 size={18} className="animate-spin" />
-                Saving...
-            </>
-        ) : (
-            <>
-                <IconDeviceFloppy size={18} /> 
-                {setting ? 'Update' : 'Create'} Setting
-            </>
-        )}
-    </Button>
+                        <Button type="submit" disabled={saving} className="h-10 gap-2 px-6 text-white font-bold">
+                            {saving ? (
+                                <>
+                                    <IconLoader2 size={18} className="animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <IconDeviceFloppy size={18} /> 
+                                    Update Setting
+                                </>
+                            )}
+                        </Button>
                     </div>
                 </form>
             </DialogContent>

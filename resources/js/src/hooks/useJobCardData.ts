@@ -347,7 +347,7 @@ export const useReplacementTypes = (params: any = {}) => {
             if (params.page) queryParams.append('page', params.page.toString());
             if (params.per_page) queryParams.append('per_page', params.per_page.toString());
             if (params.search) queryParams.append('search', params.search);
-            if (params.status) queryParams.append('status', params.status);
+            if (params.is_active !== undefined) queryParams.append('is_active', params.is_active.toString());
             if (params.all) queryParams.append('all', 'true');
 
             const response = await fetch(`/api/services/replacement-types?${queryParams.toString()}`);

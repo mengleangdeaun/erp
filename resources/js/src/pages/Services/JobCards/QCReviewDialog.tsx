@@ -32,6 +32,7 @@ import {
   IconClock,
   IconInfoCircle,
 } from '@tabler/icons-react';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { useTechnicians, useJobCard, useReplacementTypes, useCreateQCReport } from '@/hooks/useJobCardData';
 import { toast } from 'sonner';
 import SearchableMultiSelect from '@/components/ui/SearchableMultiSelect';
@@ -232,7 +233,7 @@ const QCReviewDialog: React.FC<QCReviewDialogProps> = ({
 }) => {
   const { data: job, isLoading } = useJobCard(jobId);
   const { data: technicians = [] } = useTechnicians();
-  const { data: replacementTypesData = [] } = useReplacementTypes({ all: true });
+  const { data: replacementTypesData = [] } = useReplacementTypes({ all: true, is_active: true });
   const replacementTypes = Array.isArray(replacementTypesData)
     ? replacementTypesData
     : replacementTypesData?.data || [];
@@ -308,7 +309,7 @@ const QCReviewDialog: React.FC<QCReviewDialogProps> = ({
   if (isLoading && !job) {
     return (
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-6xl h-[90vh] p-0 flex flex-col overflow-hidden [&>button]:hidden">
+        <DialogContent className="max-w-7xl max-h-[90vh] h-auto p-0 flex flex-col overflow-hidden [&>button]:hidden">
           <button
             onClick={() => setIsOpen(false)}
             className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 z-50"
@@ -353,7 +354,7 @@ const QCReviewDialog: React.FC<QCReviewDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-6xl h-[90vh] p-0 flex flex-col overflow-hidden [&>button]:hidden">
+      <DialogContent className="max-w-7xl max-h-[90vh] h-auto p-0 flex flex-col overflow-hidden [&>button]:hidden">
         {/* Custom close button */}
         <button
           onClick={() => setIsOpen(false)}
@@ -475,7 +476,7 @@ const QCReviewDialog: React.FC<QCReviewDialogProps> = ({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-6">
+        <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 p-6">
           <div className="space-y-6">
             {/* Installation map section */}
             <div>
@@ -551,7 +552,7 @@ const QCReviewDialog: React.FC<QCReviewDialogProps> = ({
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </PerfectScrollbar>
 
         <DialogFooter className="p-6 border-t">
           <div className="flex w-full items-center justify-between gap-4">
