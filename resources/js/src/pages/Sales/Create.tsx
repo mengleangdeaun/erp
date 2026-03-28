@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setPageTitle } from '@/store/themeConfigSlice';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +11,8 @@ import {
     IconPackage, IconTools, IconDeviceFloppy, IconLoader2, 
     IconX, IconSearch, IconChevronRight, IconFilter,
     IconShoppingCart, IconArrowLeft, IconBuildingWarehouse, IconBoxSeam,
-    IconCreditCard, IconCheck, IconCoins, IconSearchOff, IconInfoCircle
+    IconCreditCard, IconCheck, IconCoins, IconSearchOff, IconInfoCircle,
+    IconAlertTriangle
 } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { SearchableSelect } from '@/components/ui/SearchableSelect';
@@ -60,6 +61,9 @@ interface SalesOrder {
     sale_remark_id: number | null;
     invoice_image_path?: string;
     deposits: { amount: number; payment_account_id: number | null; date: string; notes: string; receipt: File | null }[];
+    parent_job_id?: number | null;
+    replacement_type_id?: number | null;
+    replacement_mode?: boolean;
 }
 
 interface SalesOrderItem {
@@ -225,6 +229,8 @@ const SalesCreate = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const isEdit = !!id;
+    const location = useLocation();
+    const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
     const [search, setSearch] = useState('');
     const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
@@ -233,8 +239,8 @@ const SalesCreate = () => {
     const [activeTab, setActiveTab] = useState<'services' | 'products'>('services');
 
     useEffect(() => {
-        dispatch(setPageTitle(isEdit ? `${t('edit_sale')} #${id}` : t('point_of_sale', 'Point of Sale')));
-    }, [dispatch, t, isEdit, id]);
+        dispatch(setPageTitle(isEdit ? `${t('edit_sale')} #${id}` : (queryParams.get('mode') === 'replacement' ? 'Job Card Replacement' : t('point_of_sale', 'Point of Sale'))));
+    }, [dispatch, t, isEdit, id, queryParams]);
     
     const [catalogSearch, setCatalogSearch] = useState('');
     const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
@@ -259,8 +265,11 @@ const SalesCreate = () => {
         notes: '',
         use_tax: true,
         global_tax_percent: 10,
-        sale_remark_id: null,
+        sale_remark_id: 1, // Default to Normal Sale
         deposits: [],
+        parent_job_id: null,
+        replacement_type_id: null,
+        replacement_mode: false,
     });
 
     const [manualGrandTotal, setManualGrandTotal] = useState<number | null>(null);
@@ -291,7 +300,9 @@ const SalesCreate = () => {
         plate_number: '',
         vin_last_4: '',
         year: '' as string | number,
+        current_mileage: '' as string | number,
     });
+    const [isSavingVehicle, setIsSavingVehicle] = useState(false);
 
     // Service Item Selection state
     const [selectedServiceForItems, setSelectedServiceForItems] = useState<any>(null);
@@ -378,10 +389,13 @@ const SalesCreate = () => {
 
     // Default branch selection
     useEffect(() => {
-        if (!selectedBranchId && activeBranches.length > 0 && !isEdit) {
+        const urlBranchId = queryParams.get('branch_id');
+        if (urlBranchId && !isEdit) {
+            setSelectedBranchId(parseInt(urlBranchId));
+        } else if (!selectedBranchId && activeBranches.length > 0 && !isEdit) {
             setSelectedBranchId(activeBranches[0].id);
         }
-    }, [activeBranches, selectedBranchId, isEdit]);
+    }, [activeBranches, selectedBranchId, isEdit, queryParams]);
 
     // Fetch existing order for editing
     useEffect(() => {
@@ -406,6 +420,9 @@ const SalesCreate = () => {
                             discount_value: parseFloat(i.discount_amount || 0),
                             discount: parseFloat(i.discount_amount || 0),
                             tax_percent: 0,
+                            // New fields for forensic tracking
+                            original_item_id: i.original_item_id,
+                            replacement_type_id: i.replacement_type_id
                         })),
                         subtotal: parseFloat(data.subtotal),
                         tax_total: parseFloat(data.tax_total),
@@ -419,7 +436,9 @@ const SalesCreate = () => {
                         global_tax_percent: parseFloat(data.tax_percent || 10),
                         sale_remark_id: data.sale_remark_id,
                         invoice_image_path: data.invoice_image_path,
-                        deposits: [], // We don't edit old deposits in this flow usually
+                        deposits: [],
+                        replacement_mode: !!data.parent_id,
+                        parent_job_id: data.parent_id
                     });
 
                     // Restore manual subtotal override if it existed
@@ -443,6 +462,46 @@ const SalesCreate = () => {
             fetchOrder();
         }
     }, [id, isEdit]);
+
+    // Handle Auto-loading replacement data
+    useEffect(() => {
+        const mode = queryParams.get('mode');
+        const parentJobId = queryParams.get('parent_job_id');
+        const itemsStr = queryParams.get('items');
+        const customerIdParam = queryParams.get('customer_id');
+        const vehicleIdParam = queryParams.get('vehicle_id');
+        const notesParam = queryParams.get('notes');
+
+        if (mode === 'replacement' && itemsStr && !isEdit && !form.replacement_mode) {
+            try {
+                const parsedItems = JSON.parse(itemsStr);
+                setForm(prev => ({
+                    ...prev,
+                    customer_id: customerIdParam ? parseInt(customerIdParam) : prev.customer_id,
+                    vehicle_id: vehicleIdParam ? parseInt(vehicleIdParam) : prev.vehicle_id,
+                    notes: notesParam || prev.notes,
+                    parent_job_id: parentJobId ? parseInt(parentJobId) : null,
+                    replacement_mode: true,
+                    use_tax: false, 
+                    global_tax_percent: 0,
+                    items: parsedItems.map((item: any) => ({
+                        ...item,
+                        qty: 1,
+                        unit_price: 0,
+                        discount_type: 'FIXED',
+                        discount_value: 0,
+                        discount: 0,
+                        tax_percent: 0,
+                        original_item_id: item.original_item_id,
+                        replacement_type_id: item.replacement_type_id
+                    }))
+                }));
+                toast.info('Replacement context loaded');
+            } catch (e) {
+                console.error("Failed to parse replacement items", e);
+            }
+        }
+    }, [queryParams, isEdit, form.replacement_mode]);
 
     const handleAddItem = (type: 'service' | 'product', id: number) => {
         if (type === 'service') {
@@ -694,10 +753,15 @@ const SalesCreate = () => {
             formData.append('discount_type', form.global_discount_type);
             formData.append('discount_value', form.global_discount_value.toString());
 
+            if (form.parent_job_id) formData.append('parent_job_id', form.parent_job_id.toString());
+            if (form.replacement_type_id) formData.append('replacement_type_id', form.replacement_type_id.toString());
+
             form.items.forEach((item, idx) => {
                 if (item.service_id) formData.append(`items[${idx}][service_id]`, item.service_id.toString());
                 if (item.product_id) formData.append(`items[${idx}][product_id]`, item.product_id.toString());
                 if (item.job_part_id) formData.append(`items[${idx}][job_part_id]`, item.job_part_id.toString());
+                if (item.original_item_id) formData.append(`items[${idx}][original_item_id]`, item.original_item_id.toString());
+                if (item.replacement_type_id) formData.append(`items[${idx}][replacement_type_id]`, item.replacement_type_id.toString());
                 formData.append(`items[${idx}][qty]`, item.qty.toString());
                 formData.append(`items[${idx}][unit_price]`, item.unit_price.toString());
                 formData.append(`items[${idx}][discount]`, item.discount.toString());
@@ -796,6 +860,23 @@ const SalesCreate = () => {
                 </div>
             )}
             
+            {form.replacement_mode && (
+                <div className="bg-orange-500/10 border-b border-orange-100 dark:border-orange-500/20 px-6 py-2.5 flex items-center justify-between shrink-0 animate-in slide-in-from-top duration-500 relative z-10">
+                    <div className="flex items-center gap-4">
+                        <div className="p-2 rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-500/40">
+                            <IconAlertTriangle size={16} stroke={3} />
+                        </div>
+                        <div>
+                            <span className="text-[11px] font-black uppercase text-orange-700 dark:text-orange-500 tracking-[0.1em] leading-none block mb-0.5">Replacement Mode Active</span>
+                            <p className="text-[9px] font-bold text-orange-600/60 uppercase tracking-widest leading-none">Linked to Parent Job Card <span className="text-orange-700 dark:text-orange-500">#{form.parent_job_id}</span></p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="text-[8px] font-black border-orange-200 dark:border-orange-500/30 text-orange-600 bg-white dark:bg-zinc-900 px-2.5 py-1 uppercase tracking-widest shadow-sm">Warranty Settlement</Badge>
+                    </div>
+                </div>
+            )}
+            
             {/* Top Navigation Bar */}
             <div className="bg-white dark:bg-gray-900 px-4 py-4.5 flex items-center justify-between border-b dark:border-gray-800 shrink-0">
                 <div className="flex items-center gap-3 shrink-0">
@@ -876,10 +957,10 @@ const SalesCreate = () => {
   <Button 
     disabled={saving || form.items.length === 0} 
     onClick={() => setShowCheckoutDialog(true)}
-    className="bg-primary hover:bg-primary/90 text-white font-bold px-6 h-9 shadow-md shadow-primary/20 active:scale-95 transition-all text-[11px]"
+    className={`${form.replacement_mode ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-500/30' : 'bg-primary hover:bg-primary/90 shadow-primary/30'} text-white font-bold px-6 h-9 active:scale-95 transition-all text-[11px]`}
   >
     <IconShoppingCart className="mr-1.5" size={14} />
-    Checkout
+    {form.replacement_mode ? 'COMPLETE REPLACEMENT' : 'Checkout'}
   </Button>
   
   {form.items.length > 0 && (
@@ -1378,15 +1459,38 @@ const SalesCreate = () => {
                                 />
                             </div>
                         </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">VIN (Last 4)</Label>
+                                <Input 
+                                    placeholder="last 4 digits"
+                                    value={newVehicle.vin_last_4}
+                                    onChange={(e) => setNewVehicle({ ...newVehicle, vin_last_4: e.target.value.toUpperCase().slice(0, 4) })}
+                                    className="rounded-lg h-11"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-bold uppercase text-gray-400 tracking-widest">Current Mileage</Label>
+                                <Input 
+                                    type="number"
+                                    placeholder="0"
+                                    value={newVehicle.current_mileage}
+                                    onChange={(e) => setNewVehicle({ ...newVehicle, current_mileage: e.target.value })}
+                                    className="rounded-lg h-11"
+                                />
+                            </div>
+                        </div>
                     </div>
                     <DialogFooter>
-                        <Button 
+                         <Button 
                             className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-lg shadow-lg"
+                            disabled={isSavingVehicle}
                             onClick={async () => {
-                                if (!newVehicle.brand_id || !newVehicle.plate_number) {
-                                    toast.error('Brand and Plate No are required');
+                                if (!newVehicle.brand_id || (!newVehicle.plate_number && !newVehicle.vin_last_4)) {
+                                    toast.error('Brand and either Plate No or VIN are required');
                                     return;
                                 }
+                                setIsSavingVehicle(true);
                                 try {
                                     const res = await fetch('/api/crm/customer-vehicles', {
                                         method: 'POST',
@@ -1399,7 +1503,9 @@ const SalesCreate = () => {
                                             brand_id: newVehicle.brand_id,
                                             model_id: newVehicle.model_id,
                                             plate_number: newVehicle.plate_number,
+                                            vin_last_4: newVehicle.vin_last_4,
                                             year: newVehicle.year,
+                                            current_mileage: newVehicle.current_mileage,
                                             status: 'ACTIVE'
                                         })
                                     });
@@ -1412,15 +1518,18 @@ const SalesCreate = () => {
                                         
                                         setForm((prev: any) => ({ ...prev, vehicle_id: created.id }));
                                         setShowAddVehicle(false);
-                                        setNewVehicle({ brand_id: null, model_id: null, plate_number: '', vin_last_4: '', year: '' });
+                                        setNewVehicle({ brand_id: null, model_id: null, plate_number: '', vin_last_4: '', year: '', current_mileage: '' });
                                     } else {
                                         toast.error('Failed to register vehicle');
                                     }
                                 } catch (e) {
                                     toast.error('Error registering vehicle');
+                                } finally {
+                                    setIsSavingVehicle(false);
                                 }
                             }}
                         >
+                            {isSavingVehicle && <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Complete Registration
                         </Button>
                     </DialogFooter>

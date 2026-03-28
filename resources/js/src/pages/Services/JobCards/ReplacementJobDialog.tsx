@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -21,58 +22,80 @@ interface ReplacementJobDialogProps {
 const ReplacementJobDialog: React.FC<ReplacementJobDialogProps> = ({ isOpen, setIsOpen, originalJob, onSave }) => {
     const { data: replacementData } = useReplacementTypes({ all: true });
     const replacementTypes = Array.isArray(replacementData) ? replacementData : (replacementData?.data || []);
-    const createReplacementMutation = useCreateReplacementJob();
+    const navigate = useNavigate();
     
-    const [selectedTypeId, setSelectedTypeId] = useState<string>('');
     const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
+    const [itemReplacementTypes, setItemReplacementTypes] = useState<Record<number, string>>({});
     const [notes, setNotes] = useState('');
 
     useEffect(() => {
         if (isOpen) {
-            setSelectedTypeId('');
             setSelectedItemIds([]);
+            setItemReplacementTypes({});
             setNotes('');
         }
     }, [isOpen]);
 
     const handleToggleItem = (itemId: number) => {
-        setSelectedItemIds(prev => 
-            prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
-        );
+        setSelectedItemIds(prev => {
+            const isSelected = prev.includes(itemId);
+            if (isSelected) {
+                const newTypes = { ...itemReplacementTypes };
+                delete newTypes[itemId];
+                setItemReplacementTypes(newTypes);
+                return prev.filter(id => id !== itemId);
+            } else {
+                return [...prev, itemId];
+            }
+        });
     };
 
-    const handleSubmit = async () => {
-        if (!selectedTypeId) {
-            toast.error('Please select a replacement reason');
-            return;
-        }
+    const handleSetItemType = (itemId: number, typeId: string) => {
+        setItemReplacementTypes(prev => ({ ...prev, [itemId]: typeId }));
+    };
+
+    const handleSubmit = () => {
         if (selectedItemIds.length === 0) {
             toast.error('Please select at least one part for replacement');
             return;
         }
 
+        // Ensure all selected items have a reason
+        const missingReasons = selectedItemIds.filter(id => !itemReplacementTypes[id]);
+        if (missingReasons.length > 0) {
+            toast.error('Please select a replacement reason for all selected parts');
+            return;
+        }
+
         const items = selectedItemIds.map(id => {
             const originalItem = originalJob.items.find((i: any) => i.id === id);
+            
+            // Find the product used for this item in the original job
+            // Search in materialUsage where job_card_item_id matches
+            const usage = originalJob.materialUsage?.find((u: any) => u.job_card_item_id === id);
+            
             return {
                 service_id: originalItem.service_id,
-                part_id: originalItem.part_id
+                job_part_id: originalItem.part_id,
+                product_id: usage?.product_id || null, // Auto-resolve product!
+                original_item_id: id,
+                replacement_type_id: parseInt(itemReplacementTypes[id]),
+                qty: 1
             };
         });
 
-        try {
-            await createReplacementMutation.mutateAsync({
-                originalId: originalJob.id,
-                data: {
-                    replacement_type_id: parseInt(selectedTypeId),
-                    notes,
-                    items
-                }
-            });
-            setIsOpen(false);
-            onSave?.();
-        } catch (error) {
-            // Error managed by mutation
-        }
+        const params = new URLSearchParams();
+        params.set('mode', 'replacement');
+        params.set('parent_job_id', originalJob.id.toString());
+        params.set('branch_id', originalJob.branch_id.toString()); // Pass branch ID
+        params.set('notes', notes);
+        params.set('items', JSON.stringify(items));
+        params.set('customer_id', originalJob.customer_id.toString());
+        if (originalJob.vehicle_id) params.set('vehicle_id', originalJob.vehicle_id.toString());
+
+        navigate(`/sales/create?${params.toString()}`);
+        setIsOpen(false);
+        onSave?.();
     };
 
     return (
@@ -94,55 +117,74 @@ const ReplacementJobDialog: React.FC<ReplacementJobDialogProps> = ({ isOpen, set
 
                 <div className="p-6 space-y-6">
                     <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400">1. Select Reason (Category)</Label>
-                            <Select value={selectedTypeId} onValueChange={setSelectedTypeId}>
-                                <SelectTrigger className="h-12 rounded-xl border-slate-200 dark:border-slate-800">
-                                    <SelectValue placeholder="Why is this being replaced?" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                    {replacementTypes.map((type: any) => (
-                                        <SelectItem key={type.id} value={type.id.toString()} className="font-bold">
-                                            {type.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
                         <div className="space-y-3">
-                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400">2. Select Parts to Replace</Label>
+                            <Label className="text-xs font-black uppercase tracking-widest text-slate-400">1. Select Parts & Reasons</Label>
                             <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 p-4">
-                                <ScrollArea className="h-[200px] pr-4">
-                                    <div className="space-y-2">
-                                        {originalJob?.items?.map((item: any) => (
-                                            <div 
-                                                key={item.id}
-                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
-                                                    selectedItemIds.includes(item.id) 
-                                                    ? 'bg-primary/5 border-primary shadow-sm' 
-                                                    : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
-                                                }`}
-                                                onClick={() => handleToggleItem(item.id)}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <Checkbox 
-                                                        checked={selectedItemIds.includes(item.id)}
-                                                        onCheckedChange={() => handleToggleItem(item.id)}
-                                                        className="rounded-md"
-                                                    />
-                                                    <div>
-                                                        <p className="font-bold text-xs">{item.part?.name}</p>
-                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{item.service?.name}</p>
+                                <ScrollArea className="h-[280px] pr-4">
+                                    <div className="space-y-4">
+                                        {originalJob?.items?.map((item: any) => {
+                                            const isSelected = selectedItemIds.includes(item.id);
+                                            const usage = originalJob.materialUsage?.find((u: any) => u.job_card_item_id === item.id);
+                                            const product = usage?.product;
+
+                                            return (
+                                                <div 
+                                                    key={item.id}
+                                                    className={`p-4 rounded-xl border transition-all ${
+                                                        isSelected 
+                                                        ? 'bg-white dark:bg-slate-900 border-rose-500 shadow-md ring-1 ring-rose-500/10' 
+                                                        : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-200 opacity-60'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <Checkbox 
+                                                                checked={isSelected}
+                                                                onCheckedChange={() => handleToggleItem(item.id)}
+                                                                className="rounded-md h-5 w-5 border-slate-300 data-[state=checked]:bg-rose-500 data-[state=checked]:border-rose-500"
+                                                            />
+                                                            <div>
+                                                                <p className="font-black text-sm">{item.part?.name}</p>
+                                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{item.service?.name}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            {product && (
+                                                                <Badge variant="outline" className="text-[8px] font-black border-primary/20 text-primary">
+                                                                    {product?.name}
+                                                                </Badge>
+                                                            )}
+                                                            {item.part?.side && (
+                                                                <Badge variant="secondary" className="text-[8px] font-black uppercase px-2">
+                                                                    {item.part.side}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                     </div>
+
+                                                    {isSelected && (
+                                                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200">
+                                                            <Label className="text-[9px] font-black uppercase text-rose-500 mb-1.5 block tracking-widest">Replacement Reason</Label>
+                                                            <Select 
+                                                                value={itemReplacementTypes[item.id] || ''} 
+                                                                onValueChange={(val) => handleSetItemType(item.id, val)}
+                                                            >
+                                                                <SelectTrigger className="h-9 rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 font-bold text-xs ring-offset-rose-500 focus:ring-rose-500/20">
+                                                                    <SelectValue placeholder="Why is this being replaced?" />
+                                                                </SelectTrigger>
+                                                                <SelectContent className="rounded-xl">
+                                                                    {replacementTypes.map((type: any) => (
+                                                                        <SelectItem key={type.id} value={type.id.toString()} className="font-bold text-xs">
+                                                                            {type.name}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                {item.part?.side && (
-                                                    <Badge variant="secondary" className="text-[8px] font-black uppercase px-2">
-                                                        {item.part.side}
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </ScrollArea>
                             </div>
@@ -172,10 +214,9 @@ const ReplacementJobDialog: React.FC<ReplacementJobDialogProps> = ({ isOpen, set
                             </Button>
                             <Button 
                                 onClick={handleSubmit}
-                                disabled={createReplacementMutation.isPending}
                                 className="px-8 rounded-xl font-black uppercase text-[10px] tracking-widest bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-200 dark:shadow-rose-900/20 h-11 gap-2"
                             >
-                                {createReplacementMutation.isPending ? <IconLoader2 className="animate-spin w-4 h-4" /> : <IconReplace className="w-4 h-4" />}
+                                <IconReplace className="w-4 h-4" />
                                 Confirm Replacement
                             </Button>
                         </div>

@@ -20,7 +20,7 @@ const Error404 = () => {
         <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950">
 
             {/* ── Vertical column lines ── */}
-            <div className="absolute inset-0 flex pointer-events-none" aria-hidden="true">
+            <div className="absolute inset-0 flex pointer-events-none animate-pulse" aria-hidden="true">
                 <div className="flex-1 border-r border-primary/[0.77]" />
                 <div className="w-10 border-r border-primary/[0.75]" />
                 <div className="w-10 border-r border-primary/[0.65]" />
@@ -47,20 +47,20 @@ const Error404 = () => {
             </div>
 
             {/* ── Horizontal row lines — top band ── */}
-            <div className="absolute inset-x-0 top-0 flex flex-col pointer-events-none" aria-hidden="true">
+            <div className="absolute inset-x-0 top-0 flex flex-col pointer-events-none animate-pulse" aria-hidden="true">
                 {/* Top border of first row */}
-                <div className="h-16 border-b border-white/[0.5]" />
-                <div className="h-10 border-b border-white/[0.25]" />
-                <div className="h-10 border-b border-white/[0.15]" />
-                 <div className="h-10 border-b border-white/[0.10]" />
+                <div className="h-16 border-b border-primary/[0.5]" />
+                <div className="h-10 border-b border-primary/[0.25]" />
+                <div className="h-10 border-b border-primary/[0.15]" />
+                 <div className="h-10 border-b border-primary/[0.10]" />
             </div>
 
             {/* ── Horizontal row lines — bottom band ── */}
-            <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end pointer-events-none" aria-hidden="true">
-                <div className="h-10 border-t border-white/[0.10]" />
-                <div className="h-10 border-t border-white/[0.15]" />
-                <div className="h-10 border-t border-white/[0.25]" />
-                <div className="h-16 border-t border-white/[0.5]" />
+            <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end pointer-events-none animate-pulse" aria-hidden="true">
+                <div className="h-10 border-t border-primary/[0.10]" />
+                <div className="h-10 border-t border-primary/[0.15]" />
+                <div className="h-10 border-t border-primary/[0.25]" />
+                <div className="h-16 border-t border-primary/[0.5]" />
             </div>
 
             {/* Animated SVG dot grid background */}

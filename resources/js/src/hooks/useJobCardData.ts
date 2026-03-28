@@ -122,15 +122,59 @@ export const useUpdateJobCardItem = () => {
 };
 
 /**
- * Hook to update material usage
+ * Hook to add a material usage record
+ */
+export const useAddMaterialUsage = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (data: {
+            job_card_id: number;
+            product_id: number;
+            job_card_item_id?: number;
+            spent_qty: number;
+            is_damage?: boolean;
+        }) => {
+            const response = await fetch('/api/services/job-cards/material-usage', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) throw new Error('Failed to add material usage');
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['job-card'] });
+            toast.success('Material added successfully');
+        },
+        onError: () => {
+            toast.error('Failed to add material');
+        }
+    });
+};
+
+/**
+ * Hook to update existing material usage
  */
 export const useUpdateMaterialUsage = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ usageId, ...updates }: { usageId: number; [key: string]: any }) => {
+        mutationFn: async ({ usageId, ...updates }: { 
+            usageId: number; 
+            serial_id?: number | null;
+            width_on_car?: number;
+            height_on_car?: number;
+            width_cut?: number;
+            height_cut?: number;
+            actual_qty?: number | string;
+            is_damage?: boolean;
+        }) => {
             const response = await fetch(`/api/services/job-cards/material-usage/${usageId}`, {
                 method: 'PUT',
-                headers: {
+                headers: { 
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
@@ -142,6 +186,7 @@ export const useUpdateMaterialUsage = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['job-card'] });
+            toast.success('Material updated successfully');
         },
         onError: () => {
             toast.error('Failed to update material tracking');
@@ -313,6 +358,91 @@ export const useReplacementTypes = (params: any = {}) => {
 };
 
 /**
+ * Hook to create a replacement type
+ */
+export const useCreateReplacementType = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (data: any) => {
+            const response = await fetch('/api/services/replacement-types', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) throw new Error('Failed to create replacement type');
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['replacement-types'] });
+            toast.success('Replacement type created successfully');
+        },
+        onError: (err: any) => {
+            toast.error(err.message || 'Failed to create replacement type');
+        }
+    });
+};
+
+/**
+ * Hook to update a replacement type
+ */
+export const useUpdateReplacementType = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, data }: { id: number; data: any }) => {
+            const response = await fetch(`/api/services/replacement-types/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) throw new Error('Failed to update replacement type');
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['replacement-types'] });
+            toast.success('Replacement type updated successfully');
+        },
+        onError: (err: any) => {
+            toast.error(err.message || 'Failed to update replacement type');
+        }
+    });
+};
+
+/**
+ * Hook to delete a replacement type
+ */
+export const useDeleteReplacementType = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const response = await fetch(`/api/services/replacement-types/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+            });
+            if (!response.ok) throw new Error('Failed to delete replacement type');
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['replacement-types'] });
+            toast.success('Replacement type deleted successfully');
+        },
+        onError: (err: any) => {
+            toast.error(err.message || 'Failed to delete replacement type');
+        }
+    });
+};
+
+/**
  * Hook to create a replacement job
  */
 export const useCreateReplacementJob = () => {
@@ -353,10 +483,186 @@ export const useJobCardQCReports = (params: any = {}) => {
             if (params.search) queryParams.append('search', params.search);
             if (params.decision) queryParams.append('decision', params.decision);
             if (params.technician_id) queryParams.append('technician_id', params.technician_id.toString());
+            if (params.has_damage) queryParams.append('has_damage', params.has_damage.toString());
+            if (params.branch_id) queryParams.append('branch_id', params.branch_id.toString());
+            if (params.qc_person_id) queryParams.append('qc_person_id', params.qc_person_id.toString());
+            if (params.start_date) queryParams.append('start_date', params.start_date);
+            if (params.end_date) queryParams.append('end_date', params.end_date);
+            if (params.archived !== undefined) queryParams.append('archived', params.archived.toString());
 
             const response = await fetch(`/api/services/job-cards/qc?${queryParams.toString()}`);
             if (!response.ok) throw new Error('Failed to fetch QC reports');
             return response.json();
+        }
+    });
+};
+
+/**
+ * Hook to fetch detailed damage reports
+ */
+export const useJobCardDamages = (params: any = {}) => {
+    return useQuery({
+        queryKey: ['job-card-damages', params],
+        queryFn: async () => {
+            const queryParams = new URLSearchParams();
+            if (params.page) queryParams.append('page', params.page.toString());
+            if (params.per_page) queryParams.append('per_page', params.per_page.toString());
+            if (params.search) queryParams.append('search', params.search);
+            if (params.mistake_staff_id) queryParams.append('mistake_staff_id', params.mistake_staff_id.toString());
+            if (params.reason_id) queryParams.append('reason_id', params.reason_id.toString());
+            if (params.start_date) queryParams.append('start_date', params.start_date);
+            if (params.end_date) queryParams.append('end_date', params.end_date);
+            
+            const response = await fetch(`/api/services/job-cards/damages?${queryParams.toString()}`);
+            if (!response.ok) throw new Error('Failed to fetch damage reports');
+            return response.json();
+        }
+    });
+};
+
+/**
+ * Hook to create a new QC Audit Report
+ */
+export const useCreateQCReport = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (data: any) => {
+            const response = await fetch('/api/services/job-cards/qc', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to save QC report');
+            }
+            return response.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['job-card-qc-reports'] });
+            queryClient.invalidateQueries({ queryKey: ['job-card-damages'] });
+            queryClient.invalidateQueries({ queryKey: ['job-card', data.job_card_id] });
+            queryClient.invalidateQueries({ queryKey: ['job-cards'] });
+            toast.success('QC Audit Report saved successfully');
+        },
+        onError: (err: any) => {
+            toast.error(err.message || 'Failed to save QC report');
+        }
+    });
+};
+
+/**
+ * Hook to archive a QC Report
+ */
+export const useArchiveQCReport = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const response = await fetch(`/api/services/job-cards/qc/${id}/archive`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+            });
+            if (!response.ok) throw new Error('Failed to archive report');
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['job-card-qc-reports'] });
+            toast.success('Report moved to archive');
+        },
+        onError: () => {
+            toast.error('Failed to archive report');
+        }
+    });
+};
+
+/**
+ * Hook to unarchive (restore) a QC Report
+ */
+export const useUnarchiveQCReport = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const response = await fetch(`/api/services/job-cards/qc/${id}/unarchive`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+            });
+            if (!response.ok) throw new Error('Failed to restore report');
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['job-card-qc-reports'] });
+            toast.success('Report restored from archive');
+        },
+        onError: () => {
+            toast.error('Failed to restore report');
+        }
+    });
+};
+
+/**
+ * Hook to bulk archive QC Reports
+ */
+export const useBulkArchiveQCReport = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (ids: number[]) => {
+            const response = await fetch('/api/services/job-cards/qc/bulk-archive', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+                body: JSON.stringify({ ids }),
+            });
+            if (!response.ok) throw new Error('Failed to archive selected reports');
+            return response.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['job-card-qc-reports'] });
+            toast.success(data.message || 'Selected reports archived');
+        },
+        onError: (err: any) => {
+            toast.error(err.message || 'Failed to archive selected reports');
+        }
+    });
+};
+
+/**
+ * Hook to bulk unarchive (restore) QC Reports
+ */
+export const useBulkUnarchiveQCReport = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (ids: number[]) => {
+            const response = await fetch('/api/services/job-cards/qc/bulk-unarchive', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content,
+                },
+                body: JSON.stringify({ ids }),
+            });
+            if (!response.ok) throw new Error('Failed to restore selected reports');
+            return response.json();
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['job-card-qc-reports'] });
+            toast.success(data.message || 'Selected reports restored');
+        },
+        onError: (err: any) => {
+            toast.error(err.message || 'Failed to restore selected reports');
         }
     });
 };

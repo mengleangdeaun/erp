@@ -64,6 +64,10 @@ interface ActionButtonsProps {
     receiveLabel?: string;
     paymentLabel?: string;
 
+    // Custom icons
+    statsIcon?: React.ElementType;
+    receiveIcon?: React.ElementType;
+
     // Confirmation messages
     deleteConfirmMessage?: string;
     rejectConfirmMessage?: string;
@@ -207,6 +211,10 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     onReceive,
     onPayment,
 
+    // Icons
+    statsIcon,
+    receiveIcon,
+
     // Labels
     editLabel = "Edit",
     deleteLabel = "Delete",
@@ -298,12 +306,12 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
             style: 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50'
         },
         stats: {
-            icon: IconChartBar,
+            icon: statsIcon || IconChartBar,
             label: statsLabel,
             style: 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/50'
         },
         receive: {
-            icon: IconBox,
+            icon: receiveIcon || IconBox,
             label: receiveLabel,
             style: 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/50'
         },

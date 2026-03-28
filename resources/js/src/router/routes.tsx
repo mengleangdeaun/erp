@@ -106,6 +106,7 @@ const JobCardIndex = lazy(() => import('../pages/Services/JobCards/Index'));
 const DamageReportsIndex = lazy(() => import('../pages/Services/JobCards/DamageReportsIndex'));
 const ReplacementTypeIndex = lazy(() => import('../pages/Services/JobCards/ReplacementTypeIndex'));
 const SaleRemarkIndex = lazy(() => import('../pages/Sales/SaleRemarks/Index'));
+const QCReportsIndex = lazy(() => import('../pages/Services/JobCards/QCReportsIndex'));
 
 // Access Control
 const RoleManagement = lazy(() => import('../pages/AccessControl/Roles'));
@@ -464,6 +465,7 @@ const routes = [
     { path: '/sales/create', element: <SalesCreate />, layout: 'default' },
     { path: '/sales/edit/:id', element: <SalesCreate />, layout: 'default' },
     { path: '/sales/remarks', element: <SaleRemarkIndex />, layout: 'default' },
+    { path: '/services/qc-reports', element: <QCReportsIndex />, layout: 'default' },
     { path: '/services/damage-reports', element: <DamageReportsIndex />, layout: 'default' },
     { path: '/finance/payment-accounts', element: <PaymentAccountIndex />, layout: 'default' },
     {

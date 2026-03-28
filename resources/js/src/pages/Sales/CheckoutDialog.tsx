@@ -183,30 +183,63 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                 />
                             </section>
 
-                            <section className="space-y-2">
-                                <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest flex items-center gap-2">
-                                    <IconTag size={15} className="text-primary" /> Sale Remark / Type
-                                </h3>
-                                <Select 
-                                    value={form.sale_remark_id?.toString()} 
-                                    onValueChange={(val) => setForm({ ...form, sale_remark_id: parseInt(val) })}
-                                >
-                                    <SelectTrigger className="h-10 bg-white dark:bg-zinc-900 shadow-sm border-zinc-200 dark:border-zinc-800 font-bold text-sm">
-                                        <SelectValue placeholder="Categorize Sale..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="0" className="opacity-50">None (Normal Sale)</SelectItem>
-                                        {Array.isArray(saleRemarks) && saleRemarks.map((r: any) => (
-                                            <SelectItem key={r.id} value={r.id.toString()}>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color_code }} />
-                                                    {r.name}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </section>
+                            {form.replacement_mode && (
+                                <section className="space-y-2 p-4 rounded-xl bg-orange-500/5 border border-orange-500/20 shadow-inner">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-[10px] font-black uppercase text-orange-600 tracking-widest flex items-center gap-2">
+                                            <IconTag size={15} className="text-orange-600" /> Replacement Type <span className="text-rose-500">*</span>
+                                        </h3>
+                                        <Badge variant="outline" className="text-[7px] font-black border-orange-200 text-orange-600 px-1.5 py-0.5 leading-none uppercase tracking-tighter">Required</Badge>
+                                    </div>
+                                    <Select 
+                                        value={form.sale_remark_id?.toString()} 
+                                        onValueChange={(val) => setForm({ ...form, sale_remark_id: parseInt(val) })}
+                                    >
+                                        <SelectTrigger className={`h-10 bg-white dark:bg-zinc-900 shadow-sm font-bold text-sm ${!form.sale_remark_id ? 'border-orange-500 ring-2 ring-orange-500/10' : 'border-zinc-200 dark:border-zinc-800'}`}>
+                                            <SelectValue placeholder="Categorize Replacement..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Array.isArray(saleRemarks) && saleRemarks.filter((r: any) => r.is_active || r.id === 1).map((r: any) => (
+                                                <SelectItem key={r.id} value={r.id.toString()}>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color_code }} />
+                                                        {r.name}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {!form.sale_remark_id && (
+                                        <p className="text-[9px] font-black text-orange-600/70 uppercase tracking-tighter animate-bounce mt-1">Please select the reason for replacement</p>
+                                    )}
+                                </section>
+                            )}
+
+                            {!form.replacement_mode && (
+                                <section className="space-y-2">
+                                    <h3 className="text-[10px] font-black uppercase text-zinc-400 tracking-widest flex items-center gap-2">
+                                        <IconTag size={15} className="text-primary" /> Sale Remark / Type
+                                    </h3>
+                                    <Select 
+                                        value={form.sale_remark_id?.toString()} 
+                                        onValueChange={(val) => setForm({ ...form, sale_remark_id: parseInt(val) })}
+                                    >
+                                        <SelectTrigger className="h-10 bg-white dark:bg-zinc-900 shadow-sm border-zinc-200 dark:border-zinc-800 font-bold text-sm">
+                                            <SelectValue placeholder="Categorize Sale..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Array.isArray(saleRemarks) && saleRemarks.filter((r: any) => r.is_active || r.id === 1).map((r: any) => (
+                                                <SelectItem key={r.id} value={r.id.toString()}>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color_code }} />
+                                                        {r.name}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </section>
+                            )}
 
                             <section className="space-y-5 pt-4 border-t dark:border-zinc-800">
                                 <div className="space-y-2">
@@ -529,9 +562,9 @@ const CheckoutDialog: React.FC<CheckoutDialogProps> = ({
                                 </div>
 
                                 <Button 
-                                    disabled={saving || !form.customer_id || form.items.length === 0}
+                                    disabled={saving || !form.customer_id || form.items.length === 0 || (form.replacement_mode && !form.sale_remark_id)}
                                     onClick={onSubmit}
-                                    className="w-full h-15 bg-primary hover:bg-primary/95 text-white font-black shadow-sm shadow-primary/30 active:scale-[0.98] transition-all text-sm tracking-wide"
+                                    className={`w-full h-15 font-black shadow-sm active:scale-[0.98] transition-all text-sm tracking-wide ${form.replacement_mode ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-500/30' : 'bg-primary hover:bg-primary/95 shadow-primary/30'} text-white`}
                                 >
                                     {saving ? (
                                         <div className="flex items-center gap-3">

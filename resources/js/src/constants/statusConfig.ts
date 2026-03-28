@@ -117,6 +117,24 @@ export const STATUS_CONFIG: Record<string, StatusConfig> = {
     solidBg: 'bg-amber-500 dark:bg-amber-600',
     solidText: 'text-white',
   },
+  'Assigned': {
+    label: 'Assigned',
+    bg: 'bg-cyan-100 dark:bg-cyan-950',
+    text: 'text-cyan-800 dark:text-cyan-300',
+    border: 'border-cyan-400 dark:border-cyan-700',
+    dot: 'bg-cyan-500',
+    solidBg: 'bg-cyan-500 dark:bg-cyan-600',
+    solidText: 'text-white',
+  },
+  'Reworking': {
+    label: 'Reworking',
+    bg: 'bg-orange-100 dark:bg-orange-950',
+    text: 'text-orange-800 dark:text-orange-300',
+    border: 'border-orange-400 dark:border-orange-700',
+    dot: 'bg-orange-500',
+    solidBg: 'bg-orange-500 dark:bg-orange-600',
+    solidText: 'text-white',
+  },
   'Default': {
     label: 'Unknown',
     bg: 'bg-zinc-100 dark:bg-zinc-800',
@@ -128,8 +146,34 @@ export const STATUS_CONFIG: Record<string, StatusConfig> = {
   },
 };
 
-export const getStatusConfig = (status: string): StatusConfig =>
-  STATUS_CONFIG[status] ?? STATUS_CONFIG['Default'];
+// Helper to normalize status strings to match STATUS_CONFIG keys
+const normalizeStatus = (status: string): string => {
+  if (!status) return 'Default';
+  const s = status.toLowerCase().trim();
+  
+  // Direct mapping for special cases with spaces or acronyms
+  const specialMap: Record<string, string> = {
+    'in progress': 'In Progress',
+    'inprogress': 'In Progress',
+    'qc review': 'QC Review',
+    'qcreview': 'QC Review',
+    'on hold': 'On Hold',
+    'onhold': 'On Hold'
+  };
+
+  if (specialMap[s]) return specialMap[s];
+
+  // For others, try to match the case-insensitive key
+  const keys = Object.keys(STATUS_CONFIG);
+  const found = keys.find(k => k.toLowerCase() === s);
+  
+  return found || 'Default';
+};
+
+export const getStatusConfig = (status: string): StatusConfig => {
+  const normalized = normalizeStatus(status);
+  return STATUS_CONFIG[normalized] ?? STATUS_CONFIG['Default'];
+};
 
 export const JOB_CARD_STATUS_KEYS = [
   'Pending',
@@ -139,4 +183,14 @@ export const JOB_CARD_STATUS_KEYS = [
   'Ready',
   'Delivered',
   'Cancelled'
+];
+
+export const ITEM_STATUS_KEYS = [
+  'Pending',
+  'Assigned',
+  'In Progress',
+  'Completed',
+  'On Hold',
+  'Cancelled',
+  'Reworking'
 ];

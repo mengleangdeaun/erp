@@ -51,7 +51,8 @@ class JobCardController extends Controller
                       $cq->where('name', 'like', "%{$search}%");
                   })
                   ->orWhereHas('vehicle', function($vq) use ($search) {
-                      $vq->where('plate_number', 'like', "%{$search}%");
+                      $vq->where('plate_number', 'like', "%{$search}%")
+                        ->orWhere('vin_last_4', 'like', "%{$search}%");
                   });
             });
         }
@@ -71,6 +72,7 @@ class JobCardController extends Controller
             'items.part', 
             'items.technicians',
             'materialUsage.product',
+            'materialUsage.jobCardItem.part',
             'parent',
             'replacements',
             'replacementType',
@@ -162,6 +164,7 @@ class JobCardController extends Controller
             ]);
         } else {
             // Check if any item is started
+            $hasStarted = $jobCard->items()->where('status', '!=', 'Pending')->exists();
             if ($hasStarted && $jobCard->status === 'Pending') {
                 $jobCard->update([
                     'status' => 'In Progress'
@@ -175,6 +178,30 @@ class JobCardController extends Controller
         event(new JobCardUpdated($jobCard->id));
 
         return $item;
+    }
+
+    public function storeMaterialUsage(Request $request)
+    {
+        $validated = $request->validate([
+            'job_card_id' => 'required|exists:job_cards,id',
+            'product_id' => 'required|exists:inventory_products,id',
+            'job_card_item_id' => 'nullable|exists:job_card_items,id',
+            'spent_qty' => 'required|numeric|min:0',
+            'is_damage' => 'boolean'
+        ]);
+
+        $product = \App\Models\Inventory\InventoryProduct::find($validated['product_id']);
+        
+        $usage = JobCardMaterialUsage::create([
+            'job_card_id' => $validated['job_card_id'],
+            'job_card_item_id' => $validated['job_card_item_id'],
+            'product_id' => $validated['product_id'],
+            'spent_qty' => $validated['spent_qty'],
+            'unit' => $product->unit ?? 'm',
+            'is_damage' => $validated['is_damage'] ?? false,
+        ]);
+
+        return $usage->load('product');
     }
 
     public function updateMaterialUsage(Request $request, $usageId)

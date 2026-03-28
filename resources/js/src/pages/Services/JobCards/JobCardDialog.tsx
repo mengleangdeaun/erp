@@ -37,6 +37,7 @@ import {
   useCompleteJobCard,
   useTechnicians,
 } from '@/hooks/useJobCardData';
+import PerfectScrollbar from 'react-perfect-scrollbar';
 import { Skeleton } from '@/components/ui/skeleton';
 import TableSkeleton from '@/components/ui/TableSkeleton';
 import ConfirmationModal from '@/components/ConfirmationModal';
@@ -45,7 +46,7 @@ import SearchableMultiSelect from '@/components/ui/SearchableMultiSelect';
 import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { getStatusConfig, STATUS_CONFIG, JOB_CARD_STATUS_KEYS } from '@/constants/statusConfig';
+import { getStatusConfig, STATUS_CONFIG, JOB_CARD_STATUS_KEYS, ITEM_STATUS_KEYS } from '@/constants/statusConfig';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -74,7 +75,7 @@ const SideColumn = ({
             {items.length}
           </Badge>
         </div>
-        {items.length > 0 && items.some(i => i.status !== 'Completed') && (
+        {items.length > 0 && items.some(i => i.status?.toLowerCase() !== 'completed') && (
           <Button 
             variant="ghost" 
             size="sm" 
@@ -126,18 +127,18 @@ const JobItemRow = ({
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden rounded-lg">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-3">
           <div
             className={cn(
               'p-1.5 rounded-md border',
-              item.status === 'Completed'
+              item.status?.toLowerCase() === 'completed'
                 ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
                 : 'bg-muted text-muted-foreground border-border'
             )}
           >
-            {item.status === 'Completed' ? <IconCheck size={14} /> : <IconDots size={14} />}
+            {item.status?.toLowerCase() === 'completed' ? <IconCheck size={14} /> : <IconDots size={14} />}
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm truncate">{item.part?.name}</div>
@@ -177,10 +178,11 @@ const JobItemRow = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="In Progress">In Progress</SelectItem>
-              <SelectItem value="Completed">Completed</SelectItem>
-              <SelectItem value="On Hold">On Hold</SelectItem>
+              {ITEM_STATUS_KEYS.map((s) => (
+                <SelectItem key={s} value={s} className="text-xs">
+                  {s}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -245,7 +247,7 @@ const JobCardDialog = ({ isOpen, setIsOpen, jobId, onSave }: JobCardDialogProps)
           const originalTechIds = original.technicians?.map((t: any) => Number(t.id)) || [];
           const techChanged =
             JSON.stringify(originalTechIds.sort()) !== JSON.stringify([...li.technician_ids].sort());
-          return techChanged || original.status !== li.status || original.completion_percentage !== li.completion_percentage;
+          return techChanged || original.status?.toLowerCase() !== li.status?.toLowerCase() || original.completion_percentage !== li.completion_percentage;
         })
         .map((li) =>
           updateItemMutation.mutateAsync({
@@ -410,7 +412,7 @@ if (isLoading && !job) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-<DialogContent className="max-w-7xl h-[90vh] p-0 flex flex-col overflow-hidden [&>button]:hidden">
+<DialogContent className="max-w-7xl max-h-[90vh] h-auto p-0 flex flex-col overflow-hidden [&>button]:hidden">
         {/* Custom close button */}
         <button
           onClick={() => setIsOpen(false)}
@@ -479,7 +481,7 @@ if (isLoading && !job) {
 </Select>
                   <div className="flex items-center gap-1">
                     <IconClock size={12} />
-                    <span>Inbound: {job && format(new Date(job.created_at), 'dd MMM yyyy, HH:mm')}</span>
+                    <span>Inbound: {job?.created_at ? format(new Date(job.created_at), 'dd MMM yyyy, HH:mm') : 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -513,7 +515,9 @@ if (isLoading && !job) {
                 <span className="text-[10px] font-medium text-muted-foreground uppercase">Asset identity</span>
                 <div className="flex items-center gap-2">
                   <div>
-                    <div className="font-semibold">{job?.vehicle?.plate_number}</div>
+                    <div className="font-semibold">
+                      {job?.vehicle?.plate_number || (job?.vehicle?.vin_last_4 ? `VIN: ${job.vehicle.vin_last_4}` : 'N/A')}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {job?.vehicle?.brand?.name} · {job?.vehicle?.model?.name}
                     </div>
@@ -531,7 +535,7 @@ if (isLoading && !job) {
         </DialogHeader>
 
         {/* Rest of the dialog content same as before */}
-        <ScrollArea className="flex-1 p-6 pt-0 pb-0">
+        <PerfectScrollbar options={{ suppressScrollX: true }} className="flex-1 min-h-0 p-6 pt-0 pb-3">
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -575,7 +579,7 @@ if (isLoading && !job) {
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </PerfectScrollbar>
 
         <DialogFooter className="p-6 border-t">
           <div className="flex w-full items-center justify-between gap-4">
@@ -601,13 +605,13 @@ if (isLoading && !job) {
               )}
               <Button
                 onClick={() => setIsCompleteModalOpen(true)}
-                disabled={isDirty || completeJobMutation.isPending || job?.status === 'Completed'}
+                disabled={isDirty || completeJobMutation.isPending || job?.status?.toLowerCase() === 'completed'}
                 variant="default"
               >
                 {completeJobMutation.isPending && (
                   <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {job?.status === 'Completed' ? 'Finalized' : 'Mark as ready'}
+                {job?.status?.toLowerCase() === 'completed' ? 'Finalized' : 'Mark as ready'}
               </Button>
             </div>
           </div>

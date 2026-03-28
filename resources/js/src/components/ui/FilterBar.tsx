@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { IconSearch, IconX, IconPlus, IconFilter, IconFilterOff, IconRefresh, IconAdjustmentsHorizontal } from '@tabler/icons-react';
+import { IconSearch, IconX, IconPlus, IconFilter, IconFilterOff, IconRefresh, IconAdjustmentsHorizontal, IconFileExport } from '@tabler/icons-react';
 
 interface FilterBarProps {
     // Title & Icon
@@ -34,6 +34,9 @@ interface FilterBarProps {
 
     // Extra Header Actions
     extraActions?: React.ReactNode;
+
+    // Export Action
+    onExport?: () => void;
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({
@@ -51,7 +54,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
     hasActiveFilters = false,
     onClearFilters,
     children,
-    extraActions
+    extraActions,
+    onExport
 }) => {
     const [showFilters, setShowFilters] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -120,6 +124,17 @@ const FilterBar: React.FC<FilterBarProps> = ({
                         </Button>
                     )}
 
+                    {onExport && (
+                        <Button
+                            variant="outline"
+                            onClick={onExport}
+                            className="h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-primary border-slate-200 dark:border-slate-800 shadow-sm transition-all"
+                        >
+                            <IconFileExport size={18} className="mr-2" />
+                            <span className="hidden lg:inline">Export CSV</span>
+                        </Button>
+                    )}
+
                     {extraActions}
 
                     {onAdd && (
@@ -136,7 +151,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
             {/* Filter Drawer Section */}
             {showFilters && (
-                <div className="p-4 sm:p-5 bg-white dark:bg-black border border-slate-200/60 dark:border-slate-800 rounded-xl space-y-5 animate-in slide-in-from-top-3 fade-in duration-300">
+                <div className="p-4 sm:p-5 bg-white dark:bg-black border border-slate-200/60 dark:border-slate-800 rounded-lg space-y-5 animate-in slide-in-from-top-3 fade-in duration-300">
                     
                     {/* Filter Grid: Use grid for children and components */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">

@@ -22,7 +22,8 @@ class JobCardMaterialUsage extends Model
         'width_on_car',
         'height_on_car',
         'width_cut',
-        'height_cut'
+        'height_cut',
+        'is_damage'
     ];
 
     protected $casts = [
@@ -32,6 +33,7 @@ class JobCardMaterialUsage extends Model
         'height_on_car' => 'decimal:2',
         'width_cut' => 'decimal:2',
         'height_cut' => 'decimal:2',
+        'is_damage' => 'boolean',
     ];
 
     public function jobCard()

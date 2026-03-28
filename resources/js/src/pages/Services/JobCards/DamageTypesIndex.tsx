@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { IconPlus, IconEdit, IconTrash, IconCheck, IconX, IconAlertTriangle, IconLoader2, IconDeviceFloppy, IconRefresh } from '@tabler/icons-react';
+import { IconPlus, IconEdit, IconTrash, IconCheck, IconX, IconAlertTriangle, IconLoader2, IconDeviceFloppy } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import TableSkeleton from '@/components/ui/TableSkeleton';
 import FilterBar from '@/components/ui/FilterBar';
@@ -22,11 +22,11 @@ interface ReplacementType {
     id: number;
     name: string;
     description?: string;
-    is_active: boolean|number;
+    is_active: boolean;
     created_at: string;
 }
 
-const ReplacementTypeIndex = () => {
+const DamageTypesIndex = () => {
     const queryClient = useQueryClient();
     
     // Pagination & Filters
@@ -152,12 +152,12 @@ const ReplacementTypeIndex = () => {
                 <div className="panel bg-white dark:bg-gray-900 border-none shadow-sm overflow-hidden p-0">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50 dark:bg-white-dark/5 text-gray-500 uppercase text-[10px] font-bold tracking-wider border-b border-gray-100 dark:border-gray-800">
+                            <thead className="bg-gray-50 dark:bg-white-dark/5 text-gray-500 uppercase text-[10px] font-bold tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-4 text-left font-black tracking-widest">Reason / Type</th>
-                                    <th className="px-6 py-4 text-left font-black tracking-widest">Description</th>
-                                    <th className="px-6 py-4 text-center font-black tracking-widest">Status</th>
-                                    <th className="px-6 py-4 text-right font-black tracking-widest">Actions</th>
+                                    <th className="px-6 py-4 text-left">Reason / Type</th>
+                                    <th className="px-6 py-4 text-left">Description</th>
+                                    <th className="px-6 py-4 text-center">Status</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -173,7 +173,7 @@ const ReplacementTypeIndex = () => {
                                             <Badge
                                                 size="sm"
                                                 variant={type.is_active ? 'success' : 'destructive'}
-                                                className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5"
+                                                className="text-[10px] font-black uppercase tracking-widest"
                                             >
                                                 {type.is_active ? 'Active' : 'Inactive'}
                                             </Badge>
@@ -285,4 +285,4 @@ const ReplacementTypeIndex = () => {
     );
 };
 
-export default ReplacementTypeIndex;
+export default DamageTypesIndex;

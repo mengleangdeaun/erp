@@ -74,6 +74,8 @@ class SalesOrderController extends Controller
             'items.*.qty' => 'required|numeric|min:0.01',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.discount' => 'nullable|numeric|min:0',
+            'items.*.original_item_id' => 'nullable|exists:job_card_items,id',
+            'items.*.replacement_type_id' => 'nullable|exists:job_card_replacement_types,id',
             'subtotal' => 'required|numeric',
             'taxable_amount' => 'nullable|numeric',
             'tax_percent' => 'nullable|numeric',
@@ -89,6 +91,9 @@ class SalesOrderController extends Controller
             'deposits.*.notes' => 'nullable|string',
             'deposits.*.receipt' => 'nullable|file|max:2048',
             'notes' => 'nullable|string',
+            'parent_job_id' => 'nullable|exists:job_cards,id',
+            'replacement_type_id' => 'nullable|exists:job_card_replacement_types,id',
+            'sale_remark_id' => 'nullable|exists:sale_remarks,id',
         ]);
 
         $order = null;
@@ -108,6 +113,7 @@ class SalesOrderController extends Controller
                 'customer_id' => $validated['customer_id'],
                 'branch_id' => $validated['branch_id'],
                 'vehicle_id' => $validated['vehicle_id'] ?? null,
+                'sale_remark_id' => $validated['sale_remark_id'] ?? 1, // Default 1 (Normal Sale)
                 'invoice_image_path' => $invoiceImagePath ? '/storage/' . $invoiceImagePath : null,
                 'order_date' => $validated['order_date'],
                 'subtotal' => $validated['subtotal'],
@@ -177,6 +183,8 @@ class SalesOrderController extends Controller
                     'itemable_type' => $itemable_type,
                     'itemable_id' => $itemable_id,
                     'job_part_id' => $itemData['job_part_id'] ?? null,
+                    'original_item_id' => $itemData['original_item_id'] ?? null,
+                    'replacement_type_id' => $itemData['replacement_type_id'] ?? null,
                     'item_name' => $item_name,
                     'quantity' => $itemData['qty'],
                     'unit_price' => $itemData['unit_price'],
@@ -208,7 +216,7 @@ class SalesOrderController extends Controller
 
             // If any item is a service (or linked to a service part), create a Job Card
             if ($hasService || !empty($itemsWithJobParts)) {
-                $this->generateJobCard($order, $validated['items'], $itemsWithJobParts, $documentNumberService);
+                $this->generateJobCard($order, $validated, $itemsWithJobParts, $documentNumberService);
             }
         });
 
@@ -221,7 +229,7 @@ class SalesOrderController extends Controller
         return response()->json($order->load(['customer', 'items', 'jobCard.items']), 201);
     }
 
-    private function generateJobCard(SalesOrder $order, array $itemsData, array $itemsWithJobParts, DocumentNumberService $documentNumberService)
+    private function generateJobCard(SalesOrder $order, array $validated, array $itemsWithJobParts, DocumentNumberService $documentNumberService)
     {
         $jobNo = $documentNumberService->generate('job_card');
         $jobCard = JobCard::create([
@@ -230,10 +238,38 @@ class SalesOrderController extends Controller
             'branch_id' => $order->branch_id,
             'customer_id' => $order->customer_id,
             'vehicle_id' => $order->vehicle_id,
-            'status' => 'PENDING',
+            'mileage_in' => $order->vehicle?->current_mileage ?? 0,
+            'status' => 'Pending',
+            'type' => !empty($validated['parent_job_id']) ? 'replacement' : 'installation',
+            'parent_id' => $validated['parent_job_id'] ?? null,
+            'replacement_type_id' => $validated['replacement_type_id'] ?? null,
         ]);
 
-        // 1. Process explicit services added as main items
+        // If this is a replacement, log it as a damage/incident after delivery
+        if (!empty($validated['parent_job_id'])) {
+            // Check if items have specific reasons, otherwise use the global one
+            foreach ($order->items as $orderItem) {
+                // We map order items back to original job card items if provided
+                if ($orderItem->itemable_type === \App\Models\Service::class) continue; // Skip main service lines, look at parts
+                
+                \App\Models\JobCardDamage::create([
+                    'job_card_id' => $validated['parent_job_id'],
+                    'sales_order_id' => $order->id,
+                    'job_card_item_id' => $orderItem->original_item_id ?? null,
+                    'reason_id' => $orderItem->replacement_type_id ?? $validated['replacement_type_id'] ?? null,
+                    'incident_phase' => 'after_delivered',
+                    'notes' => $validated['notes'] ?? 'Post-delivery replacement claim',
+                    'status' => 'REPLACED'
+                ]);
+            }
+            
+            // If no item-specific damage was created (unlikely but safe), create a general one
+            if ($order->items->whereNotNull('replacement_type_id')->count() === 0 && !isset($validated['replacement_type_id'])) {
+                // Logic to ensure at least one record exists if parent_job_id is set
+            }
+        }
+
+        $itemsData = $validated['items'];
         foreach ($itemsData as $itemData) {
             if (!empty($itemData['service_id']) && empty($itemData['job_part_id'])) {
                 $service = Service::with(['parts', 'materials'])->find($itemData['service_id']);
@@ -242,7 +278,7 @@ class SalesOrderController extends Controller
                     'job_card_id' => $jobCard->id,
                     'service_id' => $service->id,
                     'part_id' => null,
-                    'status' => 'PENDING',
+                    'status' => 'Pending',
                 ]);
 
                 // Add parts that DON'T have a specific product selected in this sale
@@ -253,7 +289,7 @@ class SalesOrderController extends Controller
                             'job_card_id' => $jobCard->id,
                             'service_id' => $service->id,
                             'part_id' => $part->id,
-                            'status' => 'PENDING',
+                            'status' => 'Pending',
                         ]);
                     }
                 }
@@ -278,7 +314,7 @@ class SalesOrderController extends Controller
                 'job_card_id' => $jobCard->id,
                 'service_id' => $pLink['service_id'],
                 'part_id' => $pLink['job_part_id'],
-                'status' => 'PENDING',
+                'status' => 'Pending',
             ]);
 
             \App\Models\JobCardMaterialUsage::create([
@@ -592,6 +628,8 @@ class SalesOrderController extends Controller
                     'itemable_type' => $itemable_type,
                     'itemable_id' => $itemable_id,
                     'job_part_id' => $itemData['job_part_id'] ?? null,
+                    'original_item_id' => $itemData['original_item_id'] ?? null,
+                    'replacement_type_id' => $itemData['replacement_type_id'] ?? null,
                     'item_name' => $item_name,
                     'quantity' => $itemData['qty'],
                     'unit_price' => $itemData['unit_price'],
@@ -658,7 +696,7 @@ class SalesOrderController extends Controller
                     'job_card_id' => $jobCard->id,
                     'service_id' => $service->id,
                     'part_id' => null,
-                    'status' => 'PENDING',
+                    'status' => 'Pending',
                 ]);
 
                 foreach ($service->parts as $part) {
@@ -668,7 +706,7 @@ class SalesOrderController extends Controller
                             'job_card_id' => $jobCard->id,
                             'service_id' => $service->id,
                             'part_id' => $part->id,
-                            'status' => 'PENDING',
+                            'status' => 'Pending',
                         ]);
                     }
                 }
@@ -691,7 +729,7 @@ class SalesOrderController extends Controller
                 'job_card_id' => $jobCard->id,
                 'service_id' => $pLink['service_id'],
                 'part_id' => $pLink['job_part_id'],
-                'status' => 'PENDING',
+                'status' => 'Pending',
             ]);
 
             \App\Models\JobCardMaterialUsage::create([

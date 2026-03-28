@@ -259,16 +259,16 @@ export function DateRangePicker({
               {/* Left Side: Presets */}
               <div className="w-full sm:w-48 flex flex-col p-3 border-r bg-muted/30">
                 <h4 className="text-sm font-medium mb-2">Quick Select</h4>
-                <div className="space-y-1 max-h-[340px] overflow-y-auto">
+                <div className="space-y-2 max-h-[340px] overflow-y-auto">
                   {presets.map((preset) => (
                     <Button
                       key={`${preset.label}-${preset.value}`}
                       variant="ghost"
                       size="sm"
-                      className="w-full justify-start text-xs h-8"
+                      className="w-full justify-start text-xs rounded hover:border-l-2 hover:border-l-primary"
                       onClick={() => handlePresetSelect(preset)}
                     >
-                      <div className="text-left truncate">
+                      <div className="text-left truncate py-2">
                         <div className="font-medium truncate">{preset.label}</div>
                         {preset.description && (
                           <div className="text-[10px] text-muted-foreground truncate">
@@ -282,9 +282,9 @@ export function DateRangePicker({
               </div>
 
               {/* Right Side: Calendar and Actions */}
-              <div className="w-full sm:w-auto p-3">
+              <div className="w-full sm:w-auto p-4">
                 {/* Month + Year selectors */}
-                <div className="flex items-center gap-2 mb-2 p-1 border-b border-border">
+                <div className="flex items-center gap-2 mb pb-3 border-b border-border">
                   <Select
                     value={selectedMonth ? String(selectedMonth.getMonth()) : String(new Date().getMonth())}
                     onValueChange={(val) =>
@@ -334,7 +334,7 @@ export function DateRangePicker({
                     if (maxDate && date > maxDate) return true;
                     return false;
                   }}
-                  className="rounded-md"
+                  className="rounded-md p-0 mt-3 mb-3"
                 />
 
                 {/* Selected Range Preview */}

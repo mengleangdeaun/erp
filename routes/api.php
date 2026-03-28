@@ -181,12 +181,20 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Job Cards
         Route::get('job-cards/qc', [\App\Http\Controllers\JobCardQCController::class, 'index']);
+        Route::get('job-cards/qc/export', [\App\Http\Controllers\JobCardQCController::class, 'exportQC']);
+        Route::get('job-cards/damages', [\App\Http\Controllers\JobCardQCController::class, 'damages']);
+        Route::get('job-cards/damages/export', [\App\Http\Controllers\JobCardQCController::class, 'exportDamages']);
         Route::post('job-cards/qc', [\App\Http\Controllers\JobCardQCController::class, 'store']);
+        Route::post('job-cards/qc/{id}/archive', [\App\Http\Controllers\JobCardQCController::class, 'archive']);
+        Route::post('job-cards/qc/{id}/unarchive', [\App\Http\Controllers\JobCardQCController::class, 'unarchive']);
+        Route::post('job-cards/qc/bulk-archive', [\App\Http\Controllers\JobCardQCController::class, 'bulkArchive']);
+        Route::post('job-cards/qc/bulk-unarchive', [\App\Http\Controllers\JobCardQCController::class, 'bulkUnarchive']);
         Route::get('job-cards', [\App\Http\Controllers\JobCardController::class, 'index']);
         Route::get('job-cards/{id}', [\App\Http\Controllers\JobCardController::class, 'show']);
         Route::put('job-cards/{id}', [\App\Http\Controllers\JobCardController::class, 'update']);
         Route::get('job-cards/{id}/qc', [\App\Http\Controllers\JobCardQCController::class, 'show']);
         Route::put('job-cards/items/{itemId}', [\App\Http\Controllers\JobCardController::class, 'updateItem']);
+        Route::post('job-cards/material-usage', [\App\Http\Controllers\JobCardController::class, 'storeMaterialUsage']);
         Route::put('job-cards/material-usage/{usageId}', [\App\Http\Controllers\JobCardController::class, 'updateMaterialUsage']);
         Route::get('inventory/products/{productId}/serials', [\App\Http\Controllers\JobCardController::class, 'getAvailableSerials']);
         Route::post('job-cards/{id}/complete', [\App\Http\Controllers\JobCardController::class, 'complete']);

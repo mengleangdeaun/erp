@@ -66,6 +66,10 @@ const SaleRemarkIndex = () => {
     }, [search]);
 
     const handleOpenDialog = (remark?: SaleRemark) => {
+        if (remark && remark.id === 1) {
+            toast.error('System default category cannot be modified');
+            return;
+        }
         if (remark) {
             setEditingRemark(remark);
             setFormData({
@@ -122,6 +126,10 @@ const SaleRemarkIndex = () => {
 
     const executeDelete = async () => {
         if (!remarkToDelete) return;
+        if (remarkToDelete === 1) {
+            toast.error('System default category cannot be deleted');
+            return;
+        }
         setIsDeleting(true);
         try {
             await api.delete(`/sales/remarks/${remarkToDelete}`);
@@ -184,8 +192,13 @@ const SaleRemarkIndex = () => {
                                                     className="w-4 h-4 rounded-full border-2 border-white dark:border-zinc-900 ring-1 ring-slate-100 dark:ring-zinc-800 shrink-0" 
                                                     style={{ backgroundColor: remark.color_code }} 
                                                 />
-                                                <span className="font-bold text-gray-900 dark:text-gray-100">
+                                                <span className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                                     <HighlightText text={remark.name} highlight={search} />
+                                                    {remark.id === 1 && (
+                                                        <Badge variant="secondary" className="text-[8px] font-black uppercase px-1.5 h-4 bg-slate-100 text-slate-500 border-none">
+                                                            System
+                                                        </Badge>
+                                                    )}
                                                 </span>
                                             </div>
                                         </td>
@@ -203,8 +216,8 @@ const SaleRemarkIndex = () => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <ActionButtons
-                                                onEdit={() => handleOpenDialog(remark)}
-                                                onDelete={() => handleDeleteClick(remark.id)}
+                                                onEdit={remark.id === 1 ? undefined : () => handleOpenDialog(remark)}
+                                                onDelete={remark.id === 1 ? undefined : () => handleDeleteClick(remark.id)}
                                                 skipDeleteConfirm
                                             />
                                         </td>

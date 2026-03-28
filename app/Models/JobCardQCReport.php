@@ -19,13 +19,15 @@ class JobCardQCReport extends Model
         'damages',
         'item_evaluations',
         'rework_technician_id',
-        'notes'
+        'notes',
+        'is_archived'
     ];
 
     protected $casts = [
         'damages' => 'array',
         'item_evaluations' => 'array',
-        'rating' => 'integer'
+        'rating' => 'integer',
+        'is_archived' => 'boolean'
     ];
 
     public function jobCard()

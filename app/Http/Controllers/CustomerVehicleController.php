@@ -37,7 +37,7 @@ class CustomerVehicleController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'brand_id' => 'required|exists:vehicle_brands,id',
             'model_id' => 'required|exists:vehicle_models,id',
-            'plate_number' => 'required|string|max:20',
+            'plate_number' => 'nullable|string|max:20',
             'vin_last_4' => 'nullable|string|max:4',
             'color' => 'nullable|string|max:50',
             'year' => 'nullable|integer',
@@ -59,7 +59,7 @@ class CustomerVehicleController extends Controller
         $validated = $request->validate([
             'brand_id' => 'sometimes|exists:vehicle_brands,id',
             'model_id' => 'sometimes|exists:vehicle_models,id',
-            'plate_number' => 'sometimes|string|max:20',
+            'plate_number' => 'nullable|string|max:20',
             'vin_last_4' => 'nullable|string|max:4',
             'color' => 'nullable|string|max:50',
             'year' => 'nullable|integer',

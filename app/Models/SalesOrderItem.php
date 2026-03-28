@@ -20,7 +20,9 @@ class SalesOrderItem extends Model
         'unit_price',
         'discount_amount',
         'tax_amount',
-        'subtotal'
+        'subtotal',
+        'original_item_id',
+        'replacement_type_id'
     ];
 
     public function order()

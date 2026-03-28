@@ -128,7 +128,7 @@ const SerialIndex = () => {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Sidebar Filters */}
                 <div className="lg:col-span-1 space-y-6">
-                    <Card className="shadow-sm border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+                    <Card className="shadow-sm border-gray-100 dark:border-gray-800 rounded-lg overflow-hidden">
                         <CardHeader className="pb-4 flex flex-row items-center justify-between">
                             <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-gray-500">
                                 <IconAdjustmentsHorizontal size={16} />
@@ -194,7 +194,7 @@ const SerialIndex = () => {
                     {loading ? (
                         <TableSkeleton columns={6} rows={8} />
                     ) : (
-                        <div className="bg-white dark:bg-gray-950 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+                        <div className="bg-white dark:bg-gray-950 rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50/50 dark:bg-gray-900/50">
